@@ -75,23 +75,11 @@ ${review}
         }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error((errData as {error?: string}).error ?? `서버 오류 (${res.status})`);
-      }
-      if (!res.body) throw new Error("응답 스트림이 없습니다.");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let text = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-        setResult(text);
-      }
-    } catch {
-      setResult("답변 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `서버 오류 (${res.status})`);
+      setResult(data.text ?? "");
+    } catch (e) {
+      setResult(`답변 생성 중 오류가 발생했습니다: ${e instanceof Error ? e.message : "다시 시도해주세요."}`);
     } finally {
       setLoading(false);
     }
@@ -249,10 +237,18 @@ ${review}
                       <p className="text-slate-400 text-sm">리뷰를 입력하고<br />답변 생성 버튼을 눌러주세요</p>
                     </div>
                   )}
-                  {(result || loading) && (
+                  {loading && (
+                    <div className="h-full flex flex-col items-center justify-center gap-3">
+                      <svg className="animate-spin w-8 h-8 text-orange-400" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <p className="text-sm text-slate-400">답변 작성 중...</p>
+                    </div>
+                  )}
+                  {!loading && result && (
                     <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
                       {result}
-                      {loading && <span className="inline-block w-1 h-4 bg-orange-400 animate-pulse ml-0.5 rounded" />}
                     </div>
                   )}
                 </div>

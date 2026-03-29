@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import { useSimulatorData } from "@/lib/useSimulatorData";
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
 function fmt(v: number) { return v.toLocaleString("ko-KR"); }
@@ -53,13 +54,22 @@ function calcDeductions(hasDependents: number, isBlueReturn: boolean) {
 }
 
 export default function TaxPage() {
+  const simData = useSimulatorData();
   const [annualSales, setAnnualSales] = useState("120000000");
   const [annualProfit, setAnnualProfit] = useState("24000000");
   const [isSimplified, setIsSimplified] = useState(false);
   const [dependents, setDependents] = useState("0");
   const [isBlueReturn, setIsBlueReturn] = useState(false);
   const [isDualBiz, setIsDualBiz] = useState(false);
-  const [meatCostRatio, setMeatCostRatio] = useState("40"); // 고기 원가 비율 (%)
+  const [meatCostRatio, setMeatCostRatio] = useState("40");
+
+  // 시뮬레이터 데이터 자동 입력
+  useEffect(() => {
+    if (!simData) return;
+    setAnnualSales(String(simData.totalSales * 12));
+    setAnnualProfit(String(Math.max(0, simData.profit * 12)));
+    if (simData.industry === "gogi") setIsDualBiz(true);
+  }, [simData]);
 
   const sales = num(annualSales);
   const profit = num(annualProfit);
@@ -119,6 +129,27 @@ export default function TaxPage() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">세금 계산기</h1>
             <p className="text-slate-500 text-sm">연 매출과 순이익을 입력하면 부가세·종합소득세 예상액을 계산합니다.</p>
           </div>
+
+          {/* 시뮬레이터 연계 배너 */}
+          {simData ? (
+            <div className="rounded-2xl bg-slate-900 px-4 py-3 mb-4 flex items-center gap-3">
+              <span className="text-lg">🔗</span>
+              <div className="flex-1">
+                <p className="text-xs text-slate-400">시뮬레이터 데이터 자동 입력됨</p>
+                <p className="text-white text-xs mt-0.5">
+                  연매출 <b className="text-blue-300">{(simData.totalSales * 12).toLocaleString("ko-KR")}원</b>
+                  <span className="mx-2 text-slate-600">·</span>
+                  연이익 <b className="text-emerald-300">{(Math.max(0, simData.profit * 12)).toLocaleString("ko-KR")}원</b>
+                </p>
+              </div>
+              <span className="text-xs text-slate-500">자동 반영됨</span>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 mb-4 flex items-center gap-3">
+              <span className="text-slate-400 text-sm">💡 시뮬레이터를 실행하면 매출·이익이 자동으로 입력됩니다.</span>
+              <Link href="/simulator" className="ml-auto text-xs font-semibold text-blue-500">시뮬레이터 →</Link>
+            </div>
+          )}
 
           {/* 경고 배너 */}
           <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 mb-6 text-xs text-amber-700 leading-relaxed">
@@ -197,7 +228,8 @@ export default function TaxPage() {
                     onChange={(e) => setIsBlueReturn(e.target.checked)}
                     className="w-4 h-4 accent-amber-500"
                   />
-                  <div>\n                    <span className="text-sm font-semibold text-slate-700">성실신고 확인 대상</span>
+                  <div>
+                    <span className="text-sm font-semibold text-slate-700">성실신고 확인 대상</span>
                     <p className="text-xs text-slate-400">추가 공제 200만원 적용</p>
                   </div>
                 </label>

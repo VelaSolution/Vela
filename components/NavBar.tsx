@@ -59,7 +59,6 @@ export default function NavBar() {
 
           <div className="vela-nav-links">
             <a href="/#features">서비스</a>
-            <Link href="/tools">도구 모음</Link>
             <Link href="/pricing">요금제</Link>
             <a href="/#contact">문의</a>
           </div>
@@ -68,6 +67,7 @@ export default function NavBar() {
             {user ? (
               <>
                 <span className="vela-user-name">{user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}</span>
+                <Link href="/dashboard" className="vela-btn-login">월별현황</Link>
                 <Link href="/profile" className="vela-btn-login">히스토리</Link>
                 <Link href="/simulator" className="vela-btn-start">시뮬레이터 →</Link>
                 <button className="vela-btn-logout" onClick={handleLogout}>로그아웃</button>
@@ -89,12 +89,13 @@ export default function NavBar() {
       {/* 모바일 메뉴 */}
       <div className={`vela-mobile-menu${menuOpen ? " open" : ""}`}>
         <a href="/#features" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>서비스</a>
-        <Link href="/tools" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>도구 모음</Link>
         <Link href="/pricing" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>요금제</Link>
         <a href="/#contact" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>문의</a>
         {user ? (
           <>
             <Link href="/simulator" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>시뮬레이터</Link>
+            <Link href="/dashboard" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>월별 매출현황</Link>
+            <Link href="/monthly-input" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>이번 달 입력</Link>
             <Link href="/profile" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>내 히스토리</Link>
             <button className="vela-mobile-link" style={{ background: "none", border: "none", textAlign: "left", cursor: "pointer", fontFamily: "inherit" }} onClick={() => { handleLogout(); setMenuOpen(false); }}>로그아웃</button>
           </>

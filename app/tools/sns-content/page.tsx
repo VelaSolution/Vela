@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import { useSimulatorData } from "@/lib/useSimulatorData";
 
 type Tone = "warm" | "trendy" | "professional" | "fun";
 type Platform = "instagram" | "naver-blog" | "kakao";
@@ -22,7 +23,12 @@ const PLATFORMS: { id: Platform; label: string; icon: string }[] = [
 
 const CONTENT_TYPES = ["신메뉴 소개", "이벤트·할인", "시즌 한정", "재료 이야기", "매장 소식", "리뷰 감사", "일상 공유"];
 
+const INDUSTRY_LABEL: Record<string, string> = {
+  cafe: "카페", restaurant: "음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
+};
+
 export default function SnsContentPage() {
+  const simData = useSimulatorData();
   const [platform, setPlatform] = useState<Platform>("instagram");
   const [tone, setTone] = useState<Tone>("warm");
   const [contentType, setContentType] = useState("신메뉴 소개");
@@ -46,6 +52,13 @@ export default function SnsContentPage() {
     kakao: "카카오채널 (간결하고 행동 유도 문구 포함, 300자 이내)",
   };
 
+  const fmt = (n: number) => n.toLocaleString("ko-KR");
+
+  // 시뮬레이터 데이터 컨텍스트
+  const simContext = simData
+    ? `\n[매장 정보 (시뮬레이터 연동)]\n업종: ${INDUSTRY_LABEL[simData.industry] ?? simData.industry}\n월 매출: ${fmt(simData.totalSales)}원 / 객단가: ${fmt(simData.avgSpend)}원\n순이익률: ${simData.netMargin}%\n`
+    : "";
+
   async function generate() {
     if (!menuName && !description) return;
     setLoading(true);
@@ -53,7 +66,7 @@ export default function SnsContentPage() {
 
     const prompt = `당신은 외식업 전문 SNS 마케터입니다.
 아래 정보를 바탕으로 ${platformLabels[platform]} 플랫폼에 최적화된 게시글을 작성하세요.
-
+${simContext}
 [콘텐츠 정보]
 콘텐츠 유형: ${contentType}
 메뉴/이벤트명: ${menuName || "(없음)"}
@@ -79,24 +92,11 @@ export default function SnsContentPage() {
         }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error((errData as {error?: string}).error ?? `서버 오류 (${res.status})`);
-      }
-      if (!res.body) throw new Error("응답 스트림이 없습니다.");
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let text = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-        setResult(text);
-      }
-    } catch {
-      setResult("콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? `서버 오류 (${res.status})`);
+      setResult(data.text ?? "");
+    } catch (e) {
+      setResult(`콘텐츠 생성 중 오류가 발생했습니다: ${e instanceof Error ? e.message : "다시 시도해주세요."}`);
     } finally {
       setLoading(false);
     }
@@ -121,13 +121,38 @@ export default function SnsContentPage() {
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="inline-flex items-center gap-2 bg-pink-50 text-pink-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               <span>📱</span> AI 콘텐츠 생성기
             </div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">SNS 콘텐츠 생성기</h1>
             <p className="text-slate-500 text-sm">메뉴·이벤트 정보를 입력하면 AI가 맞춤 SNS 게시글을 작성해드립니다.</p>
           </div>
+
+          {/* 시뮬레이터 연계 배너 */}
+          {simData ? (
+            <div className="rounded-2xl bg-slate-900 px-4 py-3 mb-6 flex items-center gap-3">
+              <span className="text-lg">🔗</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-slate-400">시뮬레이터 연동 · {INDUSTRY_LABEL[simData.industry] ?? simData.industry}</p>
+                <p className="text-white text-xs mt-0.5">
+                  월매출 <b className="text-blue-300">{fmt(simData.totalSales)}원</b>
+                  <span className="mx-2 text-slate-600">·</span>
+                  객단가 <b className="text-slate-300">{fmt(simData.avgSpend)}원</b>
+                  <span className="mx-2 text-slate-600">·</span>
+                  순이익률 <b className="text-emerald-300">{simData.netMargin}%</b>
+                </p>
+              </div>
+              <span className="text-xs text-slate-500 flex-shrink-0">AI 프롬프트에 자동 반영</span>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 mb-6 flex items-center gap-3">
+              <span className="text-slate-400 text-sm">💡 시뮬레이터 데이터를 연동하면 더 정확한 콘텐츠를 생성합니다.</span>
+              <Link href="/simulator" className="ml-auto flex-shrink-0 text-xs font-semibold text-blue-500 hover:text-blue-600">
+                시뮬레이터 →
+              </Link>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* 입력 */}
@@ -266,10 +291,18 @@ export default function SnsContentPage() {
                       <p className="text-slate-400 text-sm">왼쪽에서 정보를 입력하고<br />생성 버튼을 눌러주세요</p>
                     </div>
                   )}
-                  {(result || loading) && (
+                  {loading && (
+                    <div className="h-full flex flex-col items-center justify-center gap-3">
+                      <svg className="animate-spin w-8 h-8 text-pink-400" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <p className="text-sm text-slate-400">게시글 작성 중...</p>
+                    </div>
+                  )}
+                  {!loading && result && (
                     <div className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed">
                       {result}
-                      {loading && <span className="inline-block w-1 h-4 bg-pink-400 animate-pulse ml-0.5 rounded" />}
                     </div>
                   )}
                 </div>

@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import { useSimulatorData } from "@/lib/useSimulatorData";
 
 const TOOLS = [
   {
@@ -79,6 +81,12 @@ const TOOLS = [
 ];
 
 export default function ToolsPage() {
+  const simData = useSimulatorData();
+  const fmt = (n: number) => n.toLocaleString("ko-KR");
+
+  const industryLabel: Record<string, string> = {
+    cafe: "카페", restaurant: "음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
+  };
   return (
     <>
       <style>{`
@@ -99,6 +107,38 @@ export default function ToolsPage() {
               외식업 창업과 운영에 필요한 계산기·AI 도구를 모두 모았습니다.
             </p>
           </div>
+
+          {/* 시뮬레이터 연계 배너 */}
+          {simData ? (
+            <div className="rounded-2xl bg-slate-900 px-5 py-4 mb-6 flex items-center gap-4 flex-wrap">
+              <div className="flex-1">
+                <p className="text-xs text-slate-400 mb-1">
+                  🔗 시뮬레이터 마지막 데이터 연결됨 · {industryLabel[simData.industry] ?? simData.industry}
+                </p>
+                <div className="flex gap-4 flex-wrap">
+                  <span className="text-white text-sm">
+                    월매출 <b className="text-blue-300">{fmt(simData.totalSales)}원</b>
+                  </span>
+                  <span className="text-white text-sm">
+                    순이익 <b className={simData.profit >= 0 ? "text-emerald-300" : "text-red-400"}>{fmt(simData.profit)}원</b>
+                  </span>
+                  <span className="text-white text-sm">
+                    순이익률 <b className="text-slate-300">{simData.netMargin}%</b>
+                  </span>
+                </div>
+              </div>
+              <Link href="/simulator" className="flex-shrink-0 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-2 transition">
+                시뮬레이터 →
+              </Link>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-slate-100 px-5 py-4 mb-6 flex items-center gap-3">
+              <span className="text-slate-400 text-sm">💡 시뮬레이터를 먼저 실행하면 도구들과 데이터가 연결됩니다.</span>
+              <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-slate-900 text-white text-xs font-semibold px-3 py-2">
+                시뮬레이터 →
+              </Link>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {TOOLS.map((tool) => (

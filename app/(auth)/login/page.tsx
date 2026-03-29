@@ -2,15 +2,18 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 type Tab = "email" | "phone";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") ?? "/simulator";
+
   const [tab, setTab] = useState<Tab>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +29,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider as any,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
     });
     if (error) setError(error.message);
@@ -43,7 +46,8 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.push("/simulator");
+    router.refresh();
+    router.push(nextPath);
     setLoading(false);
   }
 
@@ -53,11 +57,7 @@ export default function LoginPage() {
     const supabase = createSupabaseBrowserClient();
     const formatted = phone.startsWith("0") ? "+82" + phone.slice(1) : phone;
     const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
+    if (error) { setError(error.message); setLoading(false); return; }
     setOtpSent(true);
     setLoading(false);
   }
@@ -69,12 +69,9 @@ export default function LoginPage() {
     const supabase = createSupabaseBrowserClient();
     const formatted = phone.startsWith("0") ? "+82" + phone.slice(1) : phone;
     const { error } = await supabase.auth.verifyOtp({ phone: formatted, token: otp, type: "sms" });
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
-    router.push("/simulator");
+    if (error) { setError(error.message); setLoading(false); return; }
+    router.refresh();
+    router.push(nextPath);
     setLoading(false);
   }
 
@@ -85,13 +82,19 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
             <span className="font-serif text-3xl font-bold text-slate-900">VELA</span>
-            <span className="font-serif text-3xl font-bold text-amber-600">.</span>
+            <span className="font-serif text-3xl font-bold text-blue-500">.</span>
           </Link>
           <p className="mt-2 text-sm text-slate-500">계속하려면 로그인하세요</p>
+          {nextPath !== "/simulator" && (
+            <p className="mt-1 text-xs text-blue-500 bg-blue-50 rounded-full px-3 py-1 inline-block">
+              로그인 후 {nextPath} 으로 이동합니다
+            </p>
+          )}
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200 p-8">
 
+          {/* 소셜 로그인 */}
           <div className="space-y-3 mb-6">
             <button
               onClick={() => handleSocialLogin("kakao")}
@@ -120,6 +123,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* 탭 */}
           <div className="flex gap-1 rounded-2xl bg-slate-100 p-1 mb-6">
             {(["email", "phone"] as Tab[]).map((t) => (
               <button
@@ -212,5 +216,17 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
+      </main>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
