@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import NavBar from "@/components/NavBar";
 import Script from "next/script";
 import {
   INDUSTRY_CONFIG,
@@ -1699,7 +1700,9 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
+    <>
+    <NavBar />
+    <main className="min-h-screen bg-slate-50 px-4 pt-20 pb-6 md:px-8">
       <div className="mx-auto max-w-7xl">
 
         {showSaveModal && (
@@ -1792,5 +1795,6 @@ export default function Page() {
         </div>
       </div>
     </main>
+    </>
   );
 }

@@ -37,7 +37,8 @@ export default function NavBar() {
         .vela-dropdown{position:relative}
         .vela-dropdown-btn{font-size:15px;font-weight:500;color:#6B7684;background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;padding:0;text-decoration:none;display:inline-block}
         .vela-dropdown-btn:hover{color:#191F28}
-        .vela-dropdown-menu{display:none;position:absolute;top:calc(100% + 16px);left:50%;transform:translateX(-50%);background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.12);border:1px solid #E5E8EB;padding:16px;width:560px;z-index:200;display:none;grid-template-columns:1fr 1fr 1fr;gap:0}
+        .vela-dropdown-menu{display:none;position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.12);border:1px solid #E5E8EB;padding:16px;width:560px;z-index:200;grid-template-columns:1fr 1fr 1fr;gap:0}
+        .vela-dropdown-menu::before{content:'';position:absolute;top:-12px;left:0;right:0;height:12px}
         .vela-dropdown:hover .vela-dropdown-menu{display:grid}
         .vela-dropdown-section{padding:8px 12px;border-right:1px solid #F2F4F6}
         .vela-dropdown-section:last-of-type{border-right:none}

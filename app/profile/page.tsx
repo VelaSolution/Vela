@@ -122,7 +122,6 @@ export default function ProfilePage() {
       <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
         <div className="mx-auto max-w-3xl">
 
-          {/* 프로필 헤더 */}
           <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6 mt-6 mb-4">
             <div className="flex items-center gap-5">
               <div className="relative">
@@ -163,7 +162,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* 탭 */}
           <div className="flex gap-1 rounded-2xl bg-slate-100 p-1 mb-4">
             {([{ id: "overview", label: "📊 개요" }, { id: "history", label: "📋 히스토리" }, { id: "settings", label: "⚙️ 설정" }] as const).map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -173,7 +171,6 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* 개요 */}
           {activeTab === "overview" && (
             <div className="space-y-4">
               <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
@@ -227,7 +224,7 @@ export default function ProfilePage() {
                     <LineChart data={chartData}>
                       <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                       <YAxis tickFormatter={fmtM} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: number) => `${fmt(v)}원`} />
+                      <Tooltip formatter={(v) => `${fmt(Number(v ?? 0))}원`} />
                       <Line type="monotone" dataKey="매출" stroke="#0f172a" strokeWidth={2.5} dot={{ r: 4, fill: "#0f172a" }} />
                       <Line type="monotone" dataKey="순이익" stroke="#059669" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: "#059669" }} />
                     </LineChart>
@@ -250,7 +247,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 히스토리 */}
           {activeTab === "history" && (
             <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -291,7 +287,6 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* 설정 */}
           {activeTab === "settings" && (
             <div className="space-y-4">
               {user?.app_metadata?.provider === "email" && (
