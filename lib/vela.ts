@@ -211,11 +211,10 @@ export const INDUSTRY_CONFIG: Record<
     },
     defaultStep3: {
       businessType: "existing",
-      deposit: 50000000, premium: 30000000, interior: 40000000, equipment: 20000000,
-      loanAmount: 50000000, loanRate: 5.5, loanTerm: 60,
+      deposit: 50000000, premiumKey: 30000000, interior: 40000000, equipment: 20000000, signage: 3000000, otherSetup: 5000000,
+      loanEnabled: true, loanAmount: 50000000, loanInterestRate: 5.5, loanTermMonths: 60,
       recoveryMonths: 24,
-      incomeTaxRate: 15,
-      isDualBiz: true, meatCostRatio: 40, biz2Name: "정육점",
+      targetMonthlyProfit: 5000000,
     },
   },
   finedining: {
