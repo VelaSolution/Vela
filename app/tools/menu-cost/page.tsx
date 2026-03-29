@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -303,7 +304,7 @@ function MenuCard({
 
 // ─── 업종별 프리셋 ─────────────────────────────────────────────────────────────
 
-type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining";
+type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining" | "gogi";
 
 const INDUSTRY_PRESETS: Record<IndustryKey, MenuItem[]> = {
   cafe: [
@@ -438,6 +439,54 @@ const INDUSTRY_PRESETS: Record<IndustryKey, MenuItem[]> = {
       ],
     },
   ],
+  gogi: [
+    {
+      id: uid(), name: "삼겹살 200g", price: "16000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "삼겹살 원육 200g", cost: "4200" },
+        { id: uid(), name: "쌈채소·쌈장", cost: "600" },
+        { id: uid(), name: "가스비·집게·호일", cost: "300" },
+      ],
+    },
+    {
+      id: uid(), name: "목살 200g", price: "15000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "목살 원육 200g", cost: "3800" },
+        { id: uid(), name: "쌈채소·쌈장", cost: "600" },
+        { id: uid(), name: "가스비·소모품", cost: "300" },
+      ],
+    },
+    {
+      id: uid(), name: "항정살 150g", price: "18000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "항정살 원육 150g", cost: "5500" },
+        { id: uid(), name: "쌈채소·소스", cost: "600" },
+        { id: uid(), name: "가스비·소모품", cost: "300" },
+      ],
+    },
+    {
+      id: uid(), name: "냉면", price: "8000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "냉면 면·육수", cost: "1500" },
+        { id: uid(), name: "고명·겨자·식초", cost: "400" },
+        { id: uid(), name: "그릇·기타", cost: "100" },
+      ],
+    },
+    {
+      id: uid(), name: "된장찌개", price: "3000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "된장·두부·호박", cost: "700" },
+        { id: uid(), name: "뚝배기 가스비", cost: "150" },
+      ],
+    },
+    {
+      id: uid(), name: "소주 1병", price: "5000", category: "주류",
+      ingredients: [
+        { id: uid(), name: "소주 원가", cost: "1100" },
+        { id: uid(), name: "컵", cost: "50" },
+      ],
+    },
+  ],
 };
 
 const INDUSTRY_INFO: Record<IndustryKey, { label: string; emoji: string; color: string; bg: string }> = {
@@ -445,6 +494,7 @@ const INDUSTRY_INFO: Record<IndustryKey, { label: string; emoji: string; color: 
   restaurant: { label: "음식점",     emoji: "🍽️", color: "#059669", bg: "#ECFDF5" },
   bar:        { label: "술집/바",    emoji: "🍺", color: "#7C3AED", bg: "#F5F3FF" },
   finedining: { label: "파인다이닝", emoji: "✨", color: "#D97706", bg: "#FFFBEB" },
+  gogi:       { label: "고깃집",     emoji: "🥩", color: "#DC2626", bg: "#FEF2F2" },
 };
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -545,7 +595,7 @@ export default function MenuCostPage() {
           </div>
 
           {/* 업종 선택 탭 */}
-          <div className="grid grid-cols-4 gap-2 mb-8">
+          <div className="grid grid-cols-5 gap-2 mb-8">
             {(Object.keys(INDUSTRY_INFO) as IndustryKey[]).map((key) => {
               const info = INDUSTRY_INFO[key];
               const active = industry === key;
@@ -553,13 +603,16 @@ export default function MenuCostPage() {
                 <button
                   key={key}
                   onClick={() => changeIndustry(key)}
-                  className="rounded-2xl py-3 flex flex-col items-center gap-1.5 transition-all duration-200 border-2"
+                  className="rounded-2xl py-3 flex flex-col items-center gap-1.5 transition-all duration-200 border-2 relative"
                   style={{
                     background: active ? info.bg : "#fff",
                     borderColor: active ? info.color : "#E5E8EB",
                     boxShadow: active ? `0 0 0 1px ${info.color}` : "none",
                   }}
                 >
+                  {key === "gogi" && (
+                    <span className="absolute -top-2 -right-1 text-xs bg-red-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none">이중</span>
+                  )}
                   <span className="text-xl">{info.emoji}</span>
                   <span
                     className="text-xs font-bold"
@@ -571,6 +624,21 @@ export default function MenuCostPage() {
               );
             })}
           </div>
+
+          {/* 고깃집 이중사업자 안내 */}
+          {industry === "gogi" && (
+            <div className="rounded-2xl bg-red-50 border border-red-200 px-5 py-4 mb-6 flex gap-3">
+              <span className="text-xl flex-shrink-0">🥩</span>
+              <div>
+                <p className="text-sm font-bold text-red-700 mb-1">고깃집 이중사업자 구조</p>
+                <p className="text-xs text-red-600 leading-relaxed">
+                  <strong>1호 (음식점업)</strong> — 홀 매출·서비스 담당 / <strong>2호 (축산물판매업)</strong> — 고기 원육 공급 담당<br />
+                  2호 법인이 원육을 매입해 1호에 공급하면 매입세액 공제 + 원가 분산 효과로 세금 절감이 가능합니다.<br />
+                  <span className="text-red-400 mt-1 block">⚠️ 실제 운영 전 반드시 세무사 상담을 받으세요.</span>
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* 요약 대시보드 */}
           {validMenus.length > 0 && (

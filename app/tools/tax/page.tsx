@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
 import { useSimulatorData } from "@/lib/useSimulatorData";
+import SendToSimulator from "@/components/SendToSimulator";
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
 function fmt(v: number) { return v.toLocaleString("ko-KR"); }
@@ -116,7 +118,8 @@ export default function TaxPage() {
         body{font-family:'Pretendard',-apple-system,sans-serif}
       `}</style>
       <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <ToolNav />
+      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
@@ -383,6 +386,22 @@ export default function TaxPage() {
               </div>
             </div>
           )}
+
+          {/* 시뮬레이터로 돌려보내기 */}
+          <div className="mt-6 rounded-2xl bg-slate-50 border border-slate-200 px-5 py-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">시뮬레이터에서 상세 분석</p>
+              <p className="text-xs text-slate-400 mt-0.5">입력한 매출·비용 정보를 시뮬레이터에 반영합니다</p>
+            </div>
+            <SendToSimulator
+              data={{
+                monthlySales: sales / 12,
+                rent: num(String(0)), // tax page doesn't have rent
+                cogsRate: isSimplified ? 40 : 30,
+              }}
+              label="시뮬레이터에서 확인 →"
+            />
+          </div>
 
           {/* 세금 달력 */}
           <div className="mt-8 rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6">

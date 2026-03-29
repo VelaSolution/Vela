@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
+import { useSimulatorData } from "@/lib/useSimulatorData";
 
 type ReplyTone = "apologetic" | "grateful" | "professional" | "friendly";
 type Platform = "naver" | "kakao" | "google" | "baemin";
@@ -28,7 +30,12 @@ const RATING_SCENARIOS = [
   { label: "배달 불만", review: "배달이 너무 늦었고 음식이 식어서 왔어요. 포장도 엉망이었습니다." },
 ];
 
+const INDUSTRY_LABEL: Record<string, string> = {
+  cafe: "카페", restaurant: "음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
+};
+
 export default function ReviewReplyPage() {
+  const simData = useSimulatorData();
   const [platform, setPlatform] = useState<Platform>("naver");
   const [tone, setTone] = useState<ReplyTone>("grateful");
   const [review, setReview] = useState("");
@@ -37,7 +44,13 @@ export default function ReviewReplyPage() {
   const [result, setResult] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // 시뮬레이터 데이터로 배달 플랫폼 자동 선택
+  useEffect(() => {
+    if (simData?.deliveryEnabled) setPlatform("baemin");
+  }, [simData]);
+
   const currentPlatform = PLATFORMS.find(p => p.id === platform)!;
+  const fmt = (n: number) => n.toLocaleString("ko-KR");
 
   async function generate() {
     if (!review.trim()) return;
@@ -51,8 +64,12 @@ export default function ReviewReplyPage() {
       friendly: "친근하고 따뜻하게, 손님과 친구처럼 소통하는",
     };
 
-    const prompt = `당신은 외식업 매장 운영자입니다. 고객 리뷰에 대한 답변을 작성해주세요.
+    const simContext = simData
+      ? `\n[매장 정보]\n업종: ${INDUSTRY_LABEL[simData.industry] ?? simData.industry} / 객단가: ${fmt(simData.avgSpend)}원\n`
+      : "";
 
+    const prompt = `당신은 외식업 매장 운영자입니다. 고객 리뷰에 대한 답변을 작성해주세요.
+${simContext}
 [답변 조건]
 - 플랫폼: ${currentPlatform.label} (${currentPlatform.charLimit}자 이내)
 - 톤: ${toneGuides[tone]}
@@ -101,7 +118,8 @@ ${review}
         body{font-family:'Pretendard',-apple-system,sans-serif}
       `}</style>
       <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <ToolNav />
+      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>

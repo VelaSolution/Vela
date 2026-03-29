@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
 
 type Industry = "cafe" | "restaurant" | "bar" | "finedining";
 
@@ -121,7 +122,8 @@ export default function AreaAnalysisPage() {
         body{font-family:'Pretendard',-apple-system,sans-serif}
       `}</style>
       <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <ToolNav />
+      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>

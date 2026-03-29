@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
 
 type CheckItem = {
   id: string;
@@ -130,6 +131,15 @@ function buildState(phases: PhaseBase[], industry: string) {
       { phaseId: "legal", item: { id: "wine-import", label: "주류 수입 관련 면허 검토 (와인 셀러 운영 시)", required: false } },
       { phaseId: "hr", item: { id: "sommelier", label: "소믈리에·파티시에 등 전문 인력 채용", required: false } },
     ],
+    gogi: [
+      { phaseId: "legal", item: { id: "gogi-dual1", label: "이중사업자 구조 검토 (세무사 상담 필수)", desc: "1호 음식점업 + 2호 축산물판매업 구조", required: true } },
+      { phaseId: "legal", item: { id: "gogi-livestock", label: "축산물판매업 영업허가 신청", desc: "관할 시·군·구청 위생과 또는 농식품부", required: true } },
+      { phaseId: "legal", item: { id: "gogi-haccp", label: "HACCP 인증 검토 (냉장·냉동 보관 기준 준수)", required: false } },
+      { phaseId: "legal", item: { id: "gogi-origin", label: "원산지 표시 의무 준비 (돼지·소 원산지 메뉴판 표기)", required: true } },
+      { phaseId: "finance", item: { id: "gogi-biz2-account", label: "2호 사업자 별도 계좌·카드단말 개설", desc: "1호·2호 매출·매입 분리 필수", required: true } },
+      { phaseId: "finance", item: { id: "gogi-taxadvisor", label: "이중사업자 전문 세무사 계약", desc: "부가세 매입세액 공제 최적화", required: true } },
+      { phaseId: "hr", item: { id: "gogi-butcher", label: "정육 처리 인력 확보 또는 외주 계약", required: false } },
+    ],
   };
 
   return phases.map((phase) => ({
@@ -146,6 +156,7 @@ const INDUSTRIES = [
   { id: "restaurant", label: "음식점", emoji: "🍽️" },
   { id: "bar", label: "술집/바", emoji: "🍺" },
   { id: "finedining", label: "파인다이닝", emoji: "✨" },
+  { id: "gogi", label: "고깃집", emoji: "🥩" },
 ];
 
 export default function StartupChecklistPage() {
@@ -179,7 +190,8 @@ export default function StartupChecklistPage() {
         body{font-family:'Pretendard',-apple-system,sans-serif}
       `}</style>
       <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <ToolNav />
+      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>

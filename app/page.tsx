@@ -148,6 +148,18 @@ export default function LandingPage() {
         .step-num{width:56px;height:56px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin:0 auto 20px}
         .step-title{font-size:18px;font-weight:700;color:var(--gray-900);margin-bottom:8px}
         .step-desc{font-size:14px;color:var(--gray-600);line-height:1.7}
+        .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
+        .tool-section-card{background:#fff;border-radius:20px;padding:28px;border:1px solid var(--gray-200);transition:transform .2s,box-shadow .2s}
+        .tool-section-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.08)}
+        .tool-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .tool-section-left{display:flex;align-items:center;gap:10px}
+        .tool-section-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+        .tool-section-name{font-size:17px;font-weight:700;color:var(--gray-900)}
+        .tool-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px}
+        .tool-item{font-size:13px;color:var(--gray-600);padding:7px 0;border-bottom:1px solid var(--gray-100)}
+        .tool-item:last-child{border-bottom:none}
+        .tool-link{display:inline-flex;align-items:center;gap:4px;margin-top:16px;font-size:13px;font-weight:600;text-decoration:none;transition:opacity .15s}
+        .tool-link:hover{opacity:.7}
         .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
         .pricing-card{background:#fff;border:2px solid var(--gray-200);border-radius:24px;padding:36px 32px;position:relative;transition:border-color .2s}
         .pricing-card.popular{border-color:var(--blue)}
@@ -206,8 +218,8 @@ export default function LandingPage() {
         .footer-legal{display:flex;gap:16px}
         .footer-legal a{font-size:13px;color:var(--gray-400);text-decoration:none}
         .footer-legal a:hover{color:#fff}
-        @media(max-width:1024px){.hero-inner{grid-template-columns:1fr;gap:48px}.features-grid,.pricing-grid,.testi-grid{grid-template-columns:1fr 1fr}.steps-grid{grid-template-columns:1fr 1fr}.contact-layout{grid-template-columns:1fr;gap:48px}}
-        @media(max-width:640px){.features-grid,.pricing-grid,.testi-grid,.steps-grid{grid-template-columns:1fr}.hero-stats{flex-direction:column;gap:20px}.form-row{grid-template-columns:1fr}.footer-top{flex-direction:column;gap:24px}.footer-bottom{flex-direction:column;gap:16px;text-align:center}.hero-actions{flex-direction:column}}
+        @media(max-width:1024px){.hero-inner{grid-template-columns:1fr;gap:48px}.features-grid,.pricing-grid,.testi-grid,.tools-grid{grid-template-columns:1fr 1fr}.steps-grid{grid-template-columns:1fr 1fr}.contact-layout{grid-template-columns:1fr;gap:48px}}
+        @media(max-width:640px){.features-grid,.pricing-grid,.testi-grid,.steps-grid,.tools-grid{grid-template-columns:1fr}.hero-stats{flex-direction:column;gap:20px}.form-row{grid-template-columns:1fr}.footer-top{flex-direction:column;gap:24px}.footer-bottom{flex-direction:column;gap:16px;text-align:center}.hero-actions{flex-direction:column}}
       `}</style>
 
       <NavBar />
@@ -239,7 +251,7 @@ export default function LandingPage() {
                 <span className="hero-card-badge">흑자</span>
               </div>
               <div className="hero-metric-label">이번 달 세전 순이익</div>
-              <div className={`hero-metric-value green`}>+3,420,000원</div>
+              <div className="hero-metric-value green">+3,420,000원</div>
               <div className="hero-bar-wrap"><div className="hero-bar" /></div>
               <div className="hero-row"><span className="hero-row-label">월 총 매출</span><span className="hero-row-value">28,500,000원</span></div>
               <div className="hero-row"><span className="hero-row-label">손익분기점</span><span className="hero-row-value">22,100,000원 ✓</span></div>
@@ -296,8 +308,68 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* TOOLS */}
+      <section id="tools" className="features-bg">
+        <div className="section-inner">
+          <FadeIn>
+            <span className="section-tag">🛠️ 도구 모음</span>
+            <h2 className="section-title">사업에 필요한 모든 도구</h2>
+            <p className="section-desc">원가 계산부터 AI 마케팅까지 — 외식업 운영에 필요한 도구를 한 곳에 모았습니다.</p>
+          </FadeIn>
+          <div className="tools-grid">
+            {[
+              {
+                emoji: "💰", title: "재무·수익",
+                color: "#059669", bg: "#ECFDF5",
+                items: ["🧮 메뉴별 원가 계산기", "👥 인건비 스케줄러", "🧾 세금 계산기", "📄 손익계산서 PDF"],
+                href: "/tools/menu-cost", badge: null, delay: 0,
+              },
+              {
+                emoji: "🚀", title: "창업·운영",
+                color: "#0891B2", bg: "#ECFEFF",
+                items: ["✅ 창업 체크리스트", "🗺️ 상권 분석 도우미", "📊 월별 매출 대시보드", "📝 이번 달 매장 입력"],
+                href: "/tools/startup-checklist", badge: null, delay: 80,
+              },
+              {
+                emoji: "📣", title: "AI 마케팅",
+                color: "#DB2777", bg: "#FDF2F8",
+                items: ["📱 SNS 콘텐츠 생성기", "💬 리뷰 답변 생성기"],
+                href: "/tools/sns-content", badge: "AI", delay: 160,
+              },
+            ].map((section) => (
+              <FadeIn key={section.title} delay={section.delay}>
+                <div className="tool-section-card">
+                  <div className="tool-section-header">
+                    <div className="tool-section-left">
+                      <div className="tool-section-icon" style={{ background: section.bg }}>{section.emoji}</div>
+                      <span className="tool-section-name">{section.title}</span>
+                    </div>
+                    {section.badge && (
+                      <span className="tool-badge" style={{ background: section.bg, color: section.color }}>{section.badge}</span>
+                    )}
+                  </div>
+                  <div>
+                    {section.items.map(item => (
+                      <div key={item} className="tool-item">{item}</div>
+                    ))}
+                  </div>
+                  <Link href={section.href} className="tool-link" style={{ color: section.color }}>
+                    바로 사용하기 →
+                  </Link>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+          <FadeIn delay={200}>
+            <div style={{ marginTop: 32, textAlign: "center" }}>
+              <Link href="/tools" className="btn-secondary">전체 도구 보기 →</Link>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* PRICING */}
-      <section id="pricing" className="features-bg">
+      <section id="pricing">
         <div className="section-inner">
           <FadeIn><span className="section-tag">요금제</span><h2 className="section-title">합리적인 가격으로</h2><p className="section-desc">매장 규모에 맞는 플랜을 선택하세요. 언제든 변경 가능합니다.</p></FadeIn>
           <div className="pricing-grid">
@@ -396,6 +468,7 @@ export default function LandingPage() {
             <div className="footer-logo">VELA<span>.</span></div>
             <div className="footer-links">
               <a href="#features">서비스</a>
+              <a href="#tools">도구</a>
               <a href="#pricing">요금제</a>
               <a href="#contact">문의</a>
               <Link href="/simulator">시뮬레이터</Link>

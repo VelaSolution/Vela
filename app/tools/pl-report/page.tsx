@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ToolNav from "@/components/ToolNav";
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
 function fmt(v: number) { return v.toLocaleString("ko-KR"); }
@@ -129,8 +130,9 @@ export default function PLReportPage() {
         }
       `}</style>
       <div className="no-print"><NavBar /></div>
+      <ToolNav />
 
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-5xl">
           {/* 헤더 */}
           <div className="no-print flex items-center gap-3 mb-8 mt-4">
