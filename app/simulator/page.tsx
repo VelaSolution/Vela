@@ -1546,6 +1546,9 @@ export default function Page() {
   const [saveMessage, setSaveMessage] = useState("");
   const [stepError, setStepError] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [simTitle, setSimTitle] = useState("");
+  const [showPrevModal, setShowPrevModal] = useState(false);
+  const [prevForm, setPrevForm] = useState<FullForm | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showMessage = (msg: string) => {
@@ -1574,7 +1577,20 @@ export default function Page() {
       setForm(sanitizeFullForm(raw));
       return;
     }
-    // localStorage에서 불러오지 않음 — 항상 빈 값으로 시작
+
+    // 이전 분석값 확인 → 의사 묻기
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // 값이 있는지 확인 (seats나 avgSpend가 0이 아닌 경우)
+        if (parsed.seats || parsed.avgSpend || parsed.rent) {
+          setPrevForm(sanitizeFullForm(parsed));
+          setShowPrevModal(true);
+        }
+      } catch { /* ignore */ }
+    }
+    // localStorage에서 자동 불러오지 않음 — 항상 빈 값으로 시작
   }, []);
 
   // 폼 변경 시 자동저장 + 도구 연동 이벤트
@@ -1696,12 +1712,42 @@ export default function Page() {
     setStepError("");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
     window.dispatchEvent(new Event("vela-form-updated"));
-    router.push(`/result?${buildQuery(form)}`);
+    const titleParam = simTitle.trim() ? `&title=${encodeURIComponent(simTitle.trim())}` : "";
+    router.push(`/result?${buildQuery(form)}${titleParam}`);
   };
 
   return (
     <>
     <NavBar />
+
+    {/* 이전 분석값 불러오기 모달 */}
+    {showPrevModal && prevForm && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+          <p className="text-3xl mb-3">📊</p>
+          <h3 className="text-lg font-extrabold text-slate-900 mb-2">이전 분석값이 있어요</h3>
+          <p className="text-sm text-slate-500 mb-5">
+            마지막으로 분석한 값을 불러올까요?<br />
+            <span className="text-xs text-slate-400 mt-1 block">
+              업종: {prevForm.industry} · 좌석: {prevForm.seats}석 · 객단가: {String(prevForm.avgSpend)}원
+            </span>
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setShowPrevModal(false); }}
+              className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+              아니오 (새로 시작)
+            </button>
+            <button
+              onClick={() => { setForm(prevForm); setShowPrevModal(false); }}
+              className="flex-1 rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-700 transition">
+              예 (불러오기)
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <main className="min-h-screen bg-slate-50 px-4 pt-20 pb-6 md:px-8">
       <div className="mx-auto max-w-7xl">
 
@@ -1753,6 +1799,18 @@ export default function Page() {
 
             <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
               {stepError && <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
+              {step === 3 && (
+                <div className="mb-3">
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">시뮬레이션 제목 (선택)</label>
+                  <input
+                    type="text"
+                    value={simTitle}
+                    onChange={e => setSimTitle(e.target.value)}
+                    placeholder="예) 홍대 카페 오픈 시뮬레이션"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white transition"
+                  />
+                </div>
+              )}
               <div className="flex gap-3">
                 {step > 1 && (
                   <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-2xl border border-slate-200 px-6 py-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">← 이전</button>

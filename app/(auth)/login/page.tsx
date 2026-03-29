@@ -12,7 +12,7 @@ type Tab = "email" | "phone";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/simulator";
+  const nextPath = searchParams.get("next") ?? "/";
 
   const [tab, setTab] = useState<Tab>("email");
   const [email, setEmail] = useState("");
@@ -85,7 +85,7 @@ function LoginForm() {
             <span className="font-serif text-3xl font-bold text-blue-500">.</span>
           </Link>
           <p className="mt-2 text-sm text-slate-500">계속하려면 로그인하세요</p>
-          {nextPath !== "/simulator" && (
+          {nextPath !== "/" && (
             <p className="mt-1 text-xs text-blue-500 bg-blue-50 rounded-full px-3 py-1 inline-block">
               로그인 후 {nextPath} 으로 이동합니다
             </p>

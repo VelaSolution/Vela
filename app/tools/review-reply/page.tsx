@@ -139,18 +139,18 @@ ${review}
               {/* 플랫폼 */}
               <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
                 <h2 className="font-bold text-slate-900 mb-3">플랫폼</h2>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   {PLATFORMS.map((p) => (
                     <button
                       key={p.id}
                       onClick={() => setPlatform(p.id)}
-                      className={`rounded-2xl py-2.5 px-4 flex items-center gap-2 text-sm font-semibold transition ${
+                      className={`rounded-2xl py-3 px-2 flex flex-col items-center gap-1 text-xs font-semibold transition ${
                         platform === p.id ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                       }`}
                     >
-                      <span>{p.icon}</span>
+                      <span className="text-lg">{p.icon}</span>
                       <span>{p.label}</span>
-                      <span className={`ml-auto text-xs ${platform === p.id ? "text-slate-400" : "text-slate-300"}`}>
+                      <span className={`text-xs ${platform === p.id ? "text-slate-400" : "text-slate-300"}`}>
                         {p.charLimit}자
                       </span>
                     </button>

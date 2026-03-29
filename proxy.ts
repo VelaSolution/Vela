@@ -50,7 +50,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAuthPage && user) {
-    return NextResponse.redirect(new URL("/simulator", request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return response;
