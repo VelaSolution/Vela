@@ -81,13 +81,20 @@ export default function AreaAnalysisPage() {
 - 입점 추천 여부와 이유 (2~3문장)`;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/tools/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({
+          systemPrompt: "당신은 외식업 상권 분석 전문 컨설턴트입니다. 입지 조건을 바탕으로 창업 적합성, 강점·리스크, 전략을 구체적으로 분석합니다.",
+          prompt,
+        }),
       });
 
-      if (!res.ok || !res.body) throw new Error("API 오류");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as {error?: string}).error ?? `서버 오류 (${res.status})`);
+      }
+      if (!res.body) throw new Error("응답 스트림이 없습니다.");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let text = "";

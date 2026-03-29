@@ -70,15 +70,20 @@ export default function SnsContentPage() {
 게시글만 작성하세요. 설명, 제목, 마크다운 없이 바로 시작.`;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/tools/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "user", content: prompt }],
+          systemPrompt: "당신은 외식업 전문 SNS 마케터입니다. 사용자의 요청에 맞게 감성적이고 실용적인 SNS 게시글을 작성합니다. 요청한 플랫폼과 톤에 맞게 자연스럽게 작성하세요.",
+          prompt,
         }),
       });
 
-      if (!res.ok || !res.body) throw new Error("API 오류");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as {error?: string}).error ?? `서버 오류 (${res.status})`);
+      }
+      if (!res.body) throw new Error("응답 스트림이 없습니다.");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

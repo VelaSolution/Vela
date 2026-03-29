@@ -66,13 +66,20 @@ ${review}
 답변만 작성하세요. 설명·제목 없이 바로 시작. ${currentPlatform.charLimit}자를 넘지 마세요.`;
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/tools/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({
+          systemPrompt: "당신은 외식업 매장 운영자입니다. 고객 리뷰에 진심 어린 답변을 작성합니다. 자연스럽고 사람이 직접 쓴 것처럼 답변하세요.",
+          prompt,
+        }),
       });
 
-      if (!res.ok || !res.body) throw new Error("API 오류");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error((errData as {error?: string}).error ?? `서버 오류 (${res.status})`);
+      }
+      if (!res.body) throw new Error("응답 스트림이 없습니다.");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let text = "";

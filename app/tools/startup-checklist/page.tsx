@@ -23,7 +23,9 @@ type Phase = {
 
 // ─── 체크리스트 데이터 ─────────────────────────────────────────────────────────
 
-const PHASES_BASE: Omit<Phase, "items"> & { items: Omit<CheckItem, "done">[] }[] = [
+type PhaseBase = Omit<Phase, "items"> & { items: Omit<CheckItem, "done">[] };
+
+const PHASES_BASE: PhaseBase[] = [
   {
     id: "planning",
     title: "사업 기획",
@@ -115,7 +117,7 @@ const PHASES_BASE: Omit<Phase, "items"> & { items: Omit<CheckItem, "done">[] }[]
   },
 ];
 
-function buildState(phases: typeof PHASES_BASE, industry: string) {
+function buildState(phases: PhaseBase[], industry: string) {
   // 업종별 특수 항목 추가
   const extras: Record<string, { phaseId: string; item: Omit<CheckItem, "done"> }[]> = {
     bar: [

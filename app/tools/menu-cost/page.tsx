@@ -301,35 +301,168 @@ function MenuCard({
   );
 }
 
+// ─── 업종별 프리셋 ─────────────────────────────────────────────────────────────
+
+type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining";
+
+const INDUSTRY_PRESETS: Record<IndustryKey, MenuItem[]> = {
+  cafe: [
+    {
+      id: uid(), name: "아메리카노", price: "4500", category: "음료",
+      ingredients: [
+        { id: uid(), name: "에스프레소 원두", cost: "350" },
+        { id: uid(), name: "물·컵·뚜껑·빨대", cost: "120" },
+      ],
+    },
+    {
+      id: uid(), name: "카페라떼", price: "5500", category: "음료",
+      ingredients: [
+        { id: uid(), name: "에스프레소 원두", cost: "350" },
+        { id: uid(), name: "우유 200ml", cost: "380" },
+        { id: uid(), name: "컵·뚜껑", cost: "120" },
+      ],
+    },
+    {
+      id: uid(), name: "크로플", price: "6000", category: "디저트",
+      ingredients: [
+        { id: uid(), name: "냉동 크로아상 도우", cost: "800" },
+        { id: uid(), name: "휘핑크림·시럽", cost: "400" },
+        { id: uid(), name: "포장 용기", cost: "120" },
+      ],
+    },
+    {
+      id: uid(), name: "티라미수", price: "7500", category: "디저트",
+      ingredients: [
+        { id: uid(), name: "마스카포네 치즈", cost: "900" },
+        { id: uid(), name: "레이디핑거·에스프레소", cost: "500" },
+        { id: uid(), name: "용기·코코아파우더", cost: "200" },
+      ],
+    },
+  ],
+  restaurant: [
+    {
+      id: uid(), name: "된장찌개", price: "9000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "된장·두부·호박", cost: "1200" },
+        { id: uid(), name: "밥·반찬", cost: "800" },
+        { id: uid(), name: "가스비·포장", cost: "200" },
+      ],
+    },
+    {
+      id: uid(), name: "제육볶음", price: "11000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "돼지고기 200g", cost: "2200" },
+        { id: uid(), name: "양념·채소", cost: "600" },
+        { id: uid(), name: "밥·반찬", cost: "800" },
+      ],
+    },
+    {
+      id: uid(), name: "순두부찌개", price: "9000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "순두부·해물", cost: "1400" },
+        { id: uid(), name: "밥·반찬", cost: "800" },
+        { id: uid(), name: "가스비·기타", cost: "200" },
+      ],
+    },
+    {
+      id: uid(), name: "냉면", price: "12000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "냉면 면·육수", cost: "1800" },
+        { id: uid(), name: "고명(달걀·오이·고기)", cost: "900" },
+        { id: uid(), name: "그릇·기타", cost: "150" },
+      ],
+    },
+  ],
+  bar: [
+    {
+      id: uid(), name: "생맥주 500cc", price: "5000", category: "주류",
+      ingredients: [
+        { id: uid(), name: "생맥주 원가", cost: "900" },
+        { id: uid(), name: "컵·세제", cost: "80" },
+      ],
+    },
+    {
+      id: uid(), name: "소주 1병", price: "5000", category: "주류",
+      ingredients: [
+        { id: uid(), name: "소주 원가", cost: "1100" },
+        { id: uid(), name: "컵", cost: "50" },
+      ],
+    },
+    {
+      id: uid(), name: "안주 모둠", price: "18000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "육류·해산물", cost: "5500" },
+        { id: uid(), name: "야채·소스", cost: "800" },
+        { id: uid(), name: "그릇·기타", cost: "200" },
+      ],
+    },
+    {
+      id: uid(), name: "하이볼", price: "8000", category: "주류",
+      ingredients: [
+        { id: uid(), name: "위스키 30ml", cost: "1200" },
+        { id: uid(), name: "탄산수·얼음", cost: "300" },
+        { id: uid(), name: "글라스·가니쉬", cost: "200" },
+      ],
+    },
+  ],
+  finedining: [
+    {
+      id: uid(), name: "전채 (아뮤즈부쉬)", price: "15000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "식재료 (계절재료)", cost: "3500" },
+        { id: uid(), name: "플레이팅 소스·허브", cost: "800" },
+        { id: uid(), name: "식기 소모품", cost: "300" },
+      ],
+    },
+    {
+      id: uid(), name: "파스타 메인", price: "32000", category: "푸드",
+      ingredients: [
+        { id: uid(), name: "생면·트러플오일", cost: "4500" },
+        { id: uid(), name: "관자·버섯", cost: "5000" },
+        { id: uid(), name: "파르미지아노·허브", cost: "1200" },
+      ],
+    },
+    {
+      id: uid(), name: "와인 글라스", price: "18000", category: "주류",
+      ingredients: [
+        { id: uid(), name: "와인 원가 (1잔)", cost: "5500" },
+        { id: uid(), name: "글라스 감가", cost: "300" },
+      ],
+    },
+    {
+      id: uid(), name: "디저트 플레이트", price: "16000", category: "디저트",
+      ingredients: [
+        { id: uid(), name: "디저트 재료", cost: "3200" },
+        { id: uid(), name: "소스·장식", cost: "800" },
+        { id: uid(), name: "식기 소모품", cost: "200" },
+      ],
+    },
+  ],
+};
+
+const INDUSTRY_INFO: Record<IndustryKey, { label: string; emoji: string; color: string; bg: string }> = {
+  cafe:       { label: "카페",       emoji: "☕", color: "#3182F6", bg: "#EBF3FF" },
+  restaurant: { label: "음식점",     emoji: "🍽️", color: "#059669", bg: "#ECFDF5" },
+  bar:        { label: "술집/바",    emoji: "🍺", color: "#7C3AED", bg: "#F5F3FF" },
+  finedining: { label: "파인다이닝", emoji: "✨", color: "#D97706", bg: "#FFFBEB" },
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const DEFAULT_MENUS: MenuItem[] = [
-  {
-    id: uid(),
-    name: "아메리카노",
-    price: "4500",
-    category: "음료",
-    ingredients: [
-      { id: uid(), name: "에스프레소 원두", cost: "350" },
-      { id: uid(), name: "물·컵·뚜껑", cost: "100" },
-    ],
-  },
-  {
-    id: uid(),
-    name: "크로플",
-    price: "6000",
-    category: "디저트",
-    ingredients: [
-      { id: uid(), name: "냉동 크로아상 도우", cost: "800" },
-      { id: uid(), name: "휘핑크림·시럽", cost: "400" },
-      { id: uid(), name: "포장 용기", cost: "120" },
-    ],
-  },
-];
-
 export default function MenuCostPage() {
-  const [menus, setMenus] = useState<MenuItem[]>(DEFAULT_MENUS);
+  const [industry, setIndustry] = useState<IndustryKey>("cafe");
+  const [menus, setMenus] = useState<MenuItem[]>(INDUSTRY_PRESETS["cafe"]);
   const [filterCategory, setFilterCategory] = useState("전체");
+
+  function changeIndustry(key: IndustryKey) {
+    setIndustry(key);
+    setMenus(INDUSTRY_PRESETS[key].map(m => ({
+      ...m,
+      id: uid(),
+      ingredients: m.ingredients.map(i => ({ ...i, id: uid() })),
+    })));
+    setFilterCategory("전체");
+  }
   const [sortBy, setSortBy] = useState<"default" | "costRatio" | "profit">("default");
 
   const addMenu = useCallback(() => {
@@ -354,28 +487,28 @@ export default function MenuCostPage() {
   }, []);
 
   // 집계
-  const allCalc = menus.map((m) => ({ ...m, ...calcMenu(m) }));
-  const validMenus = allCalc.filter((m) => m.price > 0);
+  const allCalc = menus.map((m) => ({ item: m, calc: calcMenu(m) }));
+  const validMenus = allCalc.filter((m) => m.calc.price > 0);
 
   const avgCostRatio =
     validMenus.length > 0
-      ? validMenus.reduce((s, m) => s + m.costRatio, 0) / validMenus.length
+      ? validMenus.reduce((s, m) => s + m.calc.costRatio, 0) / validMenus.length
       : 0;
   const avgProfit =
     validMenus.length > 0
-      ? validMenus.reduce((s, m) => s + m.profit, 0) / validMenus.length
+      ? validMenus.reduce((s, m) => s + m.calc.profit, 0) / validMenus.length
       : 0;
-  const dangerCount = validMenus.filter((m) => m.costRatio > 40).length;
+  const dangerCount = validMenus.filter((m) => m.calc.costRatio > 40).length;
   const bestMenu = validMenus.length > 0
-    ? validMenus.reduce((best, m) => (m.profitRatio > best.profitRatio ? m : best), validMenus[0])
+    ? validMenus.reduce((best, m) => (m.calc.profitRatio > best.calc.profitRatio ? m : best), validMenus[0])
     : null;
 
   // 필터 + 정렬
   const filtered = allCalc
-    .filter((m) => filterCategory === "전체" || m.category === filterCategory)
+    .filter((m) => filterCategory === "전체" || m.item.category === filterCategory)
     .sort((a, b) => {
-      if (sortBy === "costRatio") return a.costRatio - b.costRatio;
-      if (sortBy === "profit") return b.profit - a.profit;
+      if (sortBy === "costRatio") return a.calc.costRatio - b.calc.costRatio;
+      if (sortBy === "profit") return b.calc.profit - a.calc.profit;
       return 0;
     });
 
@@ -409,6 +542,34 @@ export default function MenuCostPage() {
             <p className="text-slate-500 text-sm">
               메뉴별 식재료 원가를 입력하면 원가율과 건당 순이익을 자동으로 계산합니다.
             </p>
+          </div>
+
+          {/* 업종 선택 탭 */}
+          <div className="grid grid-cols-4 gap-2 mb-8">
+            {(Object.keys(INDUSTRY_INFO) as IndustryKey[]).map((key) => {
+              const info = INDUSTRY_INFO[key];
+              const active = industry === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => changeIndustry(key)}
+                  className="rounded-2xl py-3 flex flex-col items-center gap-1.5 transition-all duration-200 border-2"
+                  style={{
+                    background: active ? info.bg : "#fff",
+                    borderColor: active ? info.color : "#E5E8EB",
+                    boxShadow: active ? `0 0 0 1px ${info.color}` : "none",
+                  }}
+                >
+                  <span className="text-xl">{info.emoji}</span>
+                  <span
+                    className="text-xs font-bold"
+                    style={{ color: active ? info.color : "#6B7684" }}
+                  >
+                    {info.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* 요약 대시보드 */}
@@ -448,11 +609,11 @@ export default function MenuCostPage() {
               <span className="text-3xl">🏆</span>
               <div className="flex-1">
                 <p className="text-xs text-slate-400 mb-0.5">마진율 최고 메뉴</p>
-                <p className="text-white font-bold text-lg">{bestMenu.name || "미입력 메뉴"}</p>
+                <p className="text-white font-bold text-lg">{bestMenu.item.name || "미입력 메뉴"}</p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-slate-400 mb-0.5">마진율</p>
-                <p className="text-emerald-400 font-extrabold text-xl">{bestMenu.profitRatio.toFixed(1)}%</p>
+                <p className="text-emerald-400 font-extrabold text-xl">{bestMenu.calc.profitRatio.toFixed(1)}%</p>
               </div>
             </div>
           )}
@@ -496,7 +657,7 @@ export default function MenuCostPage() {
 
           {/* 메뉴 카드 리스트 */}
           <div className="space-y-4">
-            {filtered.map((item) => (
+            {filtered.map(({ item }) => (
               <MenuCard
                 key={item.id}
                 item={item}
@@ -538,33 +699,33 @@ export default function MenuCostPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {validMenus
-                      .sort((a, b) => a.costRatio - b.costRatio)
+                      .sort((a, b) => a.calc.costRatio - b.calc.costRatio)
                       .map((m) => {
                         const statusColor =
-                          m.costRatio <= 30 ? "#059669" : m.costRatio <= 40 ? "#D97706" : "#EF4444";
+                          m.calc.costRatio <= 30 ? "#059669" : m.calc.costRatio <= 40 ? "#D97706" : "#EF4444";
                         const statusLabel =
-                          m.costRatio <= 30 ? "우수" : m.costRatio <= 40 ? "양호" : "위험";
+                          m.calc.costRatio <= 30 ? "우수" : m.calc.costRatio <= 40 ? "양호" : "위험";
                         return (
-                          <tr key={m.id} className="hover:bg-slate-50 transition">
+                          <tr key={m.item.id} className="hover:bg-slate-50 transition">
                             <td className="px-6 py-4">
-                              <span className="font-semibold text-slate-800">{m.name || "—"}</span>
+                              <span className="font-semibold text-slate-800">{m.item.name || "—"}</span>
                               <span
                                 className="ml-2 text-xs px-2 py-0.5 rounded-full"
                                 style={{
-                                  background: `${CATEGORY_COLOR[m.category] ?? "#9EA6B3"}18`,
-                                  color: CATEGORY_COLOR[m.category] ?? "#9EA6B3",
+                                  background: `${CATEGORY_COLOR[m.item.category] ?? "#9EA6B3"}18`,
+                                  color: CATEGORY_COLOR[m.item.category] ?? "#9EA6B3",
                                 }}
                               >
-                                {m.category}
+                                {m.item.category}
                               </span>
                             </td>
-                            <td className="px-4 py-4 text-right text-slate-600">{fmt(m.price)}원</td>
-                            <td className="px-4 py-4 text-right text-slate-600">{fmt(m.costTotal)}원</td>
+                            <td className="px-4 py-4 text-right text-slate-600">{fmt(m.calc.price)}원</td>
+                            <td className="px-4 py-4 text-right text-slate-600">{fmt(m.calc.costTotal)}원</td>
                             <td className="px-4 py-4 text-right font-bold" style={{ color: statusColor }}>
-                              {m.costRatio.toFixed(1)}%
+                              {m.calc.costRatio.toFixed(1)}%
                             </td>
-                            <td className={`px-4 py-4 text-right font-semibold ${m.profit >= 0 ? "text-slate-900" : "text-red-500"}`}>
-                              {fmt(m.profit)}원
+                            <td className={`px-4 py-4 text-right font-semibold ${m.calc.profit >= 0 ? "text-slate-900" : "text-red-500"}`}>
+                              {fmt(m.calc.profit)}원
                             </td>
                             <td className="px-4 py-4 text-center">
                               <span

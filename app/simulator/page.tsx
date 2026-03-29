@@ -539,14 +539,32 @@ function Toggle({
       <button
         type="button"
         onClick={() => onChange(!value)}
-        className={`relative h-7 w-12 rounded-full transition-colors ${
-          value ? "bg-slate-900" : "bg-slate-200"
-        }`}
+        style={{
+          width: "52px",
+          height: "28px",
+          borderRadius: "999px",
+          background: value ? "#0f172a" : "#e2e8f0",
+          position: "relative",
+          flexShrink: 0,
+          border: "none",
+          cursor: "pointer",
+          transition: "background 0.2s",
+          padding: 0,
+        }}
       >
         <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${
-            value ? "translate-x-6" : "translate-x-1"
-          }`}
+          style={{
+            position: "absolute",
+            top: "3px",
+            left: value ? "25px" : "3px",
+            width: "22px",
+            height: "22px",
+            borderRadius: "50%",
+            background: "#ffffff",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+            transition: "left 0.2s",
+            display: "block",
+          }}
         />
       </button>
     </div>
@@ -1523,6 +1541,126 @@ function Step3({
           );
         })()}
       </section>
+
+      {/* ── 이중사업자 모드 (고깃집 전용) ── */}
+      <Toggle
+        label="🥩 이중사업자 모드"
+        hint="고깃집 음식점업 + 축산물판매업 구조"
+        value={form.isDualBiz}
+        onChange={(v) => update("isDualBiz", v)}
+      />
+
+      {form.isDualBiz && (
+        <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-red-200">
+          <div className="space-y-5">
+            {/* 안내 */}
+            <div className="rounded-2xl bg-red-50 border border-red-100 px-4 py-3 text-xs text-red-700 leading-relaxed">
+              <p className="font-semibold mb-1">이중사업자 구조란?</p>
+              <p><strong>1호 (음식점업)</strong> — 홀 매출·서비스 담당</p>
+              <p><strong>2호 (축산물판매업)</strong> — 고기 원육 매입·공급 담당</p>
+              <p className="mt-1 text-red-400">⚠️ 실제 운영 전 반드시 세무사 상담을 받으세요.</p>
+            </div>
+
+            {/* 2호 사업자명 */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                2호 사업자명 (선택)
+              </label>
+              <input
+                type="text"
+                value={form.biz2Name}
+                onChange={(e) => update("biz2Name", e.target.value)}
+                placeholder="예) OO 정육점"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-red-400 focus:bg-white transition"
+              />
+            </div>
+
+            {/* 원육 매입 비율 슬라이더 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                  원육 매입 비율
+                </label>
+                <span className="text-sm font-bold text-red-600">
+                  {form.meatCostRatio}%
+                </span>
+              </div>
+              <input
+                type="range" min="10" max="70" step="1"
+                value={form.meatCostRatio}
+                onChange={(e) => update("meatCostRatio", Number(e.target.value))}
+                className="w-full accent-red-500"
+              />
+              <div className="flex justify-between text-xs text-slate-400 mt-1">
+                <span>10% (저원가)</span><span>70% (고원가)</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">2호 법인이 원육을 매입해 1호에 공급하는 비율</p>
+            </div>
+
+            {/* 절세 효과 미리보기 */}
+            {(() => {
+              const r = calcResult(form);
+              const annualProfit = r.profit * 12;
+
+              // ① 매입세액 공제
+              // 2호가 원육을 매입할 때 부담한 VAT를 1호에서 공제
+              const meatCost = r.totalSales * 12 * (form.meatCostRatio / 100);
+              const vatSaving = Math.round(meatCost / 11); // 공급가액 × 10/110
+
+              // ② 소득 분산 절세
+              // 단일사업자 세액 vs 1호·2호 절반씩 나눴을 때 세액 차이
+              const calcTax = (income: number) => {
+                if (income <= 0) return 0;
+                const brackets = [
+                  { limit: 14_000_000,  rate: 0.06, ded: 0 },
+                  { limit: 50_000_000,  rate: 0.15, ded: 1_260_000 },
+                  { limit: 88_000_000,  rate: 0.24, ded: 5_760_000 },
+                  { limit: 150_000_000, rate: 0.35, ded: 15_440_000 },
+                  { limit: 300_000_000, rate: 0.38, ded: 19_940_000 },
+                  { limit: Infinity,    rate: 0.45, ded: 65_940_000 },
+                ];
+                const b = brackets.find(b => income <= b.limit)!;
+                return Math.max(0, income * b.rate - b.ded) * 1.1; // 지방소득세 10% 포함
+              };
+
+              const singleTax = calcTax(annualProfit);
+              const splitTax = calcTax(annualProfit / 2) * 2; // 반반 나눴을 때
+              const incomeSaving = Math.max(0, Math.round(singleTax - splitTax));
+              const total = vatSaving + incomeSaving;
+
+              // 단일 vs 이중 세율
+              const singleRate = annualProfit > 0 ? ((singleTax / annualProfit) * 100).toFixed(1) : "0";
+              const splitRate  = annualProfit > 0 ? (((splitTax)  / annualProfit) * 100).toFixed(1) : "0";
+
+              return (
+                <div className="rounded-2xl bg-slate-50 p-4 space-y-3">
+                  <p className="text-xs font-semibold text-slate-600">💰 예상 절세 효과 (연간)</p>
+                  <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-xs text-slate-400 mb-1">① VAT 매입세액 공제</p>
+                      <p className="text-sm font-bold text-emerald-600">+{fmt(vatSaving)}원</p>
+                      <p className="text-xs text-slate-400 mt-0.5">원육 매입 VAT 환급</p>
+                    </div>
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-xs text-slate-400 mb-1">② 소득 분산 절세</p>
+                      <p className="text-sm font-bold text-emerald-600">+{fmt(incomeSaving)}원</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{singleRate}% → {splitRate}% 세율</p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-red-500 p-3 text-center">
+                    <p className="text-xs text-red-200 mb-0.5">총 예상 절세액 (연간)</p>
+                    <p className="text-lg font-extrabold text-white">{fmt(total)}원</p>
+                    <p className="text-xs text-red-200 mt-0.5">월 평균 {fmt(Math.round(total / 12))}원</p>
+                  </div>
+                  <p className="text-xs text-slate-400 text-center leading-relaxed">
+                    추정치 · 매입증빙 구비 및 실제 운영비용 차감 전 수치입니다<br/>반드시 세무사 상담 후 결정하세요
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
