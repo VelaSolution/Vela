@@ -1,11 +1,11 @@
-// middleware.ts (프로젝트 루트에 위치)
+// proxy.ts (프로젝트 루트에 위치)
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const PROTECTED_PATHS = ["/simulator", "/result", "/profile", "/tools"];
+const PROTECTED_PATHS = ["/simulator", "/result", "/profile", "/tools", "/dashboard", "/monthly-input"];
 const AUTH_PATHS = ["/login", "/signup"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
