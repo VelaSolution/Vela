@@ -505,6 +505,9 @@ function ResultContent() {
     setTimeout(() => setSaveMsg(""), 3000);
   };
 
+  const [shareDesc, setShareDesc] = useState("");
+  const [showShareModal, setShowShareModal] = useState(false);
+
   const shareToCommunity = async () => {
     if (!userId) { router.push("/login?next=/community"); return; }
     const supabase = createSupabaseBrowserClient();
@@ -514,7 +517,7 @@ function ResultContent() {
     const { error } = await supabase.from("shared_simulations").insert({
       user_id: userId,
       title,
-      description: "",
+      description: shareDesc.trim(),
       industry: form.industry,
       form,
       result: {
@@ -526,8 +529,10 @@ function ResultContent() {
       author_name: authorName,
       is_public: true,
     });
-    if (error) { setSaveMsg("공유 실패. 다시 시도해주세요."); return; }
+    if (error) { setSaveMsg("공유 실패. 다시 시도해주세요."); setShowShareModal(false); return; }
     setSaveMsg("커뮤니티에 공유됐습니다 ✓");
+    setShowShareModal(false);
+    setShareDesc("");
     setTimeout(() => setSaveMsg(""), 3000);
   };
 
@@ -546,6 +551,42 @@ function ResultContent() {
   return (
     <>
     <NavBar />
+
+    {/* 커뮤니티 공유 모달 */}
+    {showShareModal && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.5)" }}>
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+          <h3 className="text-lg font-extrabold text-slate-900 mb-1">커뮤니티에 공유하기</h3>
+          <p className="text-sm text-slate-400 mb-5">다른 사장님들이 참고할 수 있도록 간단한 소개를 남겨보세요.</p>
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">제목</label>
+            <p className="text-sm font-semibold text-slate-700 bg-slate-50 rounded-xl px-4 py-2.5">
+              {simTitle.trim() || `${config.label} 수익 분석`}
+            </p>
+          </div>
+          <div className="mb-5">
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">한줄 소개 (선택)</label>
+            <textarea
+              value={shareDesc}
+              onChange={e => setShareDesc(e.target.value)}
+              placeholder="예) 홍대 카페 창업 전 시뮬레이션입니다. 피드백 환영해요!"
+              rows={3}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-slate-400 focus:bg-white transition resize-none"
+            />
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setShowShareModal(false)}
+              className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+              취소
+            </button>
+            <button onClick={shareToCommunity}
+              className="flex-1 rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-700 transition">
+              공유하기
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <main className="min-h-screen bg-slate-50 px-4 pt-20 pb-6 md:px-8 print:bg-white print:px-0 print:pt-0">
       <div className="mx-auto max-w-7xl space-y-6">
 
@@ -571,7 +612,7 @@ function ResultContent() {
             <button onClick={() => router.push("/simulator")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
             <button onClick={() => window.print()} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
             <button onClick={() => navigator.clipboard.writeText(window.location.href).catch(console.error)} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 공유</button>
-            <button onClick={shareToCommunity} className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 transition">
+            <button onClick={() => userId ? setShowShareModal(true) : router.push("/login?next=/community")} className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-100 transition">
               👥 커뮤니티 공유
             </button>
             <button onClick={saveToCloud} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
