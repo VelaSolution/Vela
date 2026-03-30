@@ -11,6 +11,7 @@ type SharedSim = {
   description: string;
   industry: string;
   author_name: string;
+  form: Record<string, unknown>;
   result: {
     totalSales: number;
     profit: number;
