@@ -1,130 +1,142 @@
-"use client";
-
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 
 export default function PrivacyPage() {
   return (
     <>
-      <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
-        <div className="mx-auto max-w-3xl">
-          <div className="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200 p-8 md:p-12">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Pretendard',-apple-system,sans-serif;background:#F9FAFB;color:#191F28;line-height:1.7}
+        .wrap{max-width:760px;margin:0 auto;padding:120px 24px 80px}
+        .back{display:inline-flex;align-items:center;gap:8px;color:#6B7684;font-size:14px;text-decoration:none;margin-bottom:40px;transition:color .15s}
+        .back:hover{color:#191F28}
+        .tag{display:inline-block;background:#EBF3FF;color:#3182F6;font-size:13px;font-weight:600;padding:5px 14px;border-radius:100px;margin-bottom:16px}
+        .title{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-0.02em;color:#191F28;margin-bottom:8px}
+        .date{font-size:14px;color:#9EA6B3;margin-bottom:48px}
+        .sec{margin-bottom:40px}
+        .h2{font-size:20px;font-weight:700;color:#191F28;margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid #E5E8EB}
+        .p{font-size:15px;color:#333D4B;line-height:1.8;margin-bottom:12px}
+        .ul{padding-left:20px;margin-bottom:12px}
+        .ul li{font-size:15px;color:#333D4B;line-height:1.8;margin-bottom:6px}
+        .hl{background:#EBF3FF;border-left:3px solid #3182F6;padding:16px 20px;border-radius:0 12px 12px 0;margin-bottom:16px;font-size:14px;color:#333D4B;line-height:1.8}
+        .table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14px}
+        .table th{background:#F2F4F6;padding:12px 16px;text-align:left;font-weight:600;color:#333D4B;border:1px solid #E5E8EB}
+        .table td{padding:12px 16px;border:1px solid #E5E8EB;color:#333D4B;vertical-align:top}
+      `}</style>
 
-            <div className="mb-8">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Legal</p>
-              <h1 className="text-3xl font-extrabold text-slate-900 mb-2">개인정보처리방침</h1>
-              <p className="text-sm text-slate-400">시행일: 2026년 04월 03일 · 최종 수정: 2026년 03월 30일</p>
-            </div>
+      <div className="wrap">
+        <Link href="/" className="back">← 홈으로</Link>
 
-            <div className="space-y-8 text-sm text-slate-600 leading-relaxed">
+        <span className="tag">법적 고지</span>
+        <h1 className="title">개인정보처리방침</h1>
+        <div className="date">시행일: 2026년 1월 1일 · 최종 수정: 2026년 3월 29일</div>
 
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제1조 (개인정보의 처리 목적)</h2>
-                <p>벨라솔루션(이하 "회사")은 다음의 목적을 위해 개인정보를 처리합니다.</p>
-                <ul className="mt-2 space-y-1 list-disc list-inside">
-                  <li>회원가입 및 본인 확인</li>
-                  <li>서비스 제공 및 맞춤형 분석 결과 제공</li>
-                  <li>서비스 이용 관련 공지 및 고객 지원</li>
-                  <li>서비스 개선 및 신규 기능 개발</li>
-                </ul>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제2조 (수집하는 개인정보 항목)</h2>
-                <div className="bg-slate-50 rounded-2xl p-5 space-y-3">
-                  <div>
-                    <p className="font-semibold text-slate-700 mb-1">필수 항목</p>
-                    <p>이메일 주소, 비밀번호(암호화 저장), 이름(닉네임)</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-700 mb-1">선택 항목</p>
-                    <p>매장명, 업종, 좌석 수, 지역, 운영 상태</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-700 mb-1">자동 수집</p>
-                    <p>서비스 이용 기록, 접속 로그, 쿠키, IP 주소</p>
-                  </div>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제3조 (개인정보의 처리 및 보유 기간)</h2>
-                <p>① 회원가입 시부터 탈퇴 시까지 개인정보를 보유합니다.</p>
-                <p className="mt-2">② 관련 법령에 따라 일정 기간 보존이 필요한 경우 해당 기간 동안 보관합니다.</p>
-                <ul className="mt-2 space-y-1 list-disc list-inside">
-                  <li>계약 또는 청약철회에 관한 기록: 5년</li>
-                  <li>소비자 불만 또는 분쟁처리에 관한 기록: 3년</li>
-                  <li>접속 로그: 3개월</li>
-                </ul>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제4조 (개인정보의 제3자 제공)</h2>
-                <p>회사는 이용자의 개인정보를 원칙적으로 외부에 제공하지 않습니다. 다만, 이용자가 사전에 동의한 경우 또는 법령의 규정에 의거하거나 수사 목적으로 법령에 정해진 절차와 방법에 따라 수사기관의 요구가 있는 경우에는 예외로 합니다.</p>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제5조 (개인정보 처리 위탁)</h2>
-                <div className="bg-slate-50 rounded-2xl p-5">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-slate-500 border-b border-slate-200">
-                        <th className="text-left py-2 font-semibold">수탁업체</th>
-                        <th className="text-left py-2 font-semibold">위탁 업무</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      <tr><td className="py-2">Supabase Inc.</td><td className="py-2">회원 인증 및 데이터베이스 관리</td></tr>
-                      <tr><td className="py-2">Vercel Inc.</td><td className="py-2">서비스 호스팅</td></tr>
-                      <tr><td className="py-2">Anthropic, PBC</td><td className="py-2">AI 분석 서비스 제공</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제6조 (이용자의 권리)</h2>
-                <p>이용자는 언제든지 다음의 권리를 행사할 수 있습니다.</p>
-                <ul className="mt-2 space-y-1 list-disc list-inside">
-                  <li>개인정보 열람 요구</li>
-                  <li>오류 정정 요구</li>
-                  <li>삭제 요구</li>
-                  <li>처리정지 요구</li>
-                </ul>
-                <p className="mt-2">권리 행사는 <strong>mnhyuk0213@velaanalytics.com</strong> 으로 이메일 문의하시면 처리해드립니다.</p>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제7조 (쿠키 사용)</h2>
-                <p>회사는 서비스 개선을 위해 쿠키를 사용합니다. 이용자는 브라우저 설정을 통해 쿠키 수집을 거부할 수 있으나, 이 경우 일부 서비스 이용이 제한될 수 있습니다.</p>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제8조 (개인정보 보호책임자)</h2>
-                <div className="bg-slate-50 rounded-2xl p-5 space-y-1.5">
-                  <p><span className="font-semibold text-slate-700">성명:</span> 김민혁</p>
-                  <p><span className="font-semibold text-slate-700">직책:</span> 대표</p>
-                  <p><span className="font-semibold text-slate-700">이메일:</span> mnhyuk0213@velaanalytics.com</p>
-                  <p><span className="font-semibold text-slate-700">주소:</span> 대전광역시 중구 당디로96번길 9, 204호(유천동)</p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold text-slate-900 mb-3">제9조 (개인정보처리방침 변경)</h2>
-                <p>이 방침은 2026년 4월 3일부터 시행됩니다. 내용이 변경되는 경우 변경 7일 전부터 서비스 공지사항을 통해 안내합니다.</p>
-              </section>
-
-            </div>
-
-            <div className="mt-10 pt-6 border-t border-slate-100 text-center">
-              <Link href="/terms" className="text-sm text-slate-400 hover:text-slate-700 transition underline underline-offset-2">
-                이용약관 보기 →
-              </Link>
-            </div>
-          </div>
+        <div className="hl">
+          VELA는 회원의 개인정보를 소중히 여기며, 「개인정보 보호법」 등 관련 법령을 준수합니다. 본 방침은 회사가 수집하는 개인정보의 종류, 이용 목적, 보관 기간 등을 설명합니다.
         </div>
-      </main>
+
+        <div className="sec">
+          <h2 className="h2">1. 수집하는 개인정보</h2>
+          <table className="table">
+            <thead>
+              <tr><th>구분</th><th>수집 항목</th><th>수집 방법</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>회원가입</td><td>이메일, 비밀번호, 이름</td><td>직접 입력</td></tr>
+              <tr><td>소셜 로그인</td><td>이메일, 이름, 프로필 이미지</td><td>OAuth 연동</td></tr>
+              <tr><td>전화번호 인증</td><td>전화번호</td><td>SMS 인증</td></tr>
+              <tr><td>서비스 이용</td><td>시뮬레이션 입력 데이터, 접속 로그, 쿠키</td><td>자동 수집</td></tr>
+              <tr><td>결제</td><td>결제 수단 정보 (카드사에서 처리)</td><td>결제 시 입력</td></tr>
+            </tbody>
+          </table>
+          <p className="p">민감 정보(주민등록번호 등)는 수집하지 않습니다.</p>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">2. 개인정보 이용 목적</h2>
+          <ul className="ul">
+            <li>회원 가입·관리 및 본인 확인</li>
+            <li>서비스 제공 (시뮬레이션, AI 분석, 히스토리 저장)</li>
+            <li>유료 서비스 결제 처리 및 청구</li>
+            <li>서비스 개선 및 신규 기능 개발</li>
+            <li>공지사항 전달 및 고객 문의 응대</li>
+            <li>불법·부정 이용 방지</li>
+          </ul>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">3. 개인정보 보관 기간</h2>
+          <table className="table">
+            <thead>
+              <tr><th>보관 항목</th><th>보관 기간</th><th>근거</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>회원 정보</td><td>회원 탈퇴 시까지</td><td>서비스 제공</td></tr>
+              <tr><td>결제 기록</td><td>5년</td><td>전자상거래법</td></tr>
+              <tr><td>접속 로그</td><td>3개월</td><td>통신비밀보호법</td></tr>
+              <tr><td>불만·분쟁 기록</td><td>3년</td><td>전자상거래법</td></tr>
+            </tbody>
+          </table>
+          <p className="p">보관 기간이 경과하거나 처리 목적이 달성된 개인정보는 지체 없이 파기합니다.</p>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">4. 제3자 제공</h2>
+          <p className="p">회사는 원칙적으로 회원의 개인정보를 외부에 제공하지 않습니다. 다만, 아래의 경우 예외로 합니다.</p>
+          <ul className="ul">
+            <li>회원이 사전에 동의한 경우</li>
+            <li>법령의 규정에 따라 수사기관 등이 요청하는 경우</li>
+          </ul>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">5. 위탁 처리</h2>
+          <table className="table">
+            <thead>
+              <tr><th>수탁업체</th><th>위탁 업무</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Supabase Inc.</td><td>데이터베이스 및 인증 서비스</td></tr>
+              <tr><td>Vercel Inc.</td><td>서비스 호스팅</td></tr>
+              <tr><td>Anthropic PBC</td><td>AI 분석 처리</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">6. 쿠키 및 자동 수집</h2>
+          <p className="p">서비스는 로그인 상태 유지 및 사용자 경험 개선을 위해 쿠키를 사용합니다. 브라우저 설정에서 쿠키를 거부할 수 있으나, 일부 서비스 이용이 제한될 수 있습니다.</p>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">7. 회원의 권리</h2>
+          <p className="p">회원은 언제든지 아래 권리를 행사할 수 있습니다.</p>
+          <ul className="ul">
+            <li><strong>열람권</strong>: 본인의 개인정보 처리 현황 열람 요청</li>
+            <li><strong>정정권</strong>: 부정확한 개인정보 정정 요청</li>
+            <li><strong>삭제권</strong>: 개인정보 삭제 요청 (단, 법령에 의한 보관 의무 있는 경우 제외)</li>
+            <li><strong>처리 정지권</strong>: 개인정보 처리 정지 요청</li>
+          </ul>
+          <p className="p">권리 행사는 mnhyuk@velaanalytics.com로 이메일 문의 주시면 지체 없이 처리합니다.</p>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">8. 개인정보 보호책임자</h2>
+          <ul className="ul">
+            <li>성명: 김민혁 (벨라솔루션 대표)</li>
+            <li>이메일: mnhyuk@velaanalytics.com</li>
+            <li>사업자등록번호: 777-17-02386</li>
+            <li>주소: 대전광역시 중구 당디로96번길 9, 204호(유천동)</li>
+            <li>운영 시간: 평일 10:00 - 18:00</li>
+          </ul>
+          <p className="p">개인정보 침해 관련 신고·상담은 개인정보 침해신고센터(118), 개인정보 분쟁조정위원회(1833-6972)에 문의할 수 있습니다.</p>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">9. 방침 변경</h2>
+          <p className="p">개인정보처리방침이 변경되는 경우 서비스 내 공지를 통해 안내합니다. 변경 사항은 공지 후 7일이 경과한 시점부터 효력이 발생합니다.</p>
+        </div>
+      </div>
     </>
   );
 }

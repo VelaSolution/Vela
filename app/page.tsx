@@ -451,9 +451,11 @@ export default function LandingPage() {
             <div>
               <div className="footer-logo">VELA<span>.</span></div>
               <p style={{fontSize:"13px",color:"var(--gray-400)",marginTop:"12px",lineHeight:"1.8"}}>
-                외식업 사장님을 위한 숫자 경영 파트너<br />
-                대표 : 민현욱 | 이메일 : mnhyuk@velaanalytics.com<br />
-                사업자등록번호 : 준비 중
+                상호명 : 벨라솔루션 | 대표자 : 김민혁<br />
+                사업자등록번호 : 777-17-02386<br />
+                사업장 주소 : 대전광역시 중구 당디로96번길 9, 204호(유천동)<br />
+                이메일 : mnhyuk@velaanalytics.com<br />
+                서비스 URL : https://www.velaanalytics.com
               </p>
             </div>
             <div className="footer-links">
