@@ -253,19 +253,19 @@ export default function LandingPage() {
       {/* FEATURES */}
       <section id="features" className="features-bg">
         <div className="section-inner">
-          <FadeIn><span className="section-tag">도구</span><h2 className="section-title">사장님에게 꼭 필요한 것만</h2><p className="section-desc">복잡한 회계 지식 없이도 내 매장의 재무를 정확하게 파악할 수 있습니다.</p></FadeIn>
+          <FadeIn><span className="section-tag">도구</span><h2 className="section-title">사업에 필요한 모든 도구</h2><p className="section-desc">외식업 사장님을 위한 실무 도구 모음. 계산부터 콘텐츠 생성까지 한 곳에서.</p></FadeIn>
           <div className="features-grid">
             {[
-              { icon: "📊", title: "수익 시뮬레이터", desc: "좌석·객단가·회전율·배달 매출까지 입력하면 월 매출·순이익·손익분기점을 즉시 계산합니다.", tag: "실시간 계산", delay: 0, href: "/simulator" },
-              { icon: "🤖", title: "AI 전략 컨설팅", desc: "매장 데이터를 기반으로 AI가 운영·마케팅·메뉴 전략을 제안하고 채팅으로 추가 질문도 가능합니다.", tag: "Claude AI", delay: 80, href: "/simulator" },
-              { icon: "📋", title: "POS 데이터 분석", desc: "엑셀 POS 파일을 업로드하면 AI가 매출 패턴·피크 시간·인기 메뉴를 자동 분석합니다.", tag: "파일 업로드", delay: 160, href: "/simulator" },
-              { icon: "🎯", title: "목표 역산 계획", desc: "원하는 월 순이익을 입력하면 필요한 객단가·회전율을 역산해 달성 경로를 제시합니다.", tag: "목표 설정", delay: 0, href: "/simulator" },
-              { icon: "💰", title: "투자금 회수 예측", desc: "보증금·권리금·인테리어와 대출 조건을 입력하면 투자금 회수 기간을 자동 계산합니다.", tag: "재무 계획", delay: 80, href: "/simulator" },
-              { icon: "📈", title: "월별 히스토리", desc: "매달 분석 결과를 저장하고 추이를 추적하세요. 링크 하나로 투자자·컨설턴트와 공유도 됩니다.", tag: "협업 지원", delay: 160, href: "/profile" },
-              { icon: "🎮", title: "경영 시뮬레이션 게임", desc: "90일간 실제 매장을 운영해보는 게임. 날씨·이벤트·직원 관리로 사장님 감각을 키워보세요.", tag: "게임", delay: 0, href: "/game" },
-              { icon: "👥", title: "사장님 커뮤니티", desc: "수익을 공유하고 고민을 나누고 업종 평균을 확인하세요. 익명 상담도 가능합니다.", tag: "커뮤니티", delay: 80, href: "/community" },
-            ].map((f) => (
-              <FadeIn key={f.title} delay={f.delay}>
+              { icon:"🧮", title:"메뉴별 원가 계산기",  desc:"식재료 원가 입력 → 원가율·건당 순익 자동 계산. 메뉴 가격 결정에 바로 활용하세요.",      tag:"원가 계산",  href:"/tools/menu-cost" },
+              { icon:"👥", title:"인건비 스케줄러",      desc:"직원별 시급·근무시간 설정 → 주간·월간 인건비 예측. 알바 채용 계획에 필수.",              tag:"인건비 관리", href:"/tools/labor" },
+              { icon:"🧾", title:"세금 계산기",          desc:"매출 기반 부가세·종합소득세 예상액 자동 산출. 세금 폭탄 없이 미리 준비하세요.",           tag:"세금 예측",  href:"/tools/tax" },
+              { icon:"📄", title:"손익계산서 PDF",       desc:"시뮬레이션 데이터로 월별 P&L 리포트 PDF 출력. 투자자·세무사에게 바로 공유 가능.",        tag:"PDF 출력",   href:"/tools/pl-report" },
+              { icon:"✅", title:"창업 체크리스트",      desc:"업종별 인허가·준비물·타임라인 단계별 가이드. 창업 전 놓치는 것 없이 준비하세요.",         tag:"창업 준비",  href:"/tools/startup-checklist" },
+              { icon:"📱", title:"SNS 콘텐츠 생성기",   desc:"메뉴·이벤트 정보 입력 → 인스타 캡션 AI 자동 생성. 매일 고민하는 SNS 포스팅 해결.",     tag:"AI · SNS",   href:"/tools/sns-content" },
+              { icon:"💬", title:"리뷰 답변 생성기",     desc:"고객 리뷰 붙여넣기 → AI가 맞춤 답변 초안 작성. 악성 리뷰도 프로답게 대응하세요.",        tag:"AI · 리뷰",  href:"/tools/review-reply" },
+              { icon:"🗺️", title:"상권 분석 도우미",    desc:"입지 조건 입력 → AI 상권 적합도 평가 리포트. 창업 전 상권 리스크를 미리 파악하세요.",    tag:"AI · 상권",  href:"/tools/area-analysis" },
+            ].map((f, i) => (
+              <FadeIn key={f.title} delay={i * 60}>
                 <Link href={f.href} style={{ textDecoration: "none" }}>
                   <div className="feature-card">
                     <div className="feature-icon">{f.icon}</div>

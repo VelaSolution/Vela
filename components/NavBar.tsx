@@ -50,15 +50,15 @@ export default function NavBar() {
         .vela-dropdown{position:relative}
         .vela-dropdown-btn{font-size:15px;font-weight:500;color:#6B7684;background:none;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;padding:0;transition:color .15s}
         .vela-dropdown-btn:hover{color:#191F28}
-        .vela-dropdown-btn:hover .vela-dropdown-arrow{transform:rotate(180deg)}
-        .vela-dropdown-arrow{font-size:10px;transition:transform .2s}
-        .vela-dropdown-menu{position:absolute;top:calc(100% + 16px);left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E8EB;border-radius:20px;padding:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:280px;display:none;z-index:200}
-        .vela-dropdown:hover .vela-dropdown-menu{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+        .vela-dropdown-arrow{font-size:10px;transition:transform .2s;display:inline-block}
+        .vela-dropdown:hover .vela-dropdown-arrow{transform:rotate(180deg)}
+        .vela-dropdown-menu{position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E8EB;border-radius:20px;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:520px;display:none;z-index:200;grid-template-columns:1fr 1fr;gap:4px}
+        .vela-dropdown:hover .vela-dropdown-menu{display:grid}
         .vela-dropdown-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;text-decoration:none;transition:background .15s}
         .vela-dropdown-item:hover{background:#F2F4F6}
-        .vela-dropdown-icon{font-size:18px;flex-shrink:0;margin-top:1px}
-        .vela-dropdown-label{font-size:13px;font-weight:600;color:#191F28}
-        .vela-dropdown-desc{font-size:11px;color:#9EA6B3;margin-top:1px}
+        .vela-dropdown-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+        .vela-dropdown-label{font-size:13px;font-weight:600;color:#191F28;margin:0 0 2px}
+        .vela-dropdown-desc{font-size:11px;color:#9EA6B3;margin:0}
         @media(max-width:768px){
           .vela-nav-links,.vela-nav-actions{display:none}
           .vela-hamburger{display:flex}
@@ -72,30 +72,52 @@ export default function NavBar() {
           <div className="vela-nav-links">
             <a href="/#features">서비스</a>
             <div className="vela-dropdown">
-              <button className="vela-dropdown-btn">
-                도구 <span className="vela-dropdown-arrow">▾</span>
-              </button>
+              <button className="vela-dropdown-btn">도구 <span className="vela-dropdown-arrow">▾</span></button>
               <div className="vela-dropdown-menu">
-                {[
-                  { icon:"📊", label:"수익 시뮬레이터",  desc:"매출·순이익·BEP 계산",  href:"/simulator" },
-                  { icon:"🤖", label:"AI 전략 컨설팅",  desc:"Claude AI 맞춤 전략",   href:"/simulator" },
-                  { icon:"📋", label:"POS 데이터 분석", desc:"엑셀 업로드 자동 분석",  href:"/simulator" },
-                  { icon:"🎯", label:"목표 역산 계획",  desc:"목표 순이익 역산",       href:"/simulator" },
-                  { icon:"💰", label:"투자금 회수 예측", desc:"회수 기간 자동 계산",   href:"/simulator" },
-                  { icon:"📈", label:"월별 히스토리",   desc:"매출 추이 추적",         href:"/profile" },
-                  { icon:"🎮", label:"경영 게임",       desc:"90일 경영 시뮬레이션",   href:"/game" },
-                  { icon:"👥", label:"사장님 커뮤니티", desc:"수익 공유·업종 평균",    href:"/community" },
-                ].map(item => (
-                  <Link key={item.label} href={item.href} className="vela-dropdown-item">
+                {([
+                  {icon:"🧮",label:"메뉴별 원가 계산기",desc:"원가율·건당 순익 자동 계산",href:"/tools/menu-cost"},
+                  {icon:"👥",label:"인건비 스케줄러",desc:"주간·월간 인건비 예측",href:"/tools/labor"},
+                  {icon:"🧾",label:"세금 계산기",desc:"부가세·소득세 예상액 산출",href:"/tools/tax"},
+                  {icon:"📄",label:"손익계산서 PDF",desc:"월별 P&L 리포트 PDF 출력",href:"/tools/pl-report"},
+                  {icon:"✅",label:"창업 체크리스트",desc:"인허가·준비물 단계별 가이드",href:"/tools/startup-checklist"},
+                  {icon:"📱",label:"SNS 콘텐츠 생성기",desc:"인스타 캡션 AI 자동 생성",href:"/tools/sns-content"},
+                  {icon:"💬",label:"리뷰 답변 생성기",desc:"AI 맞춤 답변 초안 작성",href:"/tools/review-reply"},
+                  {icon:"🗺️",label:"상권 분석 도우미",desc:"AI 상권 적합도 평가 리포트",href:"/tools/area-analysis"},
+                ] as const).map(item=>(
+                  <Link key={item.href} href={item.href} className="vela-dropdown-item">
                     <span className="vela-dropdown-icon">{item.icon}</span>
-                    <div>
-                      <p className="vela-dropdown-label">{item.label}</p>
-                      <p className="vela-dropdown-desc">{item.desc}</p>
-                    </div>
+                    <div><p className="vela-dropdown-label">{item.label}</p><p className="vela-dropdown-desc">{item.desc}</p></div>
                   </Link>
                 ))}
               </div>
             </div>
+            <Link href="/community">커뮤니티</Link>
+            <Link href="/game">🎮 게임</Link>
+            <Link href="/pricing">요금제</Link>
+            <a href="/#contact">문의</a>
+          </div>
+
+          <div className="vela-nav-actions">
+            {user ? (
+
+
+
+
+
+
+        @media(max-width:768px){
+          .vela-nav-links,.vela-nav-actions{display:none}
+          .vela-hamburger{display:flex}
+        }
+      `}</style>
+
+      <nav className="vela-nav">
+        <div className="vela-nav-inner">
+          <Link href="/" className="vela-nav-logo">VELA<span>.</span></Link>
+
+          <div className="vela-nav-links">
+            <a href="/#features">서비스</a>
+            <Link href="/tools">도구</Link>
             <Link href="/community">커뮤니티</Link>
             <Link href="/game">🎮 게임</Link>
             <Link href="/pricing">요금제</Link>
@@ -131,22 +153,23 @@ export default function NavBar() {
         <a href="/#features" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>서비스</a>
         <div style={{paddingBottom:"4px",borderBottom:"1px solid #F2F4F6"}}>
           <p style={{fontSize:"11px",fontWeight:700,color:"#9EA6B3",padding:"10px 0 6px",letterSpacing:"0.5px"}}>도구</p>
-          <div style={{display:"flex",flexDirection:"column",gap:0}}>
-            {[
-              {icon:"📊",label:"수익 시뮬레이터",href:"/simulator"},
-              {icon:"📋",label:"POS 데이터 분석",href:"/simulator"},
-              {icon:"🎯",label:"목표 역산 계획",href:"/simulator"},
-              {icon:"💰",label:"투자금 회수 예측",href:"/simulator"},
-              {icon:"📈",label:"월별 히스토리",href:"/profile"},
-              {icon:"🎮",label:"경영 시뮬레이션 게임",href:"/game"},
-              {icon:"👥",label:"사장님 커뮤니티",href:"/community"},
-            ].map(item=>(
-              <Link key={item.label} href={item.href} className="vela-mobile-link" onClick={() => setMenuOpen(false)} style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                <span>{item.icon}</span>{item.label}
-              </Link>
-            ))}
-          </div>
+          {([
+            {icon:"🧮",label:"메뉴별 원가 계산기",href:"/tools/menu-cost"},
+            {icon:"👥",label:"인건비 스케줄러",href:"/tools/labor"},
+            {icon:"🧾",label:"세금 계산기",href:"/tools/tax"},
+            {icon:"📄",label:"손익계산서 PDF",href:"/tools/pl-report"},
+            {icon:"✅",label:"창업 체크리스트",href:"/tools/startup-checklist"},
+            {icon:"📱",label:"SNS 콘텐츠 생성기",href:"/tools/sns-content"},
+            {icon:"💬",label:"리뷰 답변 생성기",href:"/tools/review-reply"},
+            {icon:"🗺️",label:"상권 분석 도우미",href:"/tools/area-analysis"},
+          ] as const).map(item=>(
+            <Link key={item.href} href={item.href} className="vela-mobile-link" onClick={()=>setMenuOpen(false)} style={{display:"flex",alignItems:"center",gap:"8px"}}>
+              <span>{item.icon}</span>{item.label}
+            </Link>
+          ))}
         </div>
+        <Link href="/community" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>커뮤니티</Link>
+        <Link href="/game" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>🎮 게임</Link>
         <Link href="/pricing" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>요금제</Link>
         <a href="/#contact" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>문의</a>
         {user ? (
