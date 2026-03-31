@@ -15,14 +15,23 @@ export async function POST(req: NextRequest) {
   }
 
   const industryLabels: Record<string, string> = {
-    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝",
+    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
+
+  // 익명 상담 전용 프롬프트
+  const anonymousPrompt = `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다.
+외식업 사장님의 고민에 공감하며 실용적이고 구체적인 조언을 제공하세요.
+업종: ${industryLabels[context?.industry ?? ""] ?? "외식업"}
+따뜻하고 전문적으로 답변하되, 4~6문장 이내로 간결하게 유지하세요.
+수치가 없어도 일반적인 경영 원칙과 실무 경험을 바탕으로 도움이 되는 답변을 해주세요.`;
 
   const deliveryConstraint = context?.form?.deliveryPreference === "impossible"
     ? "\n⚠️ 이 매장은 배달 운영 의사가 없습니다. 배달 관련 전략은 절대 추천하지 마세요."
     : "";
 
-  const systemPrompt = context
+  const systemPrompt = context?.isAnonymousConsult
+    ? anonymousPrompt
+    : context?.form
     ? `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다. 
 사용자의 매장 데이터를 기반으로 실용적이고 구체적인 조언을 제공하세요.
 친절하고 명확하게 답변하되, 전문 용어는 쉽게 풀어서 설명하세요.

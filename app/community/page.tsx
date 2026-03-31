@@ -449,11 +449,11 @@ function PostDetail({ post, userId, onBack }: { post: BoardPost; userId: string 
 
 // ─── 익명 상담 탭 ──────────────────────────────────────────────
 type AnonPost = {
-  id: string; industry: string; title: string; content: string;
+  id: string; user_id?: string; industry: string; title: string; content: string;
   likes: number; comment_count: number; created_at: string;
 };
 
-function AnonymousTab({ userId }: { userId: string | null }) {
+function AnonymousTab({ userId, isAdmin }: { userId: string | null; isAdmin: boolean }) {
   const [posts, setPosts] = useState<AnonPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AnonPost | null>(null);
@@ -468,6 +468,14 @@ function AnonymousTab({ userId }: { userId: string | null }) {
   }, []);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("이 게시글을 삭제할까요?")) return;
+    const sb = createSupabaseBrowserClient();
+    await sb.from("anonymous_posts").delete().eq("id", id);
+    fetchPosts();
+  };
 
   if (selected) return <AnonDetail post={selected} userId={userId} onBack={() => { setSelected(null); fetchPosts(); }} />;
 
@@ -499,7 +507,12 @@ function AnonymousTab({ userId }: { userId: string | null }) {
                   <p className="font-semibold text-slate-900 truncate">{p.title}</p>
                   <p className="mt-0.5 text-xs text-slate-400">익명 · {new Date(p.created_at).toLocaleDateString("ko-KR")}</p>
                 </div>
-                <span className="shrink-0 text-xs text-slate-400">💬 {p.comment_count}</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-slate-400">💬 {p.comment_count}</span>
+                  {(userId && p.user_id === userId || isAdmin) && (
+                    <span onClick={e => handleDelete(p.id, e)} className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer">삭제</span>
+                  )}
+                </div>
               </div>
             </button>
           ))}
@@ -778,7 +791,7 @@ export default function CommunityPage() {
           {/* 탭 콘텐츠 */}
           {tab === "feed" && <FeedTab userId={userId} isAdmin={isAdmin} />}
           {tab === "board" && <BoardTab userId={userId} isAdmin={isAdmin} />}
-          {tab === "anonymous" && <AnonymousTab userId={userId} />}
+          {tab === "anonymous" && <AnonymousTab userId={userId} isAdmin={isAdmin} />}
           {tab === "benchmark" && <BenchmarkTab />}
 
         </div>
