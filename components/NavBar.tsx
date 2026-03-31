@@ -49,10 +49,12 @@ export default function NavBar() {
         .vela-nav-actions{display:flex;align-items:center;gap:10px}
         .vela-btn-login{font-size:14px;font-weight:600;color:#6B7684;text-decoration:none;transition:color .15s;font-family:inherit}
         .vela-btn-login:hover{color:#191F28}
-        .vela-btn-start{background:#3182F6;color:#fff;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;font-family:inherit}
-        .vela-btn-start:hover{background:#1B64DA}
-        .vela-btn-logout{background:none;border:1px solid #E5E8EB;color:#6B7684;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+        .vela-btn-dashboard{background:#F2F4F6;color:#333D4B;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s;font-family:inherit;line-height:1}
+        .vela-btn-dashboard:hover{background:#E5E8EB}
+        .vela-btn-logout{background:none;border:1px solid #E5E8EB;color:#6B7684;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;line-height:1}
         .vela-btn-logout:hover{border-color:#333D4B;color:#191F28}
+        .vela-btn-start{background:#3182F6;color:#fff;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;font-family:inherit;line-height:1}
+        .vela-btn-start:hover{background:#1B64DA}
         .vela-user-name{font-size:14px;font-weight:600;color:#333D4B;text-decoration:none;cursor:pointer;font-family:inherit}
         .vela-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
         .vela-hamburger span{display:block;width:22px;height:2px;background:#333D4B;border-radius:2px;transition:all .2s}
@@ -106,9 +108,9 @@ export default function NavBar() {
                 <Link href="/profile" className="vela-user-name">
                   {user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}
                 </Link>
-                <Link href="/profile" style={{ background:"#F2F4F6", color:"#333D4B", padding:"7px 14px", borderRadius:"10px", fontSize:"13px", fontWeight:"600", textDecoration:"none" }}>대시보드</Link>
-                <Link href="/simulator" className="vela-btn-start">시뮬레이터 →</Link>
+                <Link href="/profile" className="vela-btn-dashboard">대시보드</Link>
                 <button className="vela-btn-logout" onClick={handleLogout}>로그아웃</button>
+                <Link href="/simulator" className="vela-btn-start">시뮬레이터 →</Link>
               </>
             ) : (
               <>
