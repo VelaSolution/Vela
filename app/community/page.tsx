@@ -96,7 +96,10 @@ function FeedTab({ userId, isAdmin }: { userId: string | null; isAdmin: boolean 
   const handleDelete = async (id: string) => {
     if (!confirm("이 게시글을 삭제할까요?")) return;
     const sb = createSupabaseBrowserClient();
-    await sb.from("simulation_shares").delete().eq("id", id);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { error } = await sb.from("simulation_shares").delete().eq("id", id);
+    if (error) { alert("삭제 실패: " + error.message); return; }
     fetchPosts();
   };
 
@@ -269,7 +272,10 @@ function BoardTab({ userId, isAdmin }: { userId: string | null; isAdmin: boolean
     e.stopPropagation();
     if (!confirm("이 게시글을 삭제할까요?")) return;
     const sb = createSupabaseBrowserClient();
-    await sb.from("posts").delete().eq("id", id);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { error } = await sb.from("posts").delete().eq("id", id);
+    if (error) { alert("삭제 실패: " + error.message); return; }
     fetchPosts();
   };
 
@@ -473,7 +479,10 @@ function AnonymousTab({ userId, isAdmin }: { userId: string | null; isAdmin: boo
     e.stopPropagation();
     if (!confirm("이 게시글을 삭제할까요?")) return;
     const sb = createSupabaseBrowserClient();
-    await sb.from("anonymous_posts").delete().eq("id", id);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { error } = await sb.from("anonymous_posts").delete().eq("id", id);
+    if (error) { alert("삭제 실패: " + error.message); return; }
     fetchPosts();
   };
 
