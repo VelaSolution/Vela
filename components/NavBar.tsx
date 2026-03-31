@@ -80,7 +80,7 @@ export default function NavBar() {
           <div className="vela-nav-links">
             <a href="/#features">서비스</a>
             <div className="vela-dropdown">
-              <button className="vela-dropdown-btn">도구 <span className="vela-dropdown-arrow">▾</span></button>
+              <Link href="/tools" className="vela-dropdown-btn" style={{ textDecoration:"none" }}>도구 <span className="vela-dropdown-arrow">▾</span></Link>
               <div className="vela-dropdown-menu">
                 {TOOLS.map(item => (
                   <Link key={item.href} href={item.href} className="vela-dropdown-item">
