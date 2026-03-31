@@ -364,12 +364,12 @@ const NavBar = () => <NavBarComponent />;
 // ── 메인 메뉴 ───────────────────────────────────────────────
 function Menu({onNew,onLoad,saved}:{onNew:()=>void;onLoad:()=>void;saved:S|null}) {
   return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}>
       <NavBar />
       <div style={{maxWidth:480,margin:"0 auto",padding:"48px 20px"}}>
         <div style={{textAlign:"center",marginBottom:40}}>
           <div style={{fontSize:60,marginBottom:12}}>🏪</div>
-          <h1 style={{fontSize:34,fontWeight:800,color:G900,margin:"0 0 10px",letterSpacing:-1}}>내 가게 키우기</h1>
+          <h1 style={{fontSize:34,fontWeight:800,color:G900,margin:"0 0 10px",letterSpacing:-1,fontFamily:"inherit"}}>내 가게 키우기</h1>
           <p style={{fontSize:17,color:G600,margin:0,lineHeight:1.6}}>90일간 매장을 운영해 최고의 사장님이 되세요!<br />날씨 · 이벤트 · 직원 관리 — 진짜 경영 시뮬레이션</p>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -492,10 +492,10 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
   );
 
   if (step===0) return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}><NavBar />
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}><NavBar />
       <div style={{maxWidth:520,margin:"0 auto",padding:"32px 20px"}}>
         {bar}
-        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6}}>어떤 업종으로 시작할까요?</h2>
+        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6,fontFamily:"inherit"}}>어떤 업종으로 시작할까요?</h2>
         <p style={{fontSize:15,color:G600,marginBottom:20}}>업종별 특성이 다르니 잘 고려해보세요</p>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
           {(Object.keys(IND) as Industry[]).map(k=>{
@@ -522,10 +522,10 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
   );
 
   if (step===1) return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}><NavBar />
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}><NavBar />
       <div style={{maxWidth:520,margin:"0 auto",padding:"32px 20px"}}>
         {bar}
-        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6}}>게임 조건을 설정하세요</h2>
+        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6,fontFamily:"inherit"}}>게임 조건을 설정하세요</h2>
         <p style={{fontSize:15,color:G600,marginBottom:20}}>내 맘대로 조정 가능해요</p>
 
         {/* 시뮬레이터 저장값 선택 */}
@@ -603,10 +603,10 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
   );
 
   return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}><NavBar />
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}><NavBar />
       <div style={{maxWidth:520,margin:"0 auto",padding:"32px 20px"}}>
         {bar}
-        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6}}>준비됐나요?</h2>
+        <h2 style={{fontSize:24,fontWeight:800,color:G900,marginBottom:6,fontFamily:"inherit"}}>준비됐나요?</h2>
         <p style={{fontSize:15,color:G600,marginBottom:20}}>설정을 확인하고 게임을 시작하세요</p>
         <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:20,padding:20,marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,paddingBottom:16,borderBottom:"1px solid "+G100}}>
@@ -696,7 +696,7 @@ function Play({s, setS, onOver}:{s:S; setS:React.Dispatch<React.SetStateAction<S
   const showCust = s.phase==="result" ? Math.round(busy*5) : 0;
 
   return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}>
       <style>{`
         @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
         @keyframes fup{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px)}}
@@ -940,13 +940,13 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
   },[]);
 
   return (
-    <div style={{minHeight:"100vh",background:G50,fontFamily:"system-ui,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}>
       <NavBar />
       <div style={{maxWidth:480,margin:"0 auto",padding:"28px 20px"}}>
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:60,marginBottom:8}}>{e}</div>
           <div style={{fontSize:52,fontWeight:800,color:c,marginBottom:8,letterSpacing:-2}}>{g}</div>
-          <h2 style={{fontSize:22,fontWeight:800,color:G900,marginBottom:5}}>
+          <h2 style={{fontSize:22,fontWeight:800,color:G900,marginBottom:5,fontFamily:"inherit"}}>
             {g==="S"?"전설의 사장님!":g==="A"?"우수한 경영자!":g==="B"?"선방했어요!":g==="C"?"아슬아슬 흑자!":"다시 도전!"}
           </h2>
           <p style={{fontSize:14,color:G600}}>{s.day}일 운영 · {s.name}</p>
