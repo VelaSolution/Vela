@@ -1711,6 +1711,21 @@ export default function Page() {
   const [showCloudSave, setShowCloudSave] = useState(false);
   const [cloudSaveTitle, setCloudSaveTitle] = useState("");
   const [cloudSaving, setCloudSaving] = useState(false);
+
+  const handleCloudSave = async () => {
+    if (!cloudSaveTitle.trim()) return;
+    setCloudSaving(true);
+    try {
+      const sb = createSupabaseBrowserClient();
+      const { data: { user } } = await sb.auth.getUser() as { data: { user: { id: string } | null } };
+      if (!user) { alert("로그인이 필요합니다."); setShowCloudSave(false); setCloudSaving(false); return; }
+      await sb.from("simulation_history").insert({ user_id: user.id, label: cloudSaveTitle.trim(), form });
+      showMessage(`'${cloudSaveTitle.trim()}' 클라우드 저장 완료 ✓`);
+      setShowCloudSave(false);
+      setCloudSaveTitle("");
+    } catch { showMessage("저장 실패. 다시 시도해주세요."); }
+    setCloudSaving(false);
+  };
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showMessage = (msg: string) => {
@@ -1912,18 +1927,7 @@ export default function Page() {
                 <input
                   value={cloudSaveTitle}
                   onChange={e => setCloudSaveTitle(e.target.value)}
-                  onKeyDown={e => e.key==="Enter" && cloudSaveTitle.trim() && (async()=>{
-                    setCloudSaving(true);
-                    try {
-                      const sb = createSupabaseBrowserClient();
-                      const {data:{user}} = await sb.auth.getUser() as {data:{user:{id:string}|null}};
-                      if(!user){alert("로그인이 필요합니다."); setShowCloudSave(false); setCloudSaving(false); return;}
-                      await sb.from("simulation_history").insert({ user_id:user.id, label:cloudSaveTitle.trim(), form });
-                      showMessage(`'${cloudSaveTitle.trim()}' 클라우드 저장 완료 ✓`);
-                      setShowCloudSave(false);
-                    } catch { showMessage("저장 실패. 다시 시도해주세요."); }
-                    setCloudSaving(false);
-                  })()}
+                  onKeyDown={e => { if (e.key === "Enter") handleCloudSave(); }}
                   className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400"
                   placeholder="예: 홍대 카페 2026년 4월"
                   autoFocus
@@ -1932,19 +1936,8 @@ export default function Page() {
                   <button onClick={() => setShowCloudSave(false)} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">취소</button>
                   <button
                     disabled={!cloudSaveTitle.trim() || cloudSaving}
-                    onClick={async () => {
-                      setCloudSaving(true);
-                      try {
-                        const sb = createSupabaseBrowserClient();
-                        const {data:{user}} = await sb.auth.getUser() as {data:{user:{id:string}|null}};
-                        if(!user){alert("로그인이 필요합니다."); setShowCloudSave(false); setCloudSaving(false); return;}
-                        await sb.from("simulation_history").insert({ user_id:user.id, label:cloudSaveTitle.trim(), form });
-                        showMessage(`'${cloudSaveTitle.trim()}' 클라우드 저장 완료 ✓`);
-                        setShowCloudSave(false);
-                      } catch { showMessage("저장 실패. 다시 시도해주세요."); }
-                      setCloudSaving(false);
-                    }}
-                    className="flex-2 flex-grow-[2] rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
+                    onClick={handleCloudSave}
+                    className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     {cloudSaving ? "저장 중..." : "저장하기"}
                   </button>
