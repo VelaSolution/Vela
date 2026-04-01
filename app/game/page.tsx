@@ -4,7 +4,7 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import NavBarComponent from "@/components/NavBar";
 
-const supabase = typeof window !== "undefined" ? createSupabaseBrowserClient() : null as any;
+
 
 type Industry = "cafe" | "restaurant" | "bar" | "finedining" | "gogi";
 type Weather  = "sunny" | "rainy" | "cloudy" | "hot" | "snow";
@@ -438,9 +438,10 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
 
       // 3. Supabase 클라우드 저장 목록
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const sb = createSupabaseBrowserClient();
+        const { data: { user } } = await sb.auth.getUser();
         if (user) {
-          const { data } = await supabase
+          const { data } = await sb
             .from("simulation_history")
             .select("id, label, created_at, form, result")
             .eq("user_id", user.id)
@@ -922,21 +923,22 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
     delSave();
     (async()=>{
       try {
-        const {data:{user}} = await supabase.auth.getUser();
+        const sb2 = createSupabaseBrowserClient();
+        const {data:{user}} = await sb2.auth.getUser();
         let n = "익명 사장님";
         if (user) {
-          const {data:p} = await supabase.from("profiles").select("nickname").eq("id",user.id).single();
+          const {data:p} = await sb2.from("profiles").select("nickname").eq("id",user.id).single();
           n = p?.nickname || user.email?.split("@")[0] || n;
         } else {
           try { n = JSON.parse(localStorage.getItem("vela-profile")||"{}").nickname || n; } catch {}
         }
         setNick(n);
-        await supabase.from("game_rankings").insert({
+        await sb2.from("game_rankings").insert({
           nickname:n, score:sc, grade:g,
           industry:IND[s.ind].label, industry_icon:IND[s.ind].icon, store_name:s.name,
           total_profit:s.totalProfit, reputation:s.rep, days:s.day, streak:s.streak,
         });
-        const {count} = await supabase.from("game_rankings").select("*",{count:"exact",head:true}).gt("score",sc);
+        const {count} = await sb2.from("game_rankings").select("*",{count:"exact",head:true}).gt("score",sc);
         setMyRank((count??0)+1);
       } catch {}
       setSubmitted(true);
