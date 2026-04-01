@@ -229,16 +229,15 @@ export default function LandingPage() {
       <NavBar />
 
       {/* 로그인 시 대시보드 위젯 */}
-      {isLoggedIn && dashData && (
+      {isLoggedIn && (
         <section style={{ background:"#F8FAFF", borderBottom:"1px solid #E5E8EB", padding:"20px 24px" }}>
           <div style={{ maxWidth:1100, margin:"0 auto" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
-              {/* 왼쪽: 인사 + 이번달 매출 */}
               <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
                 <div>
-                  <p style={{ fontSize:13, color:"#6B7684", margin:"0 0 2px" }}>안녕하세요, {dashData.name}님 👋</p>
+                  <p style={{ fontSize:13, color:"#6B7684", margin:"0 0 2px" }}>안녕하세요, {dashData?.name ?? "사장님"}님 👋</p>
                   <p style={{ fontSize:15, fontWeight:700, color:"#191F28", margin:0 }}>
-                    {dashData.thisMonth
+                    {dashData?.thisMonth
                       ? <>이번 달 매출 <span style={{ color:"#3182F6" }}>{Math.round(dashData.thisMonth.total_sales).toLocaleString()}원</span> · 순이익 <span style={{ color: dashData.thisMonth.net_profit >= 0 ? "#00B386" : "#EF4444" }}>{dashData.thisMonth.net_profit >= 0 ? "+" : ""}{Math.round(dashData.thisMonth.net_profit).toLocaleString()}원</span></>
                       : <span style={{ color:"#9EA6B3" }}>이번 달 매출을 등록해보세요</span>
                     }
@@ -257,7 +256,6 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              {/* 오른쪽: 시뮬레이터 바로가기 */}
               <Link href="/simulator" style={{ padding:"8px 18px", borderRadius:10, background:"#3182F6", color:"#fff", fontSize:13, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
                 시뮬레이터 →
               </Link>
