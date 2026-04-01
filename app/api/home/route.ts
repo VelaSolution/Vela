@@ -1,50 +1,55 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 300; // 5분 캐시
+export const revalidate = 3600; // 1시간 캐시
 
 async function getStocks() {
+  const key = process.env.BOK_API_KEY;
+  if (!key) return null;
+
+  // 오늘 ~ 7일 전 범위로 가장 최근 데이터 가져오기
+  const today = new Date();
+  const end   = today.toISOString().slice(0,10).replace(/-/g,"");
+  const start = new Date(today.setDate(today.getDate()-7)).toISOString().slice(0,10).replace(/-/g,"");
+
+  const base = "https://ecos.bok.or.kr/api/StatisticSearch";
+
+  const fetchStat = async (statCode: string, itemCode: string) => {
+    const url = `${base}/${key}/json/kr/1/1/${statCode}/DD/${start}/${end}/${itemCode}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    // 가장 최근 row 반환
+    const rows = d?.StatisticSearch?.row ?? [];
+    return rows[rows.length - 1] ?? null;
+  };
+
   try {
-    // stooq.com CSV API
-    const [r1, r2, r3] = await Promise.all([
-      fetch("https://stooq.com/q/l/?s=%5Ekospi&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
-      fetch("https://stooq.com/q/l/?s=%5Ekosdaq&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
-      fetch("https://stooq.com/q/l/?s=usdkrw&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
+    const [kospiRow, kosdaqRow, usdRow] = await Promise.all([
+      fetchStat("802Y001", "0001750"), // KOSPI
+      fetchStat("802Y002", "0001751"), // KOSDAQ
+      fetchStat("731Y001", "0000001"), // USD/KRW 매매기준율
     ]);
 
-    const [t1, t2, t3] = await Promise.all([r1.text(), r2.text(), r3.text()]);
-    console.log("stooq KOSPI:", t1.slice(0,100));
-    console.log("stooq KOSDAQ:", t2.slice(0,100));
-    console.log("stooq USD/KRW:", t3.slice(0,100));
-
-    // CSV 파싱: Symbol,Date,Time,Open,High,Low,Close,Volume
-    const parseCSV = (csv: string, isForex = false) => {
-      const lines = csv.trim().split("\n");
-      if (lines.length < 2) return null;
-      const vals = lines[1].split(",");
-      const close = parseFloat(vals[6]); // Close (index 6)
-      const open  = parseFloat(vals[3]); // Open  (index 3)
-      if (isNaN(close) || isNaN(open) || close <= 0) return null;
-      const diff = close - open;
-      const pct  = open > 0 ? (diff / open) * 100 : 0;
-      const fmt  = isForex
-        ? close.toFixed(1)
-        : close.toLocaleString("ko-KR", { maximumFractionDigits: 2 });
+    const fmt = (row: {DATA_VALUE:string; TIME:string} | null, isForex = false) => {
+      if (!row) return null;
+      const val = parseFloat(row.DATA_VALUE?.replace(/,/g,"") ?? "");
+      if (isNaN(val) || val <= 0) return null;
       return {
-        price: fmt,
-        diff:  (diff >= 0 ? "▲" : "▼") + " " + Math.abs(diff).toFixed(isForex ? 1 : 2),
-        pct:   (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%",
-        up:    diff >= 0,
+        price: isForex
+          ? val.toFixed(1)
+          : val.toLocaleString("ko-KR", { maximumFractionDigits: 2 }),
+        date: row.TIME
+          ? `${row.TIME.slice(0,4)}.${row.TIME.slice(4,6)}.${row.TIME.slice(6,8)}`
+          : "",
       };
     };
 
-    const kospi  = parseCSV(t1);
-    const kosdaq = parseCSV(t2);
-    const usdkrw = parseCSV(t3, true);
-
-    if (!kospi && !kosdaq) return null;
-    return { kospi, kosdaq, usdkrw };
+    return {
+      kospi:  fmt(kospiRow),
+      kosdaq: fmt(kosdaqRow),
+      usdkrw: fmt(usdRow, true),
+    };
   } catch (e) {
-    console.error("Stock error:", e);
+    console.error("BOK error:", e);
     return null;
   }
 }
@@ -71,8 +76,8 @@ JSON만 출력, 마크다운 없이.`,
         messages: [{ role: "user", content: `오늘 ${today} 외식업·자영업 관련 주요 뉴스 3개 알려줘` }],
       }),
     });
-    const data = await res.json();
-    const text = (data.content || []).filter((c: {type:string}) => c.type==="text").map((c: {text:string}) => c.text).join("");
+    const json = await res.json();
+    const text = (json.content || []).filter((c:{type:string}) => c.type==="text").map((c:{text:string}) => c.text).join("");
     return JSON.parse(text.replace(/```json|```/g,"").trim());
   } catch {
     return [
