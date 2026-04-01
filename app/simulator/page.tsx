@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import NavBar from "@/components/NavBar";
 import Script from "next/script";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import {
   INDUSTRY_CONFIG,
   VALID_INDUSTRIES,
@@ -50,10 +50,29 @@ function SaveModal({
   onClose: () => void;
 }) {
   const [saves, setSaves] = useState<SaveSlot[]>([]);
+  const [cloudSaves, setCloudSaves] = useState<{id:string;label:string;form:FullForm;created_at:string}[]>([]);
+  const [cloudLoading, setCloudLoading] = useState(true);
+  const [tab, setTab] = useState<"local"|"cloud">("cloud");
+
   useEffect(() => { setSaves(getSaves()); }, []);
 
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(async ({ data: { user } }: { data: { user: { id: string; email?: string } | null } }) => {
+      if (!user) { setCloudLoading(false); return; }
+      const { data } = await sb
+        .from("simulation_history")
+        .select("id, label, created_at, form")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setCloudSaves((data ?? []) as {id:string;label:string;form:FullForm;created_at:string}[]);
+      setCloudLoading(false);
+    });
+  }, []);
+
   const industryLabel: Record<string, string> = {
-    cafe: "☕ 카페", restaurant: "🍽️ 음식점", bar: "🍺 바", finedining: "✨ 파인다이닝",
+    cafe: "☕ 카페", restaurant: "🍽️ 음식점", bar: "🍺 바", finedining: "✨ 파인다이닝", gogi: "🥩 고깃집",
   };
 
   return (
@@ -67,39 +86,85 @@ function SaveModal({
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
         </div>
 
-        {saves.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-3xl mb-3">📭</p>
-            <p className="text-sm text-slate-400">저장된 값이 없습니다.</p>
-            <p className="text-xs text-slate-300 mt-1">'현재 값 저장' 버튼으로 저장해보세요.</p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
-            {saves.map((s) => (
-              <li key={s.id} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-50">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">{s.label}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {industryLabel[s.form.industry] ?? s.form.industry}
-                    &nbsp;·&nbsp; 좌석 {s.form.seats}석
-                    &nbsp;·&nbsp; 객단가 {fmt(s.form.avgSpend)}원
-                  </p>
-                </div>
-                <button
-                  onClick={() => { onLoad(s.form); onClose(); }}
-                  className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 flex-shrink-0"
-                >
-                  불러오기
-                </button>
-                <button
-                  onClick={() => { deleteSlot(s.id); setSaves(getSaves()); }}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 flex-shrink-0"
-                >
-                  삭제
-                </button>
-              </li>
-            ))}
-          </ul>
+        {/* 탭 */}
+        <div className="flex gap-1 p-3 border-b border-slate-100">
+          <button onClick={() => setTab("cloud")} className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${tab==="cloud"?"bg-slate-900 text-white":"text-slate-500 hover:bg-slate-50"}`}>
+            ☁️ 클라우드 ({cloudSaves.length})
+          </button>
+          <button onClick={() => setTab("local")} className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${tab==="local"?"bg-slate-900 text-white":"text-slate-500 hover:bg-slate-50"}`}>
+            💾 로컬 ({saves.length})
+          </button>
+        </div>
+
+        {/* 클라우드 탭 */}
+        {tab === "cloud" && (
+          cloudLoading ? (
+            <div className="px-6 py-12 text-center"><p className="text-slate-400 text-sm">불러오는 중...</p></div>
+          ) : cloudSaves.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-3xl mb-3">☁️</p>
+              <p className="text-sm text-slate-400">클라우드에 저장된 값이 없습니다.</p>
+              <p className="text-xs text-slate-300 mt-1">결과 페이지에서 '☁️ 클라우드 저장'을 눌러보세요.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+              {cloudSaves.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">{s.label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {industryLabel[s.form?.industry] ?? s.form?.industry}
+                      &nbsp;·&nbsp;{new Date(s.created_at).toLocaleDateString("ko-KR", {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { if(s.form) { onLoad(s.form); onClose(); } }}
+                    className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 flex-shrink-0"
+                  >
+                    불러오기
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        )}
+
+        {/* 로컬 탭 */}
+        {tab === "local" && (
+          saves.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <p className="text-3xl mb-3">📭</p>
+              <p className="text-sm text-slate-400">저장된 값이 없습니다.</p>
+              <p className="text-xs text-slate-300 mt-1">'현재 값 저장' 버튼으로 저장해보세요.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
+              {saves.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-900">{s.label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {industryLabel[s.form.industry] ?? s.form.industry}
+                      &nbsp;·&nbsp; 좌석 {s.form.seats}석
+                      &nbsp;·&nbsp; 객단가 {fmt(s.form.avgSpend)}원
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { onLoad(s.form); onClose(); }}
+                    className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 flex-shrink-0"
+                  >
+                    불러오기
+                  </button>
+                  <button
+                    onClick={() => { deleteSlot(s.id); setSaves(getSaves()); }}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-200 flex-shrink-0"
+                  >
+                    삭제
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
         )}
 
         <div className="border-t border-slate-100 px-6 py-4">
@@ -608,15 +673,15 @@ function PreviewBar({ form }: { form: FullForm }) {
     <div className="rounded-[28px] bg-slate-900 p-5 text-white">
       <p className="mb-3 text-xs font-medium text-slate-400">실시간 미리보기</p>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div>
           <p className="text-xs text-slate-400">월 총 매출</p>
-          <p className="mt-1 text-sm font-bold leading-tight">{fmt(result.totalSales)}원</p>
+          <p className="mt-1 text-base font-bold">{fmt(result.totalSales)}원</p>
         </div>
         <div>
           <p className="text-xs text-slate-400">세전 순이익</p>
           <p
-            className={`mt-1 text-sm font-bold leading-tight ${
+            className={`mt-1 text-base font-bold ${
               isProfit ? "text-emerald-400" : "text-red-400"
             }`}
           >
@@ -626,7 +691,7 @@ function PreviewBar({ form }: { form: FullForm }) {
         <div>
           <p className="text-xs text-slate-400">세후 실수령</p>
           <p
-            className={`mt-1 text-sm font-bold leading-tight ${
+            className={`mt-1 text-base font-bold ${
               result.netProfit >= 0 ? "text-emerald-300" : "text-red-300"
             }`}
           >
@@ -636,7 +701,7 @@ function PreviewBar({ form }: { form: FullForm }) {
         <div>
           <p className="text-xs text-slate-400">현금흐름</p>
           <p
-            className={`mt-1 text-sm font-bold leading-tight ${
+            className={`mt-1 text-base font-bold ${
               result.cashFlow >= 0 ? "text-blue-300" : "text-red-300"
             }`}
           >
@@ -797,6 +862,25 @@ function Step1({
           <span className="font-semibold text-slate-900">
             {(form.weekdayDays + form.weekendDays * form.weekendMultiplier).toFixed(1)}일
           </span>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <SliderCard
+            label="포장/테이크아웃 비율"
+            hint="홀 매출 중 포장 비중"
+            value={form.takeoutRatio ?? 0}
+            onChange={(v) => update("takeoutRatio", v)}
+            min={0} max={80} step={5}
+            suffix="%"
+          />
+          <SliderCard
+            label="현금 결제 비율"
+            hint="나머지는 카드 수수료 적용"
+            value={form.cashPaymentRate ?? 10}
+            onChange={(v) => update("cashPaymentRate", v)}
+            min={0} max={60} step={5}
+            suffix="%"
+          />
         </div>
       </section>
 
@@ -1162,6 +1246,21 @@ function Step2({
         )}
 
         <SliderCard
+          label="식자재 폐기율"
+          hint="구매 식자재 중 폐기되는 비율 — 실질 원가율에 합산"
+          value={form.wasteRate ?? 0}
+          onChange={(v) => update("wasteRate", v)}
+          min={0} max={20} step={0.5}
+          suffix="%"
+        />
+        {(form.wasteRate ?? 0) > 0 && (
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-xs text-amber-700">
+            실질 원가율: <span className="font-semibold">{(form.cogsRate + (form.wasteRate ?? 0)).toFixed(1)}%</span>
+            &nbsp;(구매원가 {form.cogsRate}% + 폐기율 {form.wasteRate}%)
+          </div>
+        )}
+
+        <SliderCard
           label="카드 수수료율"
           hint="매출 대비 카드 수수료"
           value={form.cardFeeRate}
@@ -1225,17 +1324,62 @@ function Step2({
           hint="예상 소득세율"
           value={form.incomeTaxRate}
           onChange={(v) => update("incomeTaxRate", v)}
-          min={0}
-          max={45}
-          step={1}
+          min={0} max={45} step={1}
           suffix="%"
         />
+
+        {/* 사업자 종류 */}
+        <div className="rounded-2xl bg-white p-4">
+          <p className="mb-3 text-sm font-semibold text-slate-700">사업자 종류</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([["individual", "개인사업자", "종합소득세 적용"], ["corporation", "법인", "법인세 적용"]] as const).map(([val, label, desc]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => update("ownerType", val)}
+                className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                  (form.ownerType ?? "individual") === val
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <p className={`text-sm font-semibold ${(form.ownerType ?? "individual") === val ? "text-blue-700" : "text-slate-700"}`}>{label}</p>
+                <p className="mt-0.5 text-xs text-slate-400">{desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <Toggle
           label="부가세 과세 사업자"
           hint="일반 과세자인 경우 ON"
           value={form.vatEnabled}
           onChange={(v) => update("vatEnabled", v)}
         />
+      </section>
+
+      {/* 프랜차이즈 섹션 */}
+      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+        <div className="px-1">
+          <h2 className="text-xl font-bold text-slate-900">프랜차이즈</h2>
+          <p className="mt-1 text-sm text-slate-500">프랜차이즈 가맹점인 경우 입력하세요.</p>
+        </div>
+        <Toggle
+          label="프랜차이즈 가맹점"
+          hint="프랜차이즈 로열티가 발생하는 경우"
+          value={form.franchiseEnabled ?? false}
+          onChange={(v) => update("franchiseEnabled", v)}
+        />
+        {form.franchiseEnabled && (
+          <SliderCard
+            label="로열티율"
+            hint="매출 대비 본사 로열티 비율"
+            value={form.franchiseRoyaltyRate ?? 0}
+            onChange={(v) => update("franchiseRoyaltyRate", v)}
+            min={0} max={15} step={0.5}
+            suffix="%"
+          />
+        )}
       </section>
     </div>
   );
@@ -1325,6 +1469,20 @@ function Step3({
           error={errors.signage}
         />
         <InputCard
+          label="가맹비"
+          hint="프랜차이즈 가맹 계약금 (해당 시)"
+          value={form.franchiseFee ?? 0}
+          onChange={(v) => update("franchiseFee", v)}
+          money
+        />
+        <InputCard
+          label="교육비"
+          hint="본사 교육·연수 비용 (해당 시)"
+          value={form.trainingFee ?? 0}
+          onChange={(v) => update("trainingFee", v)}
+          money
+        />
+        <InputCard
           label="기타 초기비용"
           hint="인허가·사업자등록·예비비"
           value={form.otherSetup}
@@ -1343,6 +1501,8 @@ function Step3({
                   form.interior +
                   form.equipment +
                   form.signage +
+                  (form.franchiseFee ?? 0) +
+                  (form.trainingFee ?? 0) +
                   form.otherSetup
               )}
               원
@@ -1356,6 +1516,8 @@ function Step3({
                   form.interior +
                   form.equipment +
                   form.signage +
+                  (form.franchiseFee ?? 0) +
+                  (form.trainingFee ?? 0) +
                   form.otherSetup
               )}
               원
@@ -1546,9 +1708,6 @@ export default function Page() {
   const [saveMessage, setSaveMessage] = useState("");
   const [stepError, setStepError] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [simTitle, setSimTitle] = useState("");
-  const [showPrevModal, setShowPrevModal] = useState(false);
-  const [prevForm, setPrevForm] = useState<FullForm | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showMessage = (msg: string) => {
@@ -1578,26 +1737,15 @@ export default function Page() {
       return;
     }
 
-    // 이전 분석값 확인 → 의사 묻기
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // 값이 있는지 확인 (seats나 avgSpend가 0이 아닌 경우)
-        if (parsed.seats || parsed.avgSpend || parsed.rent) {
-          setPrevForm(sanitizeFullForm(parsed));
-          setShowPrevModal(true);
-        }
-      } catch { /* ignore */ }
-    }
-    // localStorage에서 자동 불러오지 않음 — 항상 빈 값으로 시작
-  }, []);
+    if (!saved) return;
 
-  // 폼 변경 시 자동저장 + 도구 연동 이벤트
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
-    window.dispatchEvent(new Event("vela-form-updated"));
-  }, [form]);
+    try {
+      setForm(sanitizeFullForm(JSON.parse(saved)));
+    } catch (error) {
+      console.error("저장값 불러오기 실패", error);
+    }
+  }, []);
 
   const update = (key: keyof FullForm, value: unknown) => {
     setStepError("");
@@ -1709,53 +1857,13 @@ export default function Page() {
       return;
     }
 
-    if (!simTitle.trim()) {
-      setStepError("시뮬레이션 제목을 입력해주세요.");
-      window.scrollTo(0, 0);
-      return;
-    }
-
     setStepError("");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
-    localStorage.setItem("vela-sim-title", simTitle.trim());
-    window.dispatchEvent(new Event("vela-form-updated"));
-    const titleParam = `&title=${encodeURIComponent(simTitle.trim())}`;
-    router.push(`/result?${buildQuery(form)}${titleParam}`);
+    router.push(`/result?${buildQuery(form)}`);
   };
 
   return (
-    <>
-    <NavBar />
-
-    {/* 이전 분석값 불러오기 모달 */}
-    {showPrevModal && prevForm && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-        <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
-          <p className="text-3xl mb-3">📊</p>
-          <h3 className="text-lg font-extrabold text-slate-900 mb-2">이전 분석값이 있어요</h3>
-          <p className="text-sm text-slate-500 mb-5">
-            마지막으로 분석한 값을 불러올까요?<br />
-            <span className="text-xs text-slate-400 mt-1 block">
-              업종: {prevForm.industry} · 좌석: {prevForm.seats}석 · 객단가: {String(prevForm.avgSpend)}원
-            </span>
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setShowPrevModal(false); }}
-              className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
-              아니오 (새로 시작)
-            </button>
-            <button
-              onClick={() => { setForm(prevForm); setShowPrevModal(false); }}
-              className="flex-1 rounded-2xl bg-slate-900 py-3 text-sm font-bold text-white hover:bg-slate-700 transition">
-              예 (불러오기)
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-
-    <main className="min-h-screen bg-slate-50 px-4 pt-20 pb-6 md:px-8">
+    <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
       <div className="mx-auto max-w-7xl">
 
         {showSaveModal && (
@@ -1797,7 +1905,7 @@ export default function Page() {
           <PreviewBar form={form} />
         </div>
 
-        <div className="lg:grid lg:grid-cols-[1fr_400px] lg:gap-6 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:items-start">
 
           <div className="space-y-6">
             {step === 1 && <Step1 form={form} update={update} errors={step1Errors} loadIndustryDefaults={loadIndustryDefaults} applyPosResult={applyPosResult} />}
@@ -1806,18 +1914,6 @@ export default function Page() {
 
             <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
               {stepError && <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
-              {step === 3 && (
-                <div className="mb-3">
-                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">시뮬레이션 제목 <span className="text-red-400">*</span></label>
-                  <input
-                    type="text"
-                    value={simTitle}
-                    onChange={e => setSimTitle(e.target.value)}
-                    placeholder="예) 홍대 카페 오픈 시뮬레이션"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white transition"
-                  />
-                </div>
-              )}
               <div className="flex gap-3">
                 {step > 1 && (
                   <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-2xl border border-slate-200 px-6 py-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">← 이전</button>
@@ -1860,6 +1956,5 @@ export default function Page() {
         </div>
       </div>
     </main>
-    </>
   );
 }
