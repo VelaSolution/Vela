@@ -489,45 +489,46 @@ const TOOLS_HOME = [
 type NewsItem = { title:string; summary:string; source:string; url:string };
 import type { User } from "@supabase/supabase-js";
 
-type StockData = {
-  price:string; diff:string; pct:string; up:boolean;
-} | null;
+type IndexData = { price:string; date:string } | null;
 
 function StockTicker() {
-  const [stocks, setStocks] = useState<{
-    kospi:StockData; kosdaq:StockData; usdkrw:StockData;
-  } | null>(null);
+  const [stocks, setStocks] = useState<{kospi:IndexData;kosdaq:IndexData;usdkrw:IndexData}|null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetch("/api/home")
       .then(r => r.json())
       .then(d => { if (d.stocks) setStocks(d.stocks); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
   const cards = [
-    { label:"KOSPI",   data: stocks?.kospi  },
-    { label:"KOSDAQ",  data: stocks?.kosdaq },
-    { label:"달러/원",  data: stocks?.usdkrw },
+    { label:"KOSPI",  icon:"📈", data: stocks?.kospi  },
+    { label:"KOSDAQ", icon:"📊", data: stocks?.kosdaq },
+    { label:"달러/원", icon:"💵", data: stocks?.usdkrw },
   ];
 
   return (
     <div className="grid grid-cols-3 gap-3">
-      {cards.map(({label, data}) => (
-        <div key={label} className="rounded-2xl bg-white ring-1 ring-slate-200 px-4 py-3 text-center">
-          <p className="text-xs text-slate-400 mb-1">{label}</p>
-          {data ? (
+      {cards.map(({label, icon, data}) => (
+        <div key={label} className="rounded-2xl bg-white ring-1 ring-slate-200 px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="text-sm">{icon}</span>
+            <p className="text-xs font-semibold text-slate-500">{label}</p>
+          </div>
+          {!loaded ? (
+            <div className="animate-pulse space-y-1">
+              <div className="h-5 bg-slate-100 rounded w-20" />
+              <div className="h-3 bg-slate-100 rounded w-14" />
+            </div>
+          ) : data ? (
             <>
-              <p className="text-sm font-bold text-slate-900">{data.price}</p>
-              <p className={`text-xs font-semibold mt-0.5 ${data.up ? "text-red-500" : "text-blue-500"}`}>
-                {data.diff} ({data.pct})
-              </p>
+              <p className="text-base font-bold text-slate-900">{data.price}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{data.date} 전일종가</p>
             </>
           ) : (
-            <div className="animate-pulse space-y-1 mt-1">
-              <div className="h-4 bg-slate-100 rounded w-16 mx-auto" />
-              <div className="h-3 bg-slate-100 rounded w-12 mx-auto" />
-            </div>
+            <p className="text-xs text-slate-400 mt-1">—</p>
           )}
         </div>
       ))}
