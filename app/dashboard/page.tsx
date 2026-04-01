@@ -64,9 +64,15 @@ export default function DashboardHome() {
   const maxSales = Math.max(...[...snapshots].reverse().map(s => s.total_sales), 1);
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50"><NavBar />
-      <div className="flex items-center justify-center h-[80vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+    <div className="min-h-screen bg-slate-50">
+      <NavBar />
+      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 space-y-4 animate-pulse">
+        <div className="h-8 bg-slate-200 rounded-2xl w-48" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1,2,3,4].map(i => <div key={i} className="h-20 bg-slate-200 rounded-2xl" />)}
+        </div>
+        <div className="h-64 bg-slate-200 rounded-3xl" />
+        <div className="h-48 bg-slate-200 rounded-3xl" />
       </div>
     </div>
   );

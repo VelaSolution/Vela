@@ -120,8 +120,14 @@ export default function ProfilePage() {
   const displayName = user?.user_metadata?.nickname||user?.user_metadata?.full_name||user?.email?.split("@")[0]||"사용자";
 
   if(loading) return (
-    <div className="min-h-screen bg-slate-50"><NavBar/>
-      <div className="flex items-center justify-center h-[80vh]"><p className="text-slate-400">불러오는 중...</p></div>
+    <div className="min-h-screen bg-slate-50">
+      <NavBar />
+      <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 space-y-4 animate-pulse">
+        <div className="h-20 bg-slate-200 rounded-3xl" />
+        <div className="h-12 bg-slate-200 rounded-2xl" />
+        <div className="h-48 bg-slate-200 rounded-3xl" />
+        <div className="h-48 bg-slate-200 rounded-3xl" />
+      </div>
     </div>
   );
   if(!user) return (

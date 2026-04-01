@@ -687,18 +687,21 @@ function MemberHome() {
 
 // ── 라우터 ────────────────────────────────────────────────────
 export default function HomePage() {
-  const [checked, setChecked] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  // localStorage 캐시로 초기값 즉시 결정 → 깜빡임 방지
+  const [loggedIn, setLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("vela-logged-in") === "1";
+  });
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
     sb.auth.getUser().then(({ data }: { data: { user: unknown } }) => {
-      setLoggedIn(!!data.user);
-      setChecked(true);
+      const val = !!data.user;
+      setLoggedIn(val);
+      localStorage.setItem("vela-logged-in", val ? "1" : "0");
     });
   }, []);
 
-  if (!checked) return <LandingContent />;
   // 해시 앵커(#features 등) 접근 시 랜딩페이지 표시
   const hasHash = typeof window !== "undefined" && window.location.hash.length > 0;
   if (hasHash) return <LandingContent />;
