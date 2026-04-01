@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import NavBar from "@/components/NavBar";
 import {
   INDUSTRY_CONFIG,
   VALID_INDUSTRIES,
@@ -1881,7 +1882,9 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 md:px-8">
+    <div className="min-h-screen bg-slate-50">
+      <NavBar />
+      <main className="px-4 py-6 md:px-8">
       <div className="mx-auto max-w-7xl">
 
         {showSaveModal && (
@@ -1910,13 +1913,13 @@ export default function Page() {
             <div className="w-full max-w-sm"><StepIndicator current={step} /></div>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button type="button" onClick={() => { const label = saveSlot(form); showMessage(`${label} 저장 완료`); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white">현재 값 저장</button>
-            <button type="button" onClick={() => { setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white">☁️ 클라우드 저장</button>
-            <button type="button" onClick={() => setShowSaveModal(true)} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700">저장값 불러오기</button>
-            <button type="button" onClick={() => { setForm(createEmptyForm(form.industry)); setStep(1); setStepError(""); showMessage("초기화가 완료되었습니다."); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700">초기화</button>
-            <button type="button" onClick={async () => { try { const url = `${window.location.origin}${window.location.pathname}?${buildQuery(form)}`; await navigator.clipboard.writeText(url); showMessage("링크가 복사되었습니다."); } catch (error) { console.error(error); showMessage("링크 복사에 실패했습니다."); } }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-white" style={{background:"#3182F6",color:"#fff"}}>링크 공유</button>
+            <button type="button" onClick={() => { const label = saveSlot(form); showMessage(`${label} 저장 완료`); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">💾 현재 값 저장</button>
+            <button type="button" onClick={() => { setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">☁️ 클라우드 저장</button>
+            <button type="button" onClick={() => setShowSaveModal(true)} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">📂 저장값 불러오기</button>
+            <button type="button" onClick={() => { setForm(createEmptyForm(form.industry)); setStep(1); setStepError(""); showMessage("초기화가 완료되었습니다."); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">초기화</button>
+            <button type="button" onClick={async () => { try { const url = `${window.location.origin}${window.location.pathname}?${buildQuery(form)}`; await navigator.clipboard.writeText(url); showMessage("링크가 복사되었습니다."); } catch (error) { console.error(error); showMessage("링크 복사에 실패했습니다."); } }} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 공유</button>
           </div>
-          {saveMessage && <p className="mt-3 text-sm font-medium text-slate-500">{saveMessage}</p>}
+          {saveMessage && <p className="mt-3 text-sm font-medium text-emerald-600">{saveMessage}</p>}
 
           {/* 클라우드 저장 모달 */}
           {showCloudSave && (
@@ -2003,5 +2006,6 @@ export default function Page() {
         </div>
       </div>
     </main>
+    </div>
   );
 }
