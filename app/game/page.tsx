@@ -412,7 +412,7 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
   const [cogs, setCogs]   = useState(28);
   const [simLoaded, setSimLoaded] = useState(false);
   const [showSimPicker, setShowSimPicker] = useState(false);
-  const [simSaves, setSimSaves] = useState<{id:string;name:string;industry:string;avgSpend:number;cogsRate:number;savedAt:string}[]>([]);
+  const [simSaves, setSimSaves] = useState<{id:string;name:string;industry:string;avgSpend:number;cogsRate:number;savedAt:string;source?:string}[]>([]);
 
   const cap = Math.max(0, Number(capStr.replace(/[^0-9]/g,"")) || 0);
 
@@ -427,13 +427,13 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
       const current = localStorage.getItem("vela-form-v3");
       if (current) {
         const f = JSON.parse(current);
-        if (f.industry) all.push({ id:"current", name:"최근 시뮬레이션 (임시저장)", industry:f.industry||"restaurant", avgSpend:Number(f.avgSpend||0), cogsRate:Number(f.cogsRate||0), savedAt:"현재" });
+        if (f.industry) all.push({ id:"current", name:"최근 시뮬레이션 (임시저장)", industry:f.industry||"restaurant", avgSpend:Number(f.avgSpend||0), cogsRate:Number(f.cogsRate||0), savedAt:"현재", source:"sim" });
       }
 
       // 2. localStorage 저장 목록 (vela-saves-v1)
       const localSaves = JSON.parse(localStorage.getItem("vela-saves-v1") || "[]");
       localSaves.forEach((s: {id:string; name?:string; form?:{industry?:string; avgSpend?:number; cogsRate?:number}; savedAt?:string}) => {
-        all.push({ id:"local-"+s.id, name:s.name||"저장된 시뮬레이션", industry:s.form?.industry||"restaurant", avgSpend:Number(s.form?.avgSpend||0), cogsRate:Number(s.form?.cogsRate||0), savedAt:s.savedAt||"" });
+        all.push({ id:"local-"+s.id, name:s.name||"저장된 시뮬레이션", industry:s.form?.industry||"restaurant", avgSpend:Number(s.form?.avgSpend||0), cogsRate:Number(s.form?.cogsRate||0), savedAt:s.savedAt||"", source:"sim" });
       });
 
       // 3. Supabase 클라우드 저장 목록
@@ -441,22 +441,37 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
         const sb = createSupabaseBrowserClient();
         const { data: { user } } = await sb.auth.getUser();
         if (user) {
-          const { data } = await sb
+          // 시뮬레이션 기록
+          const { data: simData } = await sb
             .from("simulation_history")
             .select("id, label, created_at, form, result")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
             .limit(20);
-          if (data) {
-            data.forEach((row: {id:string; label:string; created_at:string; form?:Record<string,unknown>; result?:Record<string,unknown>}) => {
+          if (simData) {
+            simData.forEach((row: {id:string; label:string; created_at:string; form?:Record<string,unknown>; result?:Record<string,unknown>}) => {
               const f = row.form || {};
               const r = row.result || {};
-              // form에서 다양한 키 이름으로 저장될 수 있음
               const avgSpend = Number(f.avgSpend || f.avg_spend || 0);
               const cogsRate = Number(f.cogsRate || f.cogs_rate || f.cogsRatio || r.cogsRate || 0);
               const industry = String(f.industry || "restaurant");
               const date = new Date(row.created_at).toLocaleDateString("ko-KR", {month:"short", day:"numeric"});
-              all.push({ id:"sb-"+row.id, name:`☁️ ${row.label} (${date})`, industry, avgSpend, cogsRate, savedAt:row.created_at });
+              all.push({ id:"sb-"+row.id, name:`☁️ ${row.label} (${date})`, industry, avgSpend, cogsRate, savedAt:row.created_at, source:"sim" });
+            });
+          }
+
+          // 월별 매출 기록
+          const { data: monthData } = await sb
+            .from("monthly_snapshots")
+            .select("id, month, industry, total_sales, cogs, net_profit")
+            .eq("user_id", user.id)
+            .order("month", { ascending: false })
+            .limit(12);
+          if (monthData) {
+            monthData.forEach((row: {id:string; month:string; industry:string; total_sales:number; cogs:number; net_profit:number}) => {
+              const avgSpend = Math.round(row.total_sales / 30 / 50); // 대략 추정
+              const cogsRate = row.total_sales > 0 ? Math.round((row.cogs / row.total_sales) * 100) : 30;
+              all.push({ id:"month-"+row.id, name:`📈 ${row.month} 월별매출 (${(row.total_sales/10000).toFixed(0)}만원)`, industry:row.industry||"restaurant", avgSpend, cogsRate, savedAt:row.month, source:"monthly" });
             });
           }
         }
@@ -535,18 +550,21 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
 
         {/* 시뮬레이터 저장값 선택 */}
         <button onClick={openSimPicker} style={{width:"100%",padding:"13px 16px",borderRadius:14,border:"2px dashed "+(simLoaded?GN:G200),background:simLoaded?GNL:"#fff",color:simLoaded?GN:G600,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          {simLoaded ? "✅ 시뮬레이터 값 적용됨 (다시 선택하기)" : "📊 내 시뮬레이터 결과 불러오기 →"}
+          {simLoaded ? "✅ 데이터 적용됨 (다시 선택하기)" : "📊 내 시뮬레이션 · 월별매출 불러오기 →"}
         </button>
 
         {/* 시뮬레이션 선택 모달 */}
         {showSimPicker && (
           <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:16,padding:16,marginBottom:14,boxShadow:"0 4px 20px rgba(0,0,0,0.08)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <p style={{fontSize:14,fontWeight:700,color:G900,margin:0}}>📊 시뮬레이션 결과 선택</p>
+              <p style={{fontSize:14,fontWeight:700,color:G900,margin:0}}>📊 데이터 선택</p>
               <button onClick={()=>setShowSimPicker(false)} style={{fontSize:13,color:G400,background:"none",border:"none",cursor:"pointer"}}>✕</button>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {simSaves.map(s=>(
+              {simSaves.filter(s=>s.source!=="monthly").length>0 && (
+                <p style={{fontSize:11,fontWeight:700,color:G400,margin:"4px 0 2px",letterSpacing:"0.5px"}}>📊 시뮬레이션 기록</p>
+              )}
+              {simSaves.filter(s=>s.source!=="monthly").map(s=>(
                 <button key={s.id} onClick={()=>applySimSave(s)} style={{padding:"12px 14px",borderRadius:12,border:"1px solid "+G200,background:G50,cursor:"pointer",textAlign:"left",fontFamily:"inherit",transition:"background 0.1s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div>
@@ -556,6 +574,21 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
                       </p>
                     </div>
                     <span style={{fontSize:12,color:G400}}>{s.savedAt==="현재"?"현재":s.savedAt?new Date(s.savedAt).toLocaleDateString("ko-KR"):""}</span>
+                  </div>
+                </button>
+              ))}
+              {simSaves.filter(s=>s.source==="monthly").length>0 && (
+                <p style={{fontSize:11,fontWeight:700,color:G400,margin:"8px 0 2px",letterSpacing:"0.5px"}}>📈 월별 매출 기록</p>
+              )}
+              {simSaves.filter(s=>s.source==="monthly").map(s=>(
+                <button key={s.id} onClick={()=>applySimSave(s)} style={{padding:"12px 14px",borderRadius:12,border:"1px solid "+G200,background:G50,cursor:"pointer",textAlign:"left",fontFamily:"inherit",transition:"background 0.1s"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <p style={{fontSize:14,fontWeight:700,color:G900,margin:"0 0 2px"}}>{s.name}</p>
+                      <p style={{fontSize:12,color:G400,margin:0}}>
+                        {IND[s.industry as Industry]?.icon} {IND[s.industry as Industry]?.label||s.industry} · 원가율 {s.cogsRate}%
+                      </p>
+                    </div>
                   </div>
                 </button>
               ))}
