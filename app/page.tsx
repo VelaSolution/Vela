@@ -687,9 +687,16 @@ function MemberHome() {
 
 // ── 라우터 ────────────────────────────────────────────────────
 export default function HomePage() {
-  // localStorage 캐시로 초기값 즉시 결정 → 깜빡임 방지
+  // Supabase 세션 localStorage에서 즉시 읽기 → 깜빡임 없음
   const [loggedIn, setLoggedIn] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
+    // Supabase는 sb-{ref}-auth-token 키로 세션 저장
+    const sbKey = Object.keys(localStorage).find(
+      k => k.startsWith("sb-") && k.endsWith("-auth-token")
+    );
+    if (sbKey) {
+      try { return !!JSON.parse(localStorage.getItem(sbKey) ?? "null"); } catch { return false; }
+    }
     return localStorage.getItem("vela-logged-in") === "1";
   });
 
