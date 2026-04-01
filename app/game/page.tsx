@@ -1,13 +1,10 @@
 "use client";
 import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import NavBarComponent from "@/components/NavBar";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createSupabaseBrowserClient();
 
 type Industry = "cafe" | "restaurant" | "bar" | "finedining" | "gogi";
 type Weather  = "sunny" | "rainy" | "cloudy" | "hot" | "snow";
@@ -448,14 +445,21 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
             .select("id, label, created_at, form, result")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false })
-            .limit(15);
+            .limit(20);
           if (data) {
-            data.forEach((row: {id:string; label:string; created_at:string; form?:{industry?:string; avgSpend?:number; cogsRate?:number}}) => {
-              all.push({ id:"sb-"+row.id, name:"☁️ "+row.label, industry:row.form?.industry||"restaurant", avgSpend:Number(row.form?.avgSpend||0), cogsRate:Number(row.form?.cogsRate||0), savedAt:row.created_at });
+            data.forEach((row: {id:string; label:string; created_at:string; form?:Record<string,unknown>; result?:Record<string,unknown>}) => {
+              const f = row.form || {};
+              const r = row.result || {};
+              // form에서 다양한 키 이름으로 저장될 수 있음
+              const avgSpend = Number(f.avgSpend || f.avg_spend || 0);
+              const cogsRate = Number(f.cogsRate || f.cogs_rate || f.cogsRatio || r.cogsRate || 0);
+              const industry = String(f.industry || "restaurant");
+              const date = new Date(row.created_at).toLocaleDateString("ko-KR", {month:"short", day:"numeric"});
+              all.push({ id:"sb-"+row.id, name:`☁️ ${row.label} (${date})`, industry, avgSpend, cogsRate, savedAt:row.created_at });
             });
           }
         }
-      } catch {}
+      } catch (e) { console.error("Supabase 불러오기 실패:", e); }
 
       if (all.length===0) { alert("저장된 시뮬레이션 결과가 없어요.\n시뮬레이터에서 먼저 분석을 완료해주세요!"); return; }
       setSimSaves(all);
