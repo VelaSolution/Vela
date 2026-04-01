@@ -492,12 +492,49 @@ type NewsItem = { title:string; summary:string; source:string; url:string };
 
 import type { User } from "@supabase/supabase-js";
 
+function StockTicker() {
+  useEffect(() => {
+    // 이미 로드된 경우 스킵
+    if (document.getElementById("tv-ticker-script")) return;
+    const container = document.getElementById("tv-ticker-container");
+    if (!container) return;
+    container.innerHTML = "";
+    const widget = document.createElement("div");
+    widget.className = "tradingview-widget-container__widget";
+    container.appendChild(widget);
+    const script = document.createElement("script");
+    script.id = "tv-ticker-script";
+    script.type = "text/javascript";
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      symbols: [
+        { proName: "KRX:KOSPI",  title: "코스피" },
+        { proName: "KRX:KOSDAQ", title: "코스닥" },
+        { proName: "FX_IDC:USDKRW", title: "달러/원" },
+        { proName: "COMEX:GC1!", title: "금" },
+      ],
+      showSymbolLogo: false,
+      isTransparent: true,
+      displayMode: "adaptive",
+      colorTheme: "light",
+      locale: "kr",
+    });
+    container.appendChild(script);
+  }, []);
+
+  return (
+    <div className="rounded-2xl bg-white ring-1 ring-slate-200 overflow-hidden">
+      <div id="tv-ticker-container" className="tradingview-widget-container" style={{height:46}} />
+    </div>
+  );
+}
+
 function MemberHome() {
   const [user,    setUser]    = useState<User|null>(null);
   const [loading, setLoading] = useState(true);
   const [news,    setNews]    = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
-  const [stocks, setStocks] = useState<{kospi:string;kospiChange:string;kospiPct:string;kospiUp:boolean;kosdaq:string;kosdaqChange:string;kosdaqPct:string;kosdaqUp:boolean}|null>(null);
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
@@ -538,26 +575,6 @@ JSON 외 다른 텍스트, 마크다운 절대 없이 JSON만 출력하세요.`,
     ]))
     .finally(() => setNewsLoading(false));
 
-    // 코스피/코스닥 가져오기
-    fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 300,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
-        system: `오늘 현재 코스피(KOSPI)와 코스닥(KOSDAQ) 지수를 검색해서 JSON으로만 응답하세요.
-형식: {"kospi":"3,120.45","kospiChange":"+12.30(+0.40%)","kospiUp":true,"kosdaq":"850.12","kosdaqChange":"-3.21(-0.38%)","kosdaqUp":false}
-JSON만 출력, 마크다운 없이.`,
-        messages: [{ role: "user", content: "오늘 코스피 코스닥 현재 지수 알려줘" }],
-      }),
-    })
-    .then(r => r.json())
-    .then(d => {
-      const text = (d.content||[]).filter((c:{type:string})=>c.type==="text").map((c:{text:string})=>c.text).join("");
-      setStocks(JSON.parse(text.replace(/```json|```/g,"").trim()));
-    })
-    .catch(()=>{});
   }, []);
 
   const name = user?.user_metadata?.nickname || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "사장님";
@@ -583,33 +600,6 @@ JSON만 출력, 마크다운 없이.`,
             <div>
               <p className="text-sm text-slate-400">{new Date().toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"long"})}</p>
               <h1 className="text-2xl font-bold text-slate-900 mt-1">{greeting}, {name}님! 👋</h1>
-            </div>
-            {/* 코스피/코스닥 */}
-            <div className="flex gap-3">
-              {stocks ? (
-                <>
-                  <div className="rounded-2xl bg-white ring-1 ring-slate-200 px-4 py-2.5 text-center min-w-[90px]">
-                    <p className="text-xs text-slate-400 mb-0.5">KOSPI</p>
-                    <p className="text-sm font-bold text-slate-900">{stocks.kospi}</p>
-                    <p className={`text-xs font-semibold ${stocks.kospiUp?"text-red-500":"text-blue-500"}`}>{stocks.kospiChange}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white ring-1 ring-slate-200 px-4 py-2.5 text-center min-w-[90px]">
-                    <p className="text-xs text-slate-400 mb-0.5">KOSDAQ</p>
-                    <p className="text-sm font-bold text-slate-900">{stocks.kosdaq}</p>
-                    <p className={`text-xs font-semibold ${stocks.kosdaqUp?"text-red-500":"text-blue-500"}`}>{stocks.kosdaqChange}</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {[1,2].map(i=>(
-                    <div key={i} className="rounded-2xl bg-white ring-1 ring-slate-200 px-4 py-2.5 text-center min-w-[90px] animate-pulse">
-                      <div className="h-2.5 bg-slate-100 rounded w-12 mx-auto mb-1.5" />
-                      <div className="h-4 bg-slate-100 rounded w-14 mx-auto mb-1" />
-                      <div className="h-2.5 bg-slate-100 rounded w-10 mx-auto" />
-                    </div>
-                  ))}
-                </>
-              )}
             </div>
           </div>
 
