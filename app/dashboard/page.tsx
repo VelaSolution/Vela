@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [showInput, setShowInput] = useState(false);
   const [form, setForm] = useState({ month: new Date().toISOString().slice(0,7), industry: "cafe", total_sales: "", cogs: "", labor_cost: "", rent: "", other_cost: "", memo: "" });
   const [saving, setSaving] = useState(false);
-  const sb = createSupabaseBrowserClient();
+  const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null as any;
 
   const load = useCallback(async () => {
     setLoading(true);

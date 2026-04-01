@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
   const [resetMsg, setResetMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const sb = createSupabaseBrowserClient();
+  const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null as any;
 
   useEffect(()=>{
     sb.auth.getUser().then(({data:{user}})=>{
