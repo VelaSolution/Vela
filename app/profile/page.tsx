@@ -13,7 +13,7 @@ type HistoryRow = {
 };
 
 const II: Record<string,string> = { cafe:"☕",restaurant:"🍽️",bar:"🍺",finedining:"✨",gogi:"🥩" };
-type Tab = "profile"|"history"|"account";
+type Tab = "profile"|"history"|"subscription"|"account";
 
 export default function ProfilePage() {
   const [user, setUser]             = useState<User|null>(null);
@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [pwMsg, setPwMsg]     = useState("");
   const [savingPw, setSavingPw] = useState(false);
   const [resetMsg, setResetMsg] = useState("");
+  const [payments, setPayments] = useState<{id:string;plan:string;amount:number;status:string;created_at:string}[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null;
 
@@ -40,7 +41,14 @@ export default function ProfilePage() {
       setAvatar(user.user_metadata?.avatar_url||null);
       sb.from("simulation_history").select("id,label,created_at,result,form")
         .eq("user_id",user.id).order("created_at",{ascending:false}).limit(24)
-        .then(({data}:{data:HistoryRow[]|null})=>{setHistory(data??[]);setLoading(false);});
+        .then(({data}:{data:HistoryRow[]|null})=>{
+          setHistory(data??[]);
+          sb!.from("payments").select("id,plan,amount,status,created_at")
+            .eq("user_id",user.id).order("created_at",{ascending:false}).limit(10)
+            .then(({data:pd}:{data:{id:string;plan:string;amount:number;status:string;created_at:string}[]|null})=>{
+              setPayments(pd??[]);setLoading(false);
+            });
+        });
     });
   },[sb]);
 
@@ -177,6 +185,7 @@ export default function ProfilePage() {
             {([
               {k:"profile" as Tab, l:"⚙️ 프로필 설정"},
               {k:"history" as Tab, l:"📋 시뮬레이션 기록"},
+              {k:"subscription" as Tab, l:"💳 구독 관리"},
               {k:"account" as Tab, l:"🛡️ 계정 관리"},
             ]).map(t=>(
               <button key={t.k} onClick={()=>setTab(t.k)}
@@ -310,6 +319,79 @@ export default function ProfilePage() {
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {/* ── 구독 관리 탭 ── */}
+          {tab==="subscription" && (
+            <div className="space-y-4">
+              {/* 현재 플랜 */}
+              <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-4">현재 플랜</h3>
+                {payments.length === 0 ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-bold text-slate-900">무료 플랜</p>
+                      <p className="text-xs text-slate-400 mt-1">기본 기능을 무료로 이용 중이에요</p>
+                    </div>
+                    <Link href="/pricing"
+                      className="rounded-xl bg-blue-600 text-white text-sm font-semibold px-4 py-2 hover:bg-blue-700 transition">
+                      업그레이드 →
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
+                        ✨ PRO
+                      </span>
+                      <p className="text-base font-bold text-slate-900">{payments[0].plan} 플랜</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {new Date(payments[0].created_at).toLocaleDateString("ko-KR")} 결제
+                      </p>
+                    </div>
+                    <p className="text-lg font-bold text-blue-600">
+                      {payments[0].amount.toLocaleString("ko-KR")}원
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* 결제 이력 */}
+              <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-4">결제 이력</h3>
+                {payments.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-3xl mb-2">💳</p>
+                    <p className="text-slate-400 text-sm">결제 이력이 없어요</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {payments.map(p => (
+                      <div key={p.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{p.plan} 플랜</p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {new Date(p.created_at).toLocaleDateString("ko-KR", {year:"numeric",month:"long",day:"numeric"})}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-slate-900">{p.amount.toLocaleString("ko-KR")}원</p>
+                          <span className={`text-xs font-semibold ${p.status==="done"?"text-emerald-600":"text-red-500"}`}>
+                            {p.status==="done"?"결제완료":"실패"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 플랜 비교 링크 */}
+              <Link href="/pricing"
+                className="block w-full rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-4 text-center text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
+                요금제 비교하기 →
+              </Link>
             </div>
           )}
 
