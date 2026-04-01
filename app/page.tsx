@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
@@ -35,18 +34,27 @@ export default function LandingPage() {
   const emailRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
+  const [dashData, setDashData] = useState<{
+    name: string;
+    thisMonth: { total_sales: number; net_profit: number; month: string } | null;
+    simCount: number;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }: { data: { user: unknown } }) => {
-      if (data.user) {
-        router.replace("/dashboard");
-      } else {
-        setIsLoggedIn(false);
-      }
+    supabase.auth.getUser().then(async ({ data }: { data: { user: { id: string; email?: string; user_metadata?: Record<string, string> } | null } }) => {
+      if (!data.user) return;
+      setIsLoggedIn(true);
+      const user = data.user;
+      const name = user.user_metadata?.nickname || user.user_metadata?.full_name || user.email?.split("@")[0] || "사장님";
+      const thisMonth = new Date().toISOString().slice(0, 7);
+      const [{ data: snap }, { count }] = await Promise.all([
+        supabase.from("monthly_snapshots").select("total_sales,net_profit,month").eq("user_id", user.id).eq("month", thisMonth).single(),
+        supabase.from("simulation_history").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      ]);
+      setDashData({ name, thisMonth: snap ?? null, simCount: count ?? 0 });
     });
-  }, [router]);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -219,6 +227,44 @@ export default function LandingPage() {
       `}</style>
 
       <NavBar />
+
+      {/* 로그인 시 대시보드 위젯 */}
+      {isLoggedIn && dashData && (
+        <section style={{ background:"#F8FAFF", borderBottom:"1px solid #E5E8EB", padding:"20px 24px" }}>
+          <div style={{ maxWidth:1100, margin:"0 auto" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+              {/* 왼쪽: 인사 + 이번달 매출 */}
+              <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
+                <div>
+                  <p style={{ fontSize:13, color:"#6B7684", margin:"0 0 2px" }}>안녕하세요, {dashData.name}님 👋</p>
+                  <p style={{ fontSize:15, fontWeight:700, color:"#191F28", margin:0 }}>
+                    {dashData.thisMonth
+                      ? <>이번 달 매출 <span style={{ color:"#3182F6" }}>{Math.round(dashData.thisMonth.total_sales).toLocaleString()}원</span> · 순이익 <span style={{ color: dashData.thisMonth.net_profit >= 0 ? "#00B386" : "#EF4444" }}>{dashData.thisMonth.net_profit >= 0 ? "+" : ""}{Math.round(dashData.thisMonth.net_profit).toLocaleString()}원</span></>
+                      : <span style={{ color:"#9EA6B3" }}>이번 달 매출을 등록해보세요</span>
+                    }
+                  </p>
+                </div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {[
+                    { icon:"📊", label:"대시보드", href:"/dashboard" },
+                    { icon:"🧮", label:"원가 계산", href:"/tools/menu-cost" },
+                    { icon:"📱", label:"SNS 콘텐츠", href:"/tools/sns-content" },
+                    { icon:"🎮", label:"게임", href:"/game" },
+                  ].map(t => (
+                    <Link key={t.href} href={t.href} style={{ display:"flex", alignItems:"center", gap:4, padding:"6px 12px", borderRadius:20, background:"#fff", border:"1px solid #E5E8EB", fontSize:13, fontWeight:600, color:"#333D4B", textDecoration:"none", whiteSpace:"nowrap" }}>
+                      {t.icon} {t.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              {/* 오른쪽: 시뮬레이터 바로가기 */}
+              <Link href="/simulator" style={{ padding:"8px 18px", borderRadius:10, background:"#3182F6", color:"#fff", fontSize:13, fontWeight:700, textDecoration:"none", whiteSpace:"nowrap" }}>
+                시뮬레이터 →
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* HERO */}
       <section className="hero" id="home">
