@@ -638,8 +638,8 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
               <span style={{fontSize:16,fontWeight:700,color:B}}>{spend.toLocaleString()}원</span>
             </div>
             <input type="range" min={3000} max={150000} step={500} value={spend} onChange={e=>setSpend(Number(e.target.value))} style={{width:"100%",accentColor:B}} />
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:G400,marginTop:3}}>
-              <span>3,000원</span><span style={{color:B,fontWeight:600}}>{spend.toLocaleString()}원</span><span>150,000원</span>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:G400,marginTop:4}}>
+              <span>3,000원</span><span>150,000원</span>
             </div>
           </div>
           <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:16,padding:16}}>
@@ -648,8 +648,8 @@ function Setup({onStart}:{onStart:(s:S)=>void}) {
               <span style={{fontSize:16,fontWeight:700,color:cogs>40?RD:GN}}>{cogs}%</span>
             </div>
             <input type="range" min={10} max={65} step={1} value={cogs} onChange={e=>setCogs(Number(e.target.value))} style={{width:"100%",accentColor:B}} />
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:G400,marginTop:3}}>
-              <span>10%</span><span style={{color:cogs>40?RD:GN,fontWeight:600}}>{cogs}%</span><span>65%</span>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:G400,marginTop:4}}>
+              <span>10%</span><span>65%</span>
             </div>
           </div>
           <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:16,padding:16}}>
