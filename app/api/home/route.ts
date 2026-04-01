@@ -4,22 +4,25 @@ export const revalidate = 300; // 5분 캐시
 
 async function getStocks() {
   try {
-    // stooq.com - 클라우드 서버에서도 잘 되는 무료 CSV API
+    // stooq.com CSV API
     const [r1, r2, r3] = await Promise.all([
-      fetch("https://stooq.com/q/l/?s=%5Ekos&f=sd2ohlcv&e=csv"),   // KOSPI
-      fetch("https://stooq.com/q/l/?s=%5Ekosdaq&f=sd2ohlcv&e=csv"), // KOSDAQ
-      fetch("https://stooq.com/q/l/?s=usdkrw&f=sd2ohlcv&e=csv"),    // USD/KRW
+      fetch("https://stooq.com/q/l/?s=%5Ekospi&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
+      fetch("https://stooq.com/q/l/?s=%5Ekosdaq&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
+      fetch("https://stooq.com/q/l/?s=usdkrw&f=sd2ohlcv&e=csv", {headers:{"User-Agent":"Mozilla/5.0"}}),
     ]);
 
     const [t1, t2, t3] = await Promise.all([r1.text(), r2.text(), r3.text()]);
+    console.log("stooq KOSPI:", t1.slice(0,100));
+    console.log("stooq KOSDAQ:", t2.slice(0,100));
+    console.log("stooq USD/KRW:", t3.slice(0,100));
 
     // CSV 파싱: Symbol,Date,Time,Open,High,Low,Close,Volume
     const parseCSV = (csv: string, isForex = false) => {
       const lines = csv.trim().split("\n");
       if (lines.length < 2) return null;
       const vals = lines[1].split(",");
-      const close = parseFloat(vals[4]); // High index
-      const open  = parseFloat(vals[3]); // Open
+      const close = parseFloat(vals[6]); // Close (index 6)
+      const open  = parseFloat(vals[3]); // Open  (index 3)
       if (isNaN(close) || isNaN(open) || close <= 0) return null;
       const diff = close - open;
       const pct  = open > 0 ? (diff / open) * 100 : 0;
