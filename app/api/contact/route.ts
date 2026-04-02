@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         from: "VELA 문의 <onboarding@resend.dev>",
-        to: ["mnhyuk@velaanalytics.com"],               // ← 본인 이메일
+        to: ["mnhyuk0213@gmail.com"],
         reply_to: email,
         subject: `[VELA 문의] ${name}님의 문의`,
         html: `
