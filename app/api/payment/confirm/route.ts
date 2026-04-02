@@ -55,33 +55,32 @@ export async function POST(req: NextRequest) {
     /* ── 3. payments 테이블에 결제 내역 저장 (admin: RLS 우회) ── */
     const plan = parsePlan(orderId);
 
+    // 테이블에 확실히 존재하는 컬럼만 사용
     const { error: insertError } = await supabaseAdmin.from("payments").insert({
       user_id: user.id,
       plan,
       amount: Number(amount),
       status: "done",
-      payment_key: paymentKey,
-      order_id: orderId,
     });
 
     if (insertError) {
-      console.error("Payment insert error:", insertError);
+      console.error("Payment insert error:", JSON.stringify(insertError));
+      // insert 실패 시 success: false로 반환하여 클라이언트에서 인지 가능하게
       return NextResponse.json({
-        success: true,
-        payment: tossData,
-        warning: "결제는 완료되었으나 내역 저장에 실패했습니다. 고객센터에 문의해주세요.",
-      });
+        success: false,
+        error: "결제는 완료되었으나 내역 저장에 실패했습니다. 고객센터에 문의해주세요.",
+        detail: insertError.message,
+      }, { status: 500 });
     }
 
     /* ── 4. profiles 테이블의 plan 필드 업데이트 (admin: RLS 우회) ── */
-    const { error: updateError } = await supabaseAdmin
+    await supabaseAdmin
       .from("profiles")
       .update({ plan })
-      .eq("id", user.id);
-
-    if (updateError) {
-      console.error("Profile plan update error:", updateError);
-    }
+      .eq("id", user.id)
+      .then(({ error }) => {
+        if (error) console.error("Profile plan update error:", JSON.stringify(error));
+      });
 
     return NextResponse.json({ success: true, payment: tossData });
   } catch (e) {
