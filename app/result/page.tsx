@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import PlanGate from "@/components/PlanGate";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import {
@@ -893,7 +894,7 @@ function ResultContent() {
           </div>
         </section>
 
-        {/* AI 브리핑 */}
+        {/* AI 브리핑 — 무료: 월3회, 유료: 무제한 (PlanGate로 차단하지 않고 접근 허용) */}
         <AIBriefingSection form={form} result={result} />
 
         {/* 비용 상세 + 추천 전략 */}
@@ -939,8 +940,10 @@ function ResultContent() {
           </div>
         </section>
 
-        {/* AI 추천 전략 */}
-        <AIStrategySection form={form} result={result} strategies={strategies} />
+        {/* AI 추천 전략 — 유료 전용 */}
+        <PlanGate>
+          <AIStrategySection form={form} result={result} strategies={strategies} />
+        </PlanGate>
 
         {/* 초기비용 & 부채 현황 */}
         {result.totalInitialCost > 0 && (
