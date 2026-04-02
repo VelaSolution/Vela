@@ -82,7 +82,7 @@ const TOOLS = [
     badge: "AI",
     paid: true,
   },
-] as const;
+];
 
 export default function ToolsPage() {
   const simData = useSimulatorData();
@@ -159,18 +159,12 @@ export default function ToolsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {TOOLS.map((tool) => {
-              const locked = "paid" in tool && tool.paid && plan === "free";
-              const Wrapper = locked ? "div" : Link;
-              return (
-                <Wrapper
-                  key={tool.href}
-                  {...(locked ? {} : { href: tool.href })}
-                  className={`group rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6 flex gap-4 items-start transition-all duration-200 relative ${
-                    locked
-                      ? "opacity-75 cursor-not-allowed"
-                      : "hover:shadow-md hover:-translate-y-0.5"
-                  }`}
-                >
+              const locked = !!(tool as { paid?: boolean }).paid && plan === "free";
+              const cardClass = `group rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6 flex gap-4 items-start transition-all duration-200 relative ${
+                locked ? "opacity-75 cursor-not-allowed" : "hover:shadow-md hover:-translate-y-0.5"
+              }`;
+              const inner = (
+                <>
                   <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
                     style={{ background: tool.bg }}
@@ -211,7 +205,12 @@ export default function ToolsPage() {
                       <path d="M5 3l6 5-6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
-                </Wrapper>
+                </>
+              );
+              return locked ? (
+                <div key={tool.href} className={cardClass}>{inner}</div>
+              ) : (
+                <Link key={tool.href} href={tool.href} className={cardClass}>{inner}</Link>
               );
             })}
           </div>

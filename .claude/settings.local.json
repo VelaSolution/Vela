@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --no-install next build)",
+      "Read(//c/Users/user/Vela/**)",
+      "Read(//c/Users/user/Vela/node_modules/next/**)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(ls node_modules/.bin/next*)",
+      "Bash(node_modules/.bin/next build:*)",
+      "Bash(npm ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(vercel:*)",
+      "Read(//c/Users/user/AppData/Local/Temp/claude/C--Users-user-Vela-Vela/739de1e4-7220-46e6-812b-ef2786023602/tasks/**)",
+      "Bash(xargs grep:*)",
+      "Bash(curl:*)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep:*)"
+    ]
+  }
+}
