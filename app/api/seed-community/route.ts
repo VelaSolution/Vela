@@ -1,18 +1,27 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_EMAILS = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
+const SEED_SECRET = process.env.TOSS_SECRET_KEY; // 기존 시크릿 재활용
 
-export async function POST() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !ADMIN_EMAILS.includes(user.email ?? "")) {
-    return NextResponse.json({ error: "관리자만 접근 가능" }, { status: 403 });
+export async function POST(req: NextRequest) {
+  const { secret } = await req.json().catch(() => ({ secret: "" }));
+  if (!secret || secret !== SEED_SECRET) {
+    return NextResponse.json({ error: "인증 실패" }, { status: 403 });
   }
 
-  const uid = user.id;
+  // 관리자 유저 ID 조회
+  const { data: profiles } = await supabaseAdmin
+    .from("profiles")
+    .select("id")
+    .eq("email", "mnhyuk@velaanalytics.com")
+    .limit(1);
+  const uid = profiles?.[0]?.id ?? null;
+  if (!uid) {
+    return NextResponse.json({ error: "관리자 프로필 없음" }, { status: 500 });
+  }
+
   const errors: string[] = [];
 
   // ── 1. 수익 피드 (simulation_shares) ──
@@ -26,7 +35,7 @@ export async function POST() {
     { nickname: "브런치카페", industry: "cafe", title: "성수동 브런치카페 현실 매출", total_sales: 15000000, profit: 3750000, net_profit: 2700000, net_margin: 18.0, cogs_ratio: 38, labor_ratio: 28, bep: 11500000, recovery_months: 22, memo: "주말 매출이 평일의 3배예요. 브런치 메뉴는 원가가 높지만 SNS 효과가 큽니다." },
   ];
 
-  const { error: e1 } = await supabase.from("simulation_shares").insert(
+  const { error: e1 } = await supabaseAdmin.from("simulation_shares").insert(
     shares.map(s => ({ ...s, user_id: uid, likes: Math.floor(Math.random() * 20) + 3, views: Math.floor(Math.random() * 150) + 30 }))
   );
   if (e1) errors.push(`shares: ${e1.message}`);
@@ -43,7 +52,7 @@ export async function POST() {
     { nickname: "외식업뉴비", category: "question", industry: "restaurant", title: "첫 달 매출이 너무 낮은데 정상인가요?", content: "음식점 오픈한 지 한 달 됐는데 일 매출 30만원도 안 되는 날이 많아요. 맛은 자신 있는데 손님이 안 오니 답답합니다. 다들 초반에 이랬나요? 언제쯤 안정되나요?" },
   ];
 
-  const { error: e2 } = await supabase.from("posts").insert(
+  const { error: e2 } = await supabaseAdmin.from("posts").insert(
     posts.map(p => ({ ...p, user_id: uid, likes: Math.floor(Math.random() * 15) + 1, views: Math.floor(Math.random() * 100) + 20, comment_count: 0 }))
   );
   if (e2) errors.push(`posts: ${e2.message}`);
@@ -57,7 +66,7 @@ export async function POST() {
     { industry: "cafe", title: "카페 폐업을 고민 중입니다", content: "1년 반 운영했는데 적자가 계속되고 있어요. 대출 이자까지 합하면 매달 200만원씩 마이너스입니다. 더 버텨야 할까요 아니면 손절해야 할까요? 정말 힘드네요." },
   ];
 
-  const { error: e3 } = await supabase.from("anonymous_posts").insert(
+  const { error: e3 } = await supabaseAdmin.from("anonymous_posts").insert(
     anons.map(a => ({ ...a, user_id: uid, likes: Math.floor(Math.random() * 10) + 2, comment_count: 0 }))
   );
   if (e3) errors.push(`anon: ${e3.message}`);
