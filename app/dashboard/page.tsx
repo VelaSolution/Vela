@@ -127,7 +127,7 @@ export default function DashboardHome() {
               <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-base font-bold text-slate-900">📈 월별 매출 현황</h2>
-                  <Link href="/dashboard" className="text-xs text-blue-500 font-semibold hover:text-blue-700">상세보기 →</Link>
+                  <Link href="/monthly-input" className="text-xs text-blue-500 font-semibold hover:text-blue-700">상세보기 →</Link>
                 </div>
                 {snapshots.length === 0 ? (
                   <div className="text-center py-10">
