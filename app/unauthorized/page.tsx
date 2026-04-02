@@ -17,7 +17,7 @@ export default function UnauthorizedPage() {
           <Link href="/" className="rounded-2xl bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-700 transition">
             홈으로
           </Link>
-          <a href="mailto:hello@vela.kr" className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
+          <a href="mailto:mnhyuk@velaanalytics.com" className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
             문의하기
           </a>
         </div>

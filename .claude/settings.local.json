@@ -17,7 +17,14 @@
       "Bash(xargs grep:*)",
       "Bash(curl:*)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(git stash:*)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(tee /tmp/vbuild.txt)",
+      "Bash(gh api:*)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:velaanalytics.com)",
+      "Bash(xargs wc:*)"
     ]
   }
 }

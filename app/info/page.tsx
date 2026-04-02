@@ -301,9 +301,9 @@ export default function InfoPage() {
           <FadeIn><span className="section-tag">요금제</span><h2 className="section-title">합리적인 가격으로</h2><p className="section-desc">매장 규모에 맞는 플랜을 선택하세요.</p></FadeIn>
           <div className="pricing-grid">
             {[
-              { plan: "무료", price: "0", unit: "원/월", desc: "혼자 운영하는 소규모 매장", features: ["수익 시뮬레이터", "월 3회 AI 브리핑", "기본 차트 및 분석", "링크 공유"], btn: "무료로 시작", cls: "pricing-btn-gray", href: "/signup", popular: false },
-              { plan: "스탠다드", price: "9,900", unit: "원/월", desc: "성장하는 매장을 위한 핵심 기능", features: ["무료 플랜 모든 기능", "무제한 AI 브리핑", "AI 전략 추천", "POS 파일 분석", "히스토리 12개월"], btn: "스탠다드 시작", cls: "pricing-btn-blue", href: "/pricing", popular: true },
-              { plan: "프로", price: "29,900", unit: "원/월", desc: "다점포·프랜차이즈 운영자", features: ["스탠다드 모든 기능", "매장 무제한 관리", "팀 멤버 초대", "우선 고객 지원", "맞춤 컨설팅 월 1회"], btn: "프로 시작", cls: "pricing-btn-gray", href: "/pricing", popular: false },
+              { plan: "무료", price: "0", unit: "원/월", desc: "혼자 운영하는 소규모 매장에 적합", features: ["수익 시뮬레이터 (무제한)", "월 3회 AI 브리핑", "기본 차트 및 분석", "링크 공유"], btn: "무료로 시작", cls: "pricing-btn-gray", href: "/signup", popular: false },
+              { plan: "스탠다드", price: "9,900", unit: "원/월", desc: "성장하는 매장을 위한 핵심 기능 모음", features: ["무제한 AI 브리핑", "AI 전략 추천 (무제한)", "POS 파일 분석", "히스토리 12개월"], btn: "스탠다드 시작", cls: "pricing-btn-blue", href: "/pricing", popular: true },
+              { plan: "프로", price: "29,900", unit: "원/월", desc: "다점포·프랜차이즈 운영자를 위한 플랜", features: ["스탠다드 모든 기능", "히스토리 무제한", "팀 멤버 초대 (무제한)"], btn: "프로 시작", cls: "pricing-btn-gray", href: "/pricing", popular: false },
             ].map((p) => (
               <FadeIn key={p.plan}>
                 <div className={`pricing-card${p.popular ? " popular" : ""}`}>
