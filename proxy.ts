@@ -7,6 +7,12 @@ const PROTECTED_PATHS = [
   "/dashboard",
   "/monthly-input",
   "/my-store",
+  "/simulator",
+  "/result",
+  "/tools",
+  "/game",
+  "/community",
+  "/payment",
 ];
 
 // 관리자만 접근 가능
