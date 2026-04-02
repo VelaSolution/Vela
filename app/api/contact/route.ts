@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const err = await res.json();
       console.error("Resend error:", err);
-      return NextResponse.json({ error: "이메일 발송 실패" }, { status: 500 });
+      return NextResponse.json({ error: "이메일 발송 실패", detail: err }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
