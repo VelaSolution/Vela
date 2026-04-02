@@ -539,9 +539,9 @@ function ResultContent() {
 
     // 무료 플랜이면 저장 개수 확인
     if (plan === "free") {
-      supabase.from("simulation_history").select("id", { count: "exact" }).eq("user_id", userId)
-        .then(({ count }) => {
-          if ((count ?? 0) >= FREE_HISTORY_LIMIT) return; // 한도 초과 시 저장 안 함
+      supabase.from("simulation_history").select("id").eq("user_id", userId)
+        .then(({ data: rows }) => {
+          if ((rows?.length ?? 0) >= FREE_HISTORY_LIMIT) return;
           const now = new Date();
           const label = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} (자동저장)`;
           supabase.from("simulation_history").insert({
