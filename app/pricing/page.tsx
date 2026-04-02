@@ -200,7 +200,7 @@ export default function PricingPage() {
           <div className="pricing-header">
             <span className="pricing-tag">요금제</span>
             <h1 className="pricing-title">합리적인 가격으로<br />시작하세요</h1>
-            <p className="pricing-subtitle">매장 규모에 맞는 플랜을 선택하세요. 언제든 변경 가능합니다.</p>
+            <p className="pricing-subtitle">매장 규모에 맞는 플랜을 선택하세요.</p>
           </div>
 
           <div className="plans-grid">
