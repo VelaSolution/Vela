@@ -674,9 +674,6 @@ export default function MenuCostPage() {
                     boxShadow: active ? `0 0 0 1px ${info.color}` : "none",
                   }}
                 >
-                  {key === "gogi" && (
-                    <span className="absolute -top-2 -right-1 text-xs bg-red-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none">이중</span>
-                  )}
                   <span className="text-xl">{info.emoji}</span>
                   <span
                     className="text-xs font-bold"
