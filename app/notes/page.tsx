@@ -57,7 +57,7 @@ export default function NotesPage() {
   const [data, setData] = useState<NotesData>({ journal: [], todos: [], memo: "" });
   const [tab, setTab] = useState<TabKey>("journal");
   const [toast, setToast] = useState(false);
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const loaded = useRef(false);
 
   /* load once */
