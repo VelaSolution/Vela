@@ -12,6 +12,7 @@ type Tone = "warm" | "trendy" | "professional" | "fun";
 type Platform = "instagram" | "naver-blog" | "kakao";
 type DataSource = "none" | "simulator" | "monthly";
 type MonthSnap = { month: string; total_sales: number; net_profit: number; industry?: string };
+type SimHistory = { id: string; label: string; form: Record<string, number | string>; result: Record<string, number> };
 
 const TONES: { id: Tone; label: string; desc: string }[] = [
   { id: "warm", label: "따뜻한", desc: "친근하고 감성적인 톤" },
@@ -52,8 +53,10 @@ export default function SnsContentPage() {
   const [dataSource, setDataSource] = useState<DataSource>(simData ? "simulator" : "none");
   const [monthlySnaps, setMonthlySnaps] = useState<MonthSnap[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [simList, setSimList] = useState<SimHistory[]>([]);
+  const [selectedSimId, setSelectedSimId] = useState<string>("");
 
-  // 월별 매출 데이터 불러오기
+  // 저장된 데이터 불러오기
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
     sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
@@ -61,10 +64,12 @@ export default function SnsContentPage() {
       sb.from("monthly_snapshots").select("month,total_sales,net_profit,industry")
         .eq("user_id", user.id).order("month", { ascending: false }).limit(12)
         .then(({ data }: { data: MonthSnap[] | null }) => {
-          if (data && data.length > 0) {
-            setMonthlySnaps(data);
-            setSelectedMonth(data[0].month);
-          }
+          if (data && data.length > 0) { setMonthlySnaps(data); setSelectedMonth(data[0].month); }
+        });
+      sb.from("simulation_history").select("id,label,form,result")
+        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
+        .then(({ data }: { data: SimHistory[] | null }) => {
+          if (data && data.length > 0) { setSimList(data); setSelectedSimId(data[0].id); }
         });
     });
   }, []);
@@ -86,9 +91,25 @@ export default function SnsContentPage() {
 
   // 데이터 소스에 따른 컨텍스트
   const selectedSnap = monthlySnaps.find((s) => s.month === selectedMonth);
+  const selectedSim = simList.find((s) => s.id === selectedSimId);
   let dataContext = "";
-  if (dataSource === "simulator" && simData) {
-    dataContext = `\n[매장 정보 (시뮬레이터 데이터)]\n업종: ${INDUSTRY_LABEL[simData.industry] ?? simData.industry}\n월 매출: ${fmt(simData.totalSales)}원 / 객단가: ${fmt(simData.avgSpend)}원\n순이익률: ${simData.netMargin}%\n이 매장의 가격대와 타겟 고객층에 맞는 콘텐츠를 작성하세요. 객단가가 ${simData.avgSpend > 15000 ? "높은 편이므로 프리미엄·품질 중심 톤" : simData.avgSpend > 8000 ? "보통이므로 가성비·일상 톤" : "낮은 편이므로 접근성·가벼운 톤"}으로 작성하세요.\n`;
+  if (dataSource === "simulator") {
+    // 저장된 시뮬레이션 선택 시 우선, 없으면 최신 localStorage
+    const src = selectedSim ? {
+      industry: String(selectedSim.form.industry ?? ""),
+      totalSales: Number(selectedSim.result.totalSales ?? 0),
+      avgSpend: Number(selectedSim.form.avgSpend ?? 0),
+      netMargin: Number(selectedSim.result.netMargin ?? 0),
+    } : simData ? {
+      industry: simData.industry,
+      totalSales: simData.totalSales,
+      avgSpend: simData.avgSpend,
+      netMargin: simData.netMargin,
+    } : null;
+
+    if (src) {
+      dataContext = `\n[매장 정보 (시뮬레이터 데이터)]\n업종: ${INDUSTRY_LABEL[src.industry] ?? src.industry}\n월 매출: ${fmt(src.totalSales)}원 / 객단가: ${fmt(src.avgSpend)}원\n순이익률: ${src.netMargin}%\n이 매장의 가격대와 타겟 고객층에 맞는 콘텐츠를 작성하세요. 객단가가 ${src.avgSpend > 15000 ? "높은 편이므로 프리미엄·품질 중심 톤" : src.avgSpend > 8000 ? "보통이므로 가성비·일상 톤" : "낮은 편이므로 접근성·가벼운 톤"}으로 작성하세요.\n`;
+    }
   } else if (dataSource === "monthly" && selectedSnap) {
     const margin = selectedSnap.total_sales > 0 ? ((selectedSnap.net_profit / selectedSnap.total_sales) * 100).toFixed(1) : "0";
     dataContext = `\n[매장 정보 (${selectedSnap.month} 실제 매출)]\n업종: ${INDUSTRY_LABEL[selectedSnap.industry ?? ""] ?? "외식업"}\n월 매출: ${fmt(selectedSnap.total_sales)}원\n순이익: ${fmt(selectedSnap.net_profit)}원 (순이익률 ${margin}%)\n실제 운영 데이터 기반이므로 현실적인 톤으로 콘텐츠를 작성하세요.\n`;
@@ -181,14 +202,15 @@ ${dataContext}
                 <div className="text-xs font-semibold">직접 입력</div>
               </button>
               <button
-                onClick={() => simData ? setDataSource("simulator") : undefined}
+                onClick={() => (simData || simList.length > 0) ? setDataSource("simulator") : undefined}
                 className={`rounded-2xl py-3 text-center transition border-2 ${
-                  dataSource === "simulator" ? "border-blue-500 bg-blue-50 text-blue-700" : simData ? "border-slate-200 bg-white text-slate-500 hover:bg-slate-50" : "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
+                  dataSource === "simulator" ? "border-blue-500 bg-blue-50 text-blue-700" : (simData || simList.length > 0) ? "border-slate-200 bg-white text-slate-500 hover:bg-slate-50" : "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
                 }`}
               >
                 <div className="text-lg mb-1">🧮</div>
                 <div className="text-xs font-semibold">시뮬레이터</div>
-                {!simData && <div className="text-[10px] text-slate-400 mt-0.5">데이터 없음</div>}
+                {!simData && simList.length === 0 && <div className="text-[10px] text-slate-400 mt-0.5">데이터 없음</div>}
+                {simList.length > 0 && <div className="text-[10px] text-blue-500 mt-0.5">{simList.length}개 저장됨</div>}
               </button>
               <button
                 onClick={() => monthlySnaps.length > 0 ? setDataSource("monthly") : undefined}
@@ -203,14 +225,43 @@ ${dataContext}
             </div>
 
             {/* 선택된 소스의 상세 정보 */}
-            {dataSource === "simulator" && simData && (
-              <div className="rounded-2xl bg-blue-50 px-4 py-3">
-                <div className="flex gap-3 flex-wrap text-xs">
-                  <span className="text-blue-600 font-semibold">{INDUSTRY_LABEL[simData.industry] ?? simData.industry}</span>
-                  <span className="text-blue-800">월매출 {fmt(simData.totalSales)}원</span>
-                  <span className="text-blue-800">객단가 {fmt(simData.avgSpend)}원</span>
-                  <span className="text-blue-800">순이익률 {simData.netMargin}%</span>
-                </div>
+            {dataSource === "simulator" && (
+              <div className="space-y-2">
+                {simList.length > 0 && (
+                  <select
+                    value={selectedSimId}
+                    onChange={(e) => setSelectedSimId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {simList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} — 매출 {fmt(Number(s.result.totalSales ?? 0))}원
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {(() => {
+                  const src = selectedSim ? {
+                    industry: String(selectedSim.form.industry ?? ""),
+                    totalSales: Number(selectedSim.result.totalSales ?? 0),
+                    avgSpend: Number(selectedSim.form.avgSpend ?? 0),
+                    netMargin: Number(selectedSim.result.netMargin ?? 0),
+                  } : simData ? { industry: simData.industry, totalSales: simData.totalSales, avgSpend: simData.avgSpend, netMargin: simData.netMargin } : null;
+                  return src ? (
+                    <div className="rounded-2xl bg-blue-50 px-4 py-3">
+                      <div className="flex gap-3 flex-wrap text-xs">
+                        <span className="text-blue-600 font-semibold">{INDUSTRY_LABEL[src.industry] ?? src.industry}</span>
+                        <span className="text-blue-800">월매출 {fmt(src.totalSales)}원</span>
+                        <span className="text-blue-800">객단가 {fmt(src.avgSpend)}원</span>
+                        <span className="text-blue-800">순이익률 {src.netMargin}%</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-3">
+                      <p className="text-xs text-slate-500">시뮬레이터를 먼저 실행해주세요.</p>
+                    </div>
+                  );
+                })()}
               </div>
             )}
             {dataSource === "monthly" && monthlySnaps.length > 0 && (
