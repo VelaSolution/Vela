@@ -340,26 +340,28 @@ export default function ProfilePage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
-                        ✨ PRO
-                      </span>
-                      <p className="text-base font-bold text-slate-900">{payments[0].plan} 플랜</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {new Date(payments[0].created_at).toLocaleDateString("ko-KR")} 결제
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
+                          ✨ PRO
+                        </span>
+                        <p className="text-base font-bold text-slate-900">{payments[0].plan} 플랜</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {new Date(payments[0].created_at).toLocaleDateString("ko-KR")} 결제
+                        </p>
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">
+                        {payments[0].amount.toLocaleString("ko-KR")}원
                       </p>
                     </div>
-                    <p className="text-lg font-bold text-blue-600">
-                      {payments[0].amount.toLocaleString("ko-KR")}원
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <p className="text-xs text-slate-400">구독 관련 문의는 이메일로 연락해주세요.</p>
-                    <a href="mailto:mnhyuk@velaanalytics.com?subject=[VELA] 구독 취소 요청" className="text-xs font-semibold text-red-400 hover:text-red-500 transition">
-                      구독 취소 요청 →
-                    </a>
-                  </div>
+                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <p className="text-xs text-slate-400">구독 관련 문의는 이메일로 연락해주세요.</p>
+                      <a href="mailto:mnhyuk@velaanalytics.com?subject=[VELA] 구독 취소 요청" className="text-xs font-semibold text-red-400 hover:text-red-500 transition">
+                        구독 취소 요청 →
+                      </a>
+                    </div>
+                  </>
                 )}
               </div>
 
