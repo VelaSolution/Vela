@@ -6,7 +6,8 @@ import NavBar from "@/components/NavBar";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
-const CATEGORIES = [
+type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean };
+const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] = [
   {
     key: "calc", label: "💰 경영 분석", desc: "매출·원가·인건비·세금 계산",
     tools: [
