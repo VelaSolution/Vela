@@ -2,10 +2,14 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-const VALID_INDUSTRIES = ["cafe", "restaurant", "bar", "finedining"];
+const VALID_INDUSTRIES = ["cafe", "restaurant", "bar", "finedining", "gogi"];
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+  const body = await req.json().catch(() => null);
+  if (!body?.form || !body?.result) {
+    return new Response(JSON.stringify({ error: "입력값 누락" }), { status: 400, headers: { "Content-Type": "application/json" } });
+  }
   const { form, result, existingStrategies } = body;
 
   // 서버 측 입력값 검증
@@ -20,7 +24,7 @@ export async function POST(req: NextRequest) {
   }
 
   const industryLabels: Record<string, string> = {
-    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝",
+    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
   const label = industryLabels[form.industry] ?? "음식점";
 
@@ -113,5 +117,9 @@ ${existingList || "(없음)"}
     });
   } catch {
     return new Response(JSON.stringify({ error: "응답 파싱 실패" }), { status: 500 });
+  }
+  } catch (e) {
+    console.error("AI strategy error:", e);
+    return new Response(JSON.stringify({ error: "서버 오류" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }

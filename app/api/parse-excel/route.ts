@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
-const VALID_INDUSTRIES = ["cafe", "restaurant", "bar", "finedining"];
+const VALID_INDUSTRIES = ["cafe", "restaurant", "bar", "finedining", "gogi"];
 const MAX_CSV_ROWS = 300; // 행 기준 절삭 (문자 단위 절삭 대신)
 const MAX_CSV_CHARS = 8000;
 
@@ -20,7 +20,9 @@ function truncateCsvSafely(csvText: string): { text: string; truncated: boolean 
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+  const body = await req.json().catch(() => null);
+  if (!body) return NextResponse.json({ error: "입력값 누락" }, { status: 400 });
   const { csvText, fileName, industry } = body;
 
   if (!csvText || typeof csvText !== "string") {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
   const safeIndustry = VALID_INDUSTRIES.includes(industry) ? industry : "restaurant";
 
   const industryLabels: Record<string, string> = {
-    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝",
+    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
 
   const { text: safeCsvText, truncated } = truncateCsvSafely(csvText);
@@ -120,5 +122,9 @@ ${safeCsvText}
     });
   } catch {
     return new Response(JSON.stringify({ error: "응답 파싱 실패" }), { status: 500 });
+  }
+  } catch (e) {
+    console.error("Parse excel error:", e);
+    return new Response(JSON.stringify({ error: "서버 오류" }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }

@@ -1,4 +1,4 @@
-export type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining";
+export type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining" | "gogi";
 
 // ─── 폼 상태 ────────────────────────────────────────────────────
 
@@ -102,6 +102,7 @@ export const INDUSTRY_BENCHMARK: Record<IndustryKey, IndustryBenchmark> = {
   restaurant: { cogsRate: 33, laborRate: 25, rentRate: 12, netMargin: 9  },
   bar:        { cogsRate: 22, laborRate: 22, rentRate: 11, netMargin: 16 },
   finedining: { cogsRate: 35, laborRate: 30, rentRate: 13, netMargin: 13 },
+  gogi:       { cogsRate: 40, laborRate: 22, rentRate: 11, netMargin: 8  },
 };
 
 // ─── 업종별 설정 ────────────────────────────────────────────────
@@ -242,9 +243,37 @@ export const INDUSTRY_CONFIG: Record<
       recoveryMonths: 48, targetMonthlyProfit: 8000000,
     },
   },
+  gogi: {
+    label: "고깃집", maxTurnover: 2.5,
+    cogsWarnRate: 42, laborWarnRate: 25, netMarginWarn: 7,
+    simPctMin: 0.05, simPctMax: 0.25, simSteps: 5,
+    defaults: {
+      industry: "gogi" as IndustryKey,
+      seats: 40, avgSpend: 45000, turnover: 1.4,
+      weekdayDays: 22, weekendDays: 8, weekendMultiplier: 1.5,
+      takeoutRatio: 0, cashPaymentRate: 10,
+      deliveryEnabled: false, deliverySales: 0, deliveryAppRate: 15, deliveryDirectRate: 0,
+      deliveryPreference: "possible" as const,
+      lunchRatio: 30, dinnerRatio: 60, nightRatio: 10,
+      laborType: "direct" as const,
+      labor: 5000000, staffCount: 4, hourlyWage: 12000, workHoursPerDay: 8, workDaysPerMonth: 26,
+      rent: 3000000, utilities: 400000, telecom: 50000,
+      cogsRate: 40, alcoholCogsRate: 20, alcoholSalesRatio: 25, wasteRate: 4,
+      franchiseEnabled: false, franchiseRoyaltyRate: 0,
+      ownerType: "individual" as const,
+      deliveryFeeRate: 15, cardFeeRate: 1.5,
+      marketing: 300000, supplies: 150000, maintenance: 100000, etc: 100000,
+      incomeTaxRate: 3.3, vatEnabled: true, insuranceRate: 9,
+      businessType: "new" as const,
+      deposit: 50000000, premiumKey: 30000000, interior: 40000000, equipment: 30000000, signage: 3000000,
+      franchiseFee: 0, trainingFee: 0, otherSetup: 5000000,
+      loanEnabled: true, loanAmount: 50000000, loanInterestRate: 5, loanTermMonths: 48,
+      recoveryMonths: 30, targetMonthlyProfit: 5000000,
+    },
+  },
 };
 
-export const VALID_INDUSTRIES: IndustryKey[] = ["cafe", "restaurant", "bar", "finedining"];
+export const VALID_INDUSTRIES: IndustryKey[] = ["cafe", "restaurant", "bar", "finedining", "gogi"];
 
 /** 빈 폼 초기화 */
 export function createEmptyForm(industry: IndustryKey = "restaurant"): FullForm {

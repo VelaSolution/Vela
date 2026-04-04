@@ -31,7 +31,9 @@
       "Bash(git reset:*)",
       "Bash(cp C:/Users/user/Vela/Vela/public/VELA_마케팅전략.md C:/Users/user/Desktop/VELA_마케팅전략.md)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(f'{n.get\\(\\\\\"tag\\\\\",\\\\\"없음\\\\\"\\)} | {n[\\\\\"title\\\\\"]} | {n.get\\(\\\\\"insight\\\\\",\\\\\"\\\\\"\\)}'\\) for n in d['news']]\")",
-      "Bash(printf \"mnhyuk@velaanalytics.com,mnhyuk0213@gmail.com\")"
+      "Bash(printf \"mnhyuk@velaanalytics.com,mnhyuk0213@gmail.com\")",
+      "Bash(ls \"C:/Users/user/Vela/Vela/middleware\"*)",
+      "Bash(ls \"C:/Users/user/Vela/Vela/src/middleware\"*)"
     ]
   }
 }

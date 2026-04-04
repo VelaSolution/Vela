@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   const { form, result } = body;
 
   const industryLabels: Record<string, string> = {
-    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝",
+    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
   const label = industryLabels[form.industry] ?? "음식점";
 
