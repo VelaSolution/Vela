@@ -99,9 +99,11 @@ export default function DashboardHome() {
               <p className="text-sm text-slate-400">{new Date().toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric", weekday:"long" })}</p>
               <h1 className="text-2xl font-bold text-slate-900 mt-1">{greeting}, {name}! 👋</h1>
             </div>
-            <Link href="/simulator" className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">
-              시뮬레이터 시작 →
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/stores" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">🏪 매장 관리</Link>
+              <Link href="/team" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">👥 팀</Link>
+              <Link href="/simulator" className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">시뮬레이터 →</Link>
+            </div>
           </div>
 
           {/* 핵심 지표 4개 */}
