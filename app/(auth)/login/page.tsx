@@ -23,7 +23,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSocialLogin(provider: "kakao" | "naver") {
+  async function handleSocialLogin(provider: "kakao") {
     const supabase = createSupabaseBrowserClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.auth.signInWithOAuth({
