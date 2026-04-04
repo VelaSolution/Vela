@@ -107,11 +107,28 @@ function LoginForm() {
             </button>
           </div>
 
-          {error && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+            <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-slate-400">또는 이메일로 로그인</span></div>
+          </div>
 
-          <p className="mt-4 text-center text-xs text-slate-400">
-            카카오 계정으로 간편하게 시작하세요.<br />
-            별도 회원가입이 필요 없습니다.
+          <form onSubmit={handleEmailLogin} className="space-y-3">
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="이메일" required
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호" required
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+            {error && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
+            <button type="submit" disabled={loading}
+              className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50">
+              {loading ? "로그인 중..." : "이메일로 로그인"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-slate-400">
+            아직 계정이 없으신가요?{" "}
+            <Link href="/signup" className="font-semibold text-slate-700 underline underline-offset-2">회원가입</Link>
           </p>
         </div>
       </div>

@@ -141,11 +141,38 @@ function SignUpForm() {
                 카카오로 3초 만에 시작하기
               </button>
 
+              <div className="relative my-5">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+                <div className="relative flex justify-center"><span className="bg-white px-3 text-xs text-slate-400">또는 이메일로 가입</span></div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">이름</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="홍길동"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">이메일</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">비밀번호</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">비밀번호 확인</label>
+                <input type="password" value={passwordConfirm} onChange={e => setPasswordConfirm(e.target.value)} placeholder="다시 입력"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-slate-400 focus:bg-white transition" />
+              </div>
+
               {error && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
 
-              <p className="text-center text-xs text-slate-400">
-                카카오 계정으로 간편하게 가입됩니다.<br />별도 비밀번호 설정이 필요 없습니다.
-              </p>
+              <button onClick={() => { if (validateStep1()) setStep(2); }}
+                className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition">
+                다음 →
+              </button>
             </div>
           )}
 
