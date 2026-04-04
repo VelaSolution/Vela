@@ -43,7 +43,7 @@ function ResetForm() {
     }
 
     // 방법 3: 이미 세션이 있는 경우
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: unknown } }) => {
       if (data.session) setReady(true);
       else setError("세션이 없습니다. 비밀번호 재설정 이메일을 다시 요청해주세요.");
     });
