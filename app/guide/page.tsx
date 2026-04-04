@@ -61,7 +61,7 @@ const SECTIONS = [
 ];
 
 const TEMPLATES = [
-  { icon: "📊", title: "사장님 Notion 템플릿", desc: "매장 운영 일지, 월별 매출 트래커, 주간 체크리스트, 메뉴 관리 템플릿", href: "/VELA_사장님_Notion_템플릿.md" },
+  { icon: "📊", title: "사장님 Notion 템플릿", desc: "매장 운영 일지, 월별 매출 트래커, 주간 체크리스트, 메뉴 관리 템플릿 (Coming Soon)", href: "" },
 ];
 
 export default function GuidePage() {
@@ -86,19 +86,17 @@ export default function GuidePage() {
           <div className="rounded-3xl bg-slate-900 p-6 mb-8">
             <h2 className="text-white font-bold text-base mb-3">📋 무료 템플릿</h2>
             {TEMPLATES.map((t) => (
-              <a
+              <div
                 key={t.title}
-                href={t.href}
-                download
-                className="flex items-center gap-4 bg-white/10 hover:bg-white/20 rounded-2xl p-4 transition"
+                className="flex items-center gap-4 bg-white/10 rounded-2xl p-4 opacity-70"
               >
                 <span className="text-2xl">{t.icon}</span>
                 <div className="flex-1">
                   <p className="text-white font-semibold text-sm">{t.title}</p>
                   <p className="text-slate-400 text-xs mt-0.5">{t.desc}</p>
                 </div>
-                <span className="text-white text-xs font-semibold bg-white/20 px-3 py-1.5 rounded-xl">다운로드</span>
-              </a>
+                <span className="text-amber-400 text-xs font-semibold bg-amber-400/20 px-3 py-1.5 rounded-xl">Coming Soon</span>
+              </div>
             ))}
           </div>
 
