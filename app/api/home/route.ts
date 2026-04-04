@@ -40,9 +40,9 @@ async function getNews() {
         "anthropic-beta": "web-search-2025-03-05",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-6",
-        max_tokens: 1000,
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
         system: `Today is ${today}. Search for 6 latest Korean news articles. Include a mix of: food service industry news (2), small business/self-employed news (2), AND general Korean economic news like interest rates, inflation, consumer spending, employment (2). For each article, add a "tag" field with one of: "외식업", "소상공인", "경제". Also add an "insight" field: a one-sentence practical tip for a restaurant owner based on this news (under 40 chars, in Korean). Respond ONLY with a JSON array: [{"title":"Korean title","summary":"Korean summary under 30 chars","source":"media name","url":"article URL","tag":"category","insight":"사장님 한줄 인사이트"}]. No markdown, no extra text.`,
         messages: [{ role: "user", content: `${today} 외식업 소상공인 경제 금리 물가 고용 최신 뉴스 6개` }],
       }),
@@ -53,9 +53,12 @@ async function getNews() {
   } catch (e) {
     console.error("News error:", e);
     return [
-      { title: "\uCD5C\uC800\uC784\uAE08 \uC778\uC0C1 \uB17C\uC758", summary: "2027\uB144 \uC2EC\uC758 \uC2DC\uC791", source: "\uC5F0\uD569\uB274\uC2A4", url: "https://www.yna.co.kr" },
-      { title: "\uBC30\uB2EC\uC559 \uC218\uC218\uB8CC \uC778\uD558", summary: "\uC18C\uC0C1\uACF5\uC778 \uBD80\uB2F4 \uC644\uD654", source: "\uD55C\uAD6D\uACBD\uC81C", url: "https://www.hankyung.com" },
-      { title: "\uC678\uC2DD\uBB3C\uAC00 \uC0C1\uC2B9\uC138 \uC9C0\uC18D", summary: "\uC2DD\uC7AC\uB8CC\uBE44 \uB3D9\uBC18 \uC0C1\uC2B9", source: "\uBA38\uB2C8\uD22C\uB370\uC774", url: "https://www.mt.co.kr" },
+      { title: "최저임금 인상 논의 본격화", summary: "2027년 심의 시작", source: "연합뉴스", url: "https://www.yna.co.kr", tag: "소상공인", insight: "인건비 비율을 미리 점검하고 스케줄을 최적화하세요" },
+      { title: "배달앱 수수료 단계적 인하 추진", summary: "소상공인 부담 완화 기대", source: "한국경제", url: "https://www.hankyung.com", tag: "소상공인", insight: "수수료 변동을 VELA 시뮬레이터에서 미리 반영해보세요" },
+      { title: "외식 물가 상승세 4개월 연속", summary: "식재료비 동반 상승", source: "머니투데이", url: "https://www.mt.co.kr", tag: "외식업", insight: "제철 식재료로 전환하면 원가를 10% 이상 낮출 수 있어요" },
+      { title: "한국은행 기준금리 동결 결정", summary: "연 3.25% 유지", source: "조선비즈", url: "https://biz.chosun.com", tag: "경제", insight: "금리 동결은 대출 부담 유지를 의미해요. 상환 계획을 점검하세요" },
+      { title: "4월 소비심리지수 개선", summary: "외식 지출 증가 전망", source: "매일경제", url: "https://www.mk.co.kr", tag: "경제", insight: "소비 회복기에 신메뉴를 출시하면 효과가 극대화됩니다" },
+      { title: "프랜차이즈 가맹비 공시 의무화", summary: "정보공개서 강화", source: "서울경제", url: "https://www.sedaily.com", tag: "외식업", insight: "개인 매장이라면 오히려 차별화 기회입니다" },
     ];
   }
 }
