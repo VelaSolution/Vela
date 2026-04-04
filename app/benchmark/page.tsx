@@ -66,12 +66,11 @@ function fmt(n: number) {
 
 export default function BenchmarkPage() {
   const simData = useSimulatorData();
+  const [useSimData, setUseSimData] = useState(false);
 
-  const [industry, setIndustry] = useState<IndustryKey>(
-    (simData?.industry as IndustryKey) || "restaurant"
-  );
+  const [industry, setIndustry] = useState<IndustryKey>("restaurant");
 
-  /* 사용자 입력값 (시뮬레이터 데이터 없을 때) */
+  /* 사용자 입력값 */
   const [manualCogs, setManualCogs] = useState("");
   const [manualLabor, setManualLabor] = useState("");
   const [manualRent, setManualRent] = useState("");
@@ -79,18 +78,19 @@ export default function BenchmarkPage() {
 
   const bench = INDUSTRY_BENCHMARK[industry];
 
-  /* 사용자 값 결정: 시뮬레이터 > 수동 입력 */
+  /* 사용자 값 결정: 시뮬레이터 연동 ON일 때만 simData 사용 */
+  const sim = useSimData && simData ? simData : null;
   const userValues: Record<MetricKey, number | null> = {
-    cogsRate: simData ? simData.cogsRatio : manualCogs ? Number(manualCogs) : null,
-    laborRate: simData ? simData.laborRatio : manualLabor ? Number(manualLabor) : null,
-    rentRate: simData
-      ? simData.totalSales > 0
-        ? Math.round((simData.rent / simData.totalSales) * 1000) / 10
+    cogsRate: sim ? sim.cogsRatio : manualCogs ? Number(manualCogs) : null,
+    laborRate: sim ? sim.laborRatio : manualLabor ? Number(manualLabor) : null,
+    rentRate: sim
+      ? sim.totalSales > 0
+        ? Math.round((sim.rent / sim.totalSales) * 1000) / 10
         : null
       : manualRent
         ? Number(manualRent)
         : null,
-    netMargin: simData ? simData.netMargin : manualNet ? Number(manualNet) : null,
+    netMargin: sim ? sim.netMargin : manualNet ? Number(manualNet) : null,
   };
 
   const industryLabel = INDUSTRY_OPTIONS.find((o) => o.key === industry)?.label ?? industry;
@@ -125,6 +125,22 @@ export default function BenchmarkPage() {
               내 매장의 핵심 지표를 업종 평균과 비교해보세요.
             </p>
           </div>
+
+          {/* 시뮬레이터 데이터 연동 */}
+          {simData && (
+            <div className="rounded-3xl bg-white ring-1 ring-slate-200 p-5 mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">🔗 시뮬레이터 데이터 연동</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{useSimData ? "시뮬레이터 값으로 비교 중" : "OFF — 아래에서 직접 입력하세요"}</p>
+                </div>
+                <button onClick={() => { setUseSimData(!useSimData); if (!useSimData && simData) setIndustry(simData.industry as IndustryKey); }}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${useSimData ? "bg-blue-500" : "bg-slate-300"}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${useSimData ? "translate-x-5" : ""}`} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 업종 선택 */}
           <div className="rounded-3xl bg-white ring-1 ring-slate-200 p-5 mb-4">
