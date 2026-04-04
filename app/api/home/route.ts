@@ -30,6 +30,9 @@ async function getStocks() {
 }
 
 async function getNews() {
+  // AI 웹검색 비활성화 — 토큰 절약. 수동 뉴스 사용.
+  // 추후 크론 + 캐시로 전환 시 아래 주석 해제
+  /*
   const today = new Date().toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric" });
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -53,6 +56,7 @@ async function getNews() {
     return JSON.parse(text.replace(/```json|```/g,"").trim());
   } catch (e) {
     console.error("News error:", e);
+  */
     return [
       { title: "최저임금 인상 논의 본격화", summary: "2027년 심의 시작", source: "연합뉴스", url: "https://www.yna.co.kr/search/index?query=최저임금", tag: "소상공인", insight: "인건비 비율을 미리 점검하고 스케줄을 최적화하세요" },
       { title: "배달앱 수수료 단계적 인하 추진", summary: "소상공인 부담 완화 기대", source: "한국경제", url: "https://search.hankyung.com/search?query=배달앱+수수료", tag: "소상공인", insight: "수수료 변동을 VELA 시뮬레이터에서 미리 반영해보세요" },
@@ -61,7 +65,6 @@ async function getNews() {
       { title: "4월 소비심리지수 개선", summary: "외식 지출 증가 전망", source: "매일경제", url: "https://www.mk.co.kr/search?word=소비심리지수", tag: "경제", insight: "소비 회복기에 신메뉴를 출시하면 효과가 극대화됩니다" },
       { title: "프랜차이즈 가맹비 공시 의무화", summary: "정보공개서 강화", source: "서울경제", url: "https://www.sedaily.com/Search?keyword=프랜차이즈", tag: "외식업", insight: "개인 매장이라면 오히려 차별화 기회입니다" },
     ];
-  }
 }
 
 export async function GET() {
