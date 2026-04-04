@@ -7,7 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt, pct, INDUSTRY_BENCHMARK } from "@/lib/vela";
 
 // ─── 타입 ──────────────────────────────────────────────────────
-type Tab = "feed" | "board" | "anonymous" | "benchmark";
+type Tab = "feed" | "board" | "benchmark";
 type IndustryFilter = "all" | "cafe" | "restaurant" | "bar" | "finedining";
 type BoardCategory = "all" | "free" | "question" | "tip";
 
@@ -772,7 +772,6 @@ export default function CommunityPage() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "feed", label: "수익 피드", icon: "📊" },
     { key: "board", label: "게시판", icon: "📝" },
-    { key: "anonymous", label: "익명 상담", icon: "🤫" },
     { key: "benchmark", label: "벤치마크", icon: "📈" },
   ];
 
@@ -802,7 +801,7 @@ export default function CommunityPage() {
           {/* 탭 콘텐츠 */}
           {tab === "feed" && <FeedTab userId={userId} isAdmin={isAdmin} />}
           {tab === "board" && <BoardTab userId={userId} isAdmin={isAdmin} />}
-          {tab === "anonymous" && <AnonymousTab userId={userId} isAdmin={isAdmin} />}
+          {/* 익명 상담 탭 제거 — 추후 AI 채팅으로 대체 예정 */}
           {tab === "benchmark" && <BenchmarkTab />}
 
         </div>
