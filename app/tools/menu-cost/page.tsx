@@ -562,7 +562,6 @@ export default function MenuCostPage() {
       industry,
       sell_price: sellPrice,
       cost: totalCost,
-      ingredients: m.ingredients.map(i => ({ name: i.name, amount: "", cost: parseInt(i.cost) || 0 })),
       memo: "",
     };
   }
