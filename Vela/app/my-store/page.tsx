@@ -9,6 +9,7 @@ import {
   CartesianGrid, Tooltip, LineChart, Line, ReferenceLine,
 } from "recharts";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 /* ── 타입 ─────────────────────────────────────────── */
 type Snapshot = {
@@ -36,7 +37,6 @@ type MenuCost = {
 };
 
 /* ── 유틸 ─────────────────────────────────────────── */
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 const fmtM = (n: number) => {
   if (Math.abs(n) >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
   if (Math.abs(n) >= 10_000) return `${(n / 10_000).toFixed(0)}만`;

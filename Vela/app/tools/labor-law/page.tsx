@@ -2,8 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
+import { fmt } from "@/lib/vela";
 
 // 2026년 기준 (예상)
 const MIN_WAGE = 10620; // 최저시급

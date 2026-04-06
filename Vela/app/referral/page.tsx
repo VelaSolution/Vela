@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
+import { fmt } from "@/lib/vela";
 
 export default function ReferralPage() {
   const [userId, setUserId] = useState<string | null>(null);

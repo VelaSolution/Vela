@@ -5,6 +5,7 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,10 +32,6 @@ function uid() {
 function num(v: string) {
   const n = Number(v.replace(/,/g, ""));
   return isNaN(n) ? 0 : n;
-}
-
-function fmt(v: number) {
-  return v.toLocaleString("ko-KR");
 }
 
 function calcMenu(item: MenuItem) {

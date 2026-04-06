@@ -1,33 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const PROMO_KEY = "vela-promo-dismissed";
-const PROMO_ID = "launch-2026-04";
-const PROMO_TODAY_KEY = "vela-promo-today";
+import { useModalDismiss } from "@/lib/useModalDismiss";
 
 export default function PromoModal() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const dismissed = localStorage.getItem(PROMO_KEY);
-    if (dismissed === PROMO_ID) return;
-    const todayDismissed = localStorage.getItem(PROMO_TODAY_KEY);
-    if (todayDismissed === new Date().toISOString().slice(0, 10)) return;
-    const timer = setTimeout(() => setShow(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const dismiss = () => {
-    localStorage.setItem(PROMO_KEY, PROMO_ID);
-    setShow(false);
-  };
-
-  const dismissToday = () => {
-    localStorage.setItem(PROMO_TODAY_KEY, new Date().toISOString().slice(0, 10));
-    setShow(false);
-  };
+  const { show, dismiss, dismissToday } = useModalDismiss(
+    "vela-promo-dismissed", "launch-2026-04", "vela-promo-today", 500
+  );
 
   if (!show) return null;
 

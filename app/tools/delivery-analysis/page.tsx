@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
+import { fmt } from "@/lib/vela";
 
 type AnalysisResult = {
   totalOrders: number | null;
@@ -16,8 +17,6 @@ type AnalysisResult = {
   topMenus: string[] | null;
   summary: string;
 };
-
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
 export default function DeliveryAnalysisPage() {
   const [file, setFile] = useState<File | null>(null);

@@ -7,8 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { NotesWidget } from "@/app/notes/page";
 import PlanGate from "@/components/PlanGate";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
-
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
+import { fmt } from "@/lib/vela";
 const IND: Record<string, string> = { cafe:"☕", restaurant:"🍽️", bar:"🍺", finedining:"✨", gogi:"🥩" };
 const IND_LABEL: Record<string, string> = { cafe:"카페", restaurant:"음식점", bar:"술집/바", finedining:"파인다이닝", gogi:"고깃집" };
 

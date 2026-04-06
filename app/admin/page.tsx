@@ -8,8 +8,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
+import { fmt } from "@/lib/vela";
 
 export default function AdminPage() {
   const router = useRouter();

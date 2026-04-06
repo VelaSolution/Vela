@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
+import { fmt } from "@/lib/vela";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,7 +29,6 @@ type Employee = {
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 function calcHours(shift: Shift): number {
   if (!shift.enabled || !shift.start || !shift.end) return 0;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean };
 const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] = [
@@ -60,7 +61,6 @@ const TOOLS = CATEGORIES.flatMap(c => c.tools) as any[];
 
 export default function ToolsPage() {
   const simData = useSimulatorData();
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
   const [plan, setPlan] = useState<string>("free");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 

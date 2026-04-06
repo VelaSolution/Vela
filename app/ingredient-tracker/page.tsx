@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import { fmt } from "@/lib/vela";
 
 const STORAGE_KEY = "vela-ingredient-prices";
 
@@ -14,7 +15,6 @@ type PriceEntry = {
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function fmt(n: number) { return n.toLocaleString("ko-KR"); }
 
 const COMMON_INGREDIENTS = [
   { name: "돼지고기 (삼겹살)", unit: "kg" },

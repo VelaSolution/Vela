@@ -6,9 +6,9 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { saveQuickData, applyQuickToSimulator } from "@/lib/quickStore";
+import { fmt } from "@/lib/vela";
 
 function num(v: string) { return Number(v.replace(/,/g, "")) || 0; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 const INDUSTRY_OPTIONS = [
   { id: "cafe", label: "☕ 카페" },

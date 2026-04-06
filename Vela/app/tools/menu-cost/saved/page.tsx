@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 type MenuItem = {
   id: string;
@@ -20,8 +21,6 @@ type MenuItem = {
   note: string;
   created_at: string;
 };
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   "음료": { bg: "bg-blue-50", text: "text-blue-600" },

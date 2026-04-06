@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { fmt } from "@/lib/vela";
 
 export const dynamic = "force-dynamic";
 
@@ -186,7 +187,6 @@ function buildEmailHtml(p: {
   growthColor: string;
   tips: string[];
 }): string {
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
   const tipsHtml = p.tips
     .map((t) => `<li style="margin-bottom:8px;">${t}</li>`)
     .join("");

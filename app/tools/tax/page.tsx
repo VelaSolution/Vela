@@ -7,11 +7,11 @@ import ToolNav from "@/components/ToolNav";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import SendToSimulator from "@/components/SendToSimulator";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 type MonthSnap = { month: string; monthly_sales: number; profit: number; industry: string };
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 // ─── 세금 계산 로직 ───────────────────────────────────────────────────────────
 

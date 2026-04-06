@@ -6,12 +6,12 @@ import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import PlanGate from "@/components/PlanGate";
+import { fmt } from "@/lib/vela";
 
 type SimHistory = { id: string; label: string; form: Record<string, number | string>; result: Record<string, number> };
 type MonthSnap = { month: string; monthly_sales: number; rent: number; labor_cost: number; utilities: number; marketing: number; etc: number; cogs_rate: number; profit: number; industry: string };
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 function pct(v: number, total: number) { return total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"; }
 
 type FormData = {

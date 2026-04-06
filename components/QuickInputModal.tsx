@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { saveQuickData, loadQuickData, applyQuickToSimulator, type QuickData } from "@/lib/quickStore";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 const INDUSTRY_OPTIONS = [
   { id: "cafe", label: "☕ 카페" },
@@ -15,7 +16,6 @@ const INDUSTRY_OPTIONS = [
   { id: "gogi", label: "🥩 고깃집" },
 ];
 
-function fmt(n: number) { return n.toLocaleString("ko-KR"); }
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
 
 const SHOW_KEY = "vela-quick-modal-shown";

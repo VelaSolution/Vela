@@ -7,6 +7,7 @@ import ToolNav from "@/components/ToolNav";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import PlanGate from "@/components/PlanGate";
+import { fmt } from "@/lib/vela";
 
 type Tone = "warm" | "trendy" | "professional" | "fun";
 type Platform = "instagram" | "naver-blog" | "kakao";
@@ -86,8 +87,6 @@ export default function SnsContentPage() {
     "naver-blog": "네이버 블로그 (SEO 최적화, 키워드 자연스럽게 포함, 800~1200자)",
     kakao: "카카오채널 (간결하고 행동 유도 문구 포함, 300자 이내)",
   };
-
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
 
   // 데이터 소스에 따른 컨텍스트
   const selectedSnap = monthlySnaps.find((s) => s.month === selectedMonth);

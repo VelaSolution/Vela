@@ -1,33 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-
-const EVENT_KEY = "vela-event-dismissed";
-const EVENT_ID = "open-beta-2026-04";
-const EVENT_TODAY_KEY = "vela-event-today";
+import { useModalDismiss } from "@/lib/useModalDismiss";
 
 export default function EventPopup() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    const dismissed = localStorage.getItem(EVENT_KEY);
-    if (dismissed === EVENT_ID) return;
-    const todayDismissed = localStorage.getItem(EVENT_TODAY_KEY);
-    if (todayDismissed === new Date().toISOString().slice(0, 10)) return;
-    const timer = setTimeout(() => setShow(true), 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const dismiss = () => {
-    localStorage.setItem(EVENT_KEY, EVENT_ID);
-    setShow(false);
-  };
-
-  const dismissToday = () => {
-    localStorage.setItem(EVENT_TODAY_KEY, new Date().toISOString().slice(0, 10));
-    setShow(false);
-  };
+  const { show, dismiss, dismissToday } = useModalDismiss(
+    "vela-event-dismissed", "open-beta-2026-04", "vela-event-today", 800
+  );
 
   if (!show) return null;
 

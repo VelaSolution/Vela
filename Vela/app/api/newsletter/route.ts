@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
-import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { fmt } from "@/lib/vela";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +11,9 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiting: 분당 2회 (관리자 전용)
-    const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "newsletter", limit: 2 });
-    if (!rl.ok) return rateLimitResponse();
-
     const { secret } = await req.json();
 
-    if (!secret || secret !== process.env.TOSS_SECRET_KEY) {
+    if (secret !== process.env.TOSS_SECRET_KEY) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -192,7 +187,6 @@ function buildEmailHtml(p: {
   growthColor: string;
   tips: string[];
 }): string {
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
   const tipsHtml = p.tips
     .map((t) => `<li style="margin-bottom:8px;">${t}</li>`)
     .join("");

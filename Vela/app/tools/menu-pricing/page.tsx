@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
+import { fmt } from "@/lib/vela";
 
 type PriceResult = {
   recommendedPrice: number;

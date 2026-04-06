@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { fmt } from "@/lib/vela";
 
 const STORAGE_KEY = "vela-daily-sales";
-const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 type DayRecord = {

@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
-
-type MarketPrice = { name: string; unit: string; price: number; change: number };
-type MarketData = { categories: Record<string, MarketPrice[]> };
+import { fmt } from "@/lib/vela";
 
 const STORAGE_KEY = "vela-ingredient-prices";
 
@@ -17,7 +15,6 @@ type PriceEntry = {
 };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function fmt(n: number) { return n.toLocaleString("ko-KR"); }
 
 const COMMON_INGREDIENTS = [
   { name: "돼지고기 (삼겹살)", unit: "kg" },
@@ -54,12 +51,6 @@ export default function IngredientTrackerPage() {
   const [newName, setNewName] = useState("");
   const [newUnit, setNewUnit] = useState("kg");
   const [priceInputs, setPriceInputs] = useState<Record<string, { price: string; source: string }>>({});
-  const [marketData, setMarketData] = useState<MarketData | null>(null);
-  const [showMarket, setShowMarket] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/ingredient-price").then(r => r.json()).then(setMarketData).catch(() => {});
-  }, []);
 
   useEffect(() => { setItems(loadData()); }, []);
 
@@ -121,56 +112,6 @@ export default function IngredientTrackerPage() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">식재료 가격 트래커</h1>
             <p className="text-slate-500 text-sm">주요 식재료 가격을 기록하고 변동 추이를 확인하세요.</p>
           </div>
-
-          {/* 시세 정보 */}
-          {marketData && (
-            <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-bold text-slate-900">📈 주요 식재료 시세</h2>
-                <button onClick={() => setShowMarket(!showMarket)} className="text-xs text-blue-500 font-semibold hover:text-blue-700">
-                  {showMarket ? "접기" : "전체 보기"}
-                </button>
-              </div>
-              {!showMarket ? (
-                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                  {Object.values(marketData.categories).flat().filter(p => Math.abs(p.change) >= 3).slice(0, 6).map(p => (
-                    <div key={p.name} className="shrink-0 rounded-xl bg-slate-50 px-3 py-2 min-w-[140px]">
-                      <p className="text-xs font-semibold text-slate-700 truncate">{p.name}</p>
-                      <div className="flex items-baseline gap-2 mt-1">
-                        <span className="text-sm font-bold text-slate-900">{fmt(p.price)}원</span>
-                        <span className={`text-xs font-semibold ${p.change > 0 ? "text-red-500" : "text-blue-500"}`}>
-                          {p.change > 0 ? "▲" : "▼"}{Math.abs(p.change)}%
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400">{p.unit}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {Object.entries(marketData.categories).map(([cat, items]) => (
-                    <div key={cat}>
-                      <p className="text-xs font-bold text-slate-500 mb-2">{cat}</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {(items as MarketPrice[]).map(p => (
-                          <div key={p.name} className="rounded-xl bg-slate-50 px-3 py-2">
-                            <p className="text-xs font-semibold text-slate-700 truncate">{p.name}</p>
-                            <div className="flex items-baseline gap-2 mt-1">
-                              <span className="text-sm font-bold text-slate-900">{fmt(p.price)}원</span>
-                              <span className={`text-xs font-semibold ${p.change > 0 ? "text-red-500" : p.change < 0 ? "text-blue-500" : "text-slate-400"}`}>
-                                {p.change > 0 ? "▲" : p.change < 0 ? "▼" : "—"}{Math.abs(p.change)}%
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-slate-400">{p.unit}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* 빠른 추가 */}
           {!showAdd ? (

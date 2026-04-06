@@ -7,6 +7,7 @@ import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import PlanGate from "@/components/PlanGate";
 import { useSimulatorData } from "@/lib/useSimulatorData";
+import { fmt } from "@/lib/vela";
 
 type ReplyTone = "apologetic" | "grateful" | "professional" | "friendly";
 type Platform = "naver" | "kakao" | "google" | "baemin";
@@ -59,7 +60,6 @@ export default function ReviewReplyPage() {
   }, [simData]);
 
   const currentPlatform = PLATFORMS.find(p => p.id === platform)!;
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
 
   async function generate() {
     if (!review.trim()) return;

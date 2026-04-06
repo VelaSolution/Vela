@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { fmt } from "@/lib/vela";
 
 const STORAGE_KEY = "vela-competitor-pricing";
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 type Competitor = {
   id: string;
