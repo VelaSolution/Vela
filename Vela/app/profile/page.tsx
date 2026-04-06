@@ -355,11 +355,30 @@ export default function ProfilePage() {
                         {payments[0].amount.toLocaleString("ko-KR")}원
                       </p>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                      <p className="text-xs text-slate-400">구독 관련 문의는 이메일로 연락해주세요.</p>
-                      <a href="mailto:mnhyuk@velaanalytics.com?subject=[VELA] 구독 취소 요청" className="text-xs font-semibold text-red-400 hover:text-red-500 transition">
-                        구독 취소 요청 →
-                      </a>
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-400">다음 갱신일: {(() => { const d = new Date(payments[0].created_at); d.setMonth(d.getMonth() + 1); return d.toLocaleDateString("ko-KR"); })()}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (!confirm("정말 구독을 해지하시겠습니까?\n해지 즉시 무료 플랜으로 전환됩니다.")) return;
+                            const res = await fetch("/api/subscription/cancel", { method: "POST" });
+                            if (res.ok) {
+                              alert("구독이 해지되었습니다. 무료 플랜으로 전환됩니다.");
+                              window.location.reload();
+                            } else {
+                              alert("해지에 실패했습니다. 다시 시도해주세요.");
+                            }
+                          }}
+                          className="text-xs font-semibold text-red-400 hover:text-red-500 transition border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50"
+                        >
+                          구독 해지
+                        </button>
+                        <a href="mailto:mnhyuk@velaanalytics.com?subject=[VELA] 환불 요청" className="text-xs font-semibold text-slate-400 hover:text-slate-500 transition border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50">
+                          환불 문의
+                        </a>
+                      </div>
                     </div>
                   </>
                 )}
