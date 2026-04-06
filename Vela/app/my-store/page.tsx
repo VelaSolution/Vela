@@ -29,9 +29,9 @@ type MenuCost = {
   id: string;
   name: string;
   category: string;
-  sell_price: number;
+  price: number;
   cost: number;
-  cogs_rate: number;
+  cost_rate: number;
   margin: number;
 };
 
@@ -88,7 +88,7 @@ export default function MyStorePage() {
           .from("menu_costs")
           .select("*")
           .eq("user_id", user.id)
-          .order("cogs_rate", { ascending: true }),
+          .order("cost_rate", { ascending: true }),
       ]);
 
       setSnapshots(snaps ?? []);
@@ -124,7 +124,7 @@ export default function MyStorePage() {
   });
 
   const avgCogsRate = menus.length > 0
-    ? menus.reduce((s, m) => s + m.cogs_rate, 0) / menus.length : 0;
+    ? menus.reduce((s, m) => s + m.cost_rate, 0) / menus.length : 0;
   const categories = ["전체", ...Array.from(new Set(menus.map(m => m.category)))];
   const filteredMenus = menuCategory === "전체"
     ? menus : menus.filter(m => m.category === menuCategory);
@@ -187,10 +187,10 @@ export default function MyStorePage() {
                 {
                   label: "등록된 메뉴",
                   value: `${menus.length}개`,
-                  sub: menus.filter(m => m.cogs_rate > 50).length > 0
-                    ? `원가 위험 ${menus.filter(m => m.cogs_rate > 50).length}개`
+                  sub: menus.filter(m => m.cost_rate > 50).length > 0
+                    ? `원가 위험 ${menus.filter(m => m.cost_rate > 50).length}개`
                     : "전 메뉴 양호",
-                  good: menus.filter(m => m.cogs_rate > 50).length === 0,
+                  good: menus.filter(m => m.cost_rate > 50).length === 0,
                   emoji: "📋",
                 },
               ].map(card => (
@@ -326,17 +326,17 @@ export default function MyStorePage() {
                       <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            menu.cogs_rate <= 35 ? "bg-emerald-400" :
-                            menu.cogs_rate <= 50 ? "bg-amber-400" : "bg-red-400"
+                            menu.cost_rate <= 35 ? "bg-emerald-400" :
+                            menu.cost_rate <= 50 ? "bg-amber-400" : "bg-red-400"
                           }`}
-                          style={{ width: `${Math.min(menu.cogs_rate * 1.5, 100)}%` }}
+                          style={{ width: `${Math.min(menu.cost_rate * 1.5, 100)}%` }}
                         />
                       </div>
                       <div className="text-right flex-shrink-0 w-28">
                         <span className={`text-xs font-bold ${
-                          menu.cogs_rate <= 35 ? "text-emerald-600" :
-                          menu.cogs_rate <= 50 ? "text-amber-500" : "text-red-500"
-                        }`}>{menu.cogs_rate.toFixed(1)}%</span>
+                          menu.cost_rate <= 35 ? "text-emerald-600" :
+                          menu.cost_rate <= 50 ? "text-amber-500" : "text-red-500"
+                        }`}>{menu.cost_rate.toFixed(1)}%</span>
                         <span className="text-xs text-slate-400 ml-2">+{fmt(menu.margin)}원</span>
                       </div>
                     </div>
