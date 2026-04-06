@@ -127,7 +127,7 @@ function MenuCard({
   industry: string;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const [saving, setSaving] = useState<string>("idle");
+  const [saving, setSaving] = useState<"idle" | "saving" | "done" | "error" | "noname" | "noprice">("idle");
   const { price, costTotal, profit, costRatio, profitRatio } = calcMenu(item);
 
   async function handleSave() {
@@ -145,12 +145,11 @@ function MenuCard({
     try {
       await onSave(item);
       setSaving("done");
-    } catch (err: any) {
-      const msg = err?.message || err?.code || "알 수 없는 오류";
+    } catch (err) {
       console.error("Menu save error:", err);
-      setSaving("err:" + msg);
+      setSaving("error");
     }
-    setTimeout(() => setSaving("idle"), 4000);
+    setTimeout(() => setSaving("idle"), 2500);
   }
 
   const addIngredient = () => {
@@ -233,17 +232,17 @@ function MenuCard({
             disabled={saving === "saving"}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               saving === "done" ? "bg-emerald-100 text-emerald-600" :
-              saving.startsWith("err:") || saving === "noname" || saving === "noprice" ? "bg-red-100 text-red-500" :
+              saving === "error" || saving === "noname" || saving === "noprice" ? "bg-red-100 text-red-500" :
               saving === "saving" ? "bg-slate-100 text-slate-400" :
               price > 0 && item.name.trim() ? "bg-blue-50 text-blue-500 hover:bg-blue-100" : "bg-slate-50 text-slate-300"
             }`}
-            title={saving.startsWith("err:") ? saving.slice(4) : price <= 0 ? "판매가를 입력해주세요" : "이 메뉴 저장"}
+            title={price <= 0 ? "판매가를 입력해주세요" : "이 메뉴 저장"}
           >
             {saving === "saving" ? "저장 중..." :
              saving === "done" ? "✓ 저장됨" :
              saving === "noname" ? "메뉴명 입력" :
              saving === "noprice" ? "판매가 입력" :
-             saving.startsWith("err:") ? saving.slice(4, 30) :
+             saving === "error" ? "저장 실패" :
              "💾 저장"}
           </button>
           <button
@@ -555,13 +554,17 @@ export default function MenuCostPage() {
   function buildMenuRow(m: MenuItem, userId: string) {
     const totalCost = m.ingredients.reduce((s, i) => s + (parseInt(i.cost) || 0), 0);
     const sellPrice = num(m.price);
+    const costRate = sellPrice > 0 ? (totalCost / sellPrice) * 100 : 0;
     return {
       user_id: userId,
       name: m.name,
       category: m.category,
       industry,
-      sell_price: sellPrice,
+      price: sellPrice,
       cost: totalCost,
+      cost_rate: parseFloat(costRate.toFixed(2)),
+      margin: sellPrice - totalCost,
+      note: "",
     };
   }
 
