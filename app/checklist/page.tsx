@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 /* ── 체크리스트 항목 ── */
 const OPEN_ITEMS = [
@@ -44,7 +45,18 @@ export default function ChecklistPage() {
   const [checked, setChecked] = useState<CheckedMap>({});
   const [celebrate, setCelebrate] = useState(false);
 
-  /* localStorage 로드 */
+  const userRef = useRef<string | null>(null);
+
+  /* 초기 사용자 확인 */
+  useEffect(() => {
+    (async () => {
+      const sb = createSupabaseBrowserClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) userRef.current = user.id;
+    })();
+  }, []);
+
+  /* localStorage + 클라우드 로드 */
   useEffect(() => {
     const raw = localStorage.getItem(storageKey(date));
     if (raw) {
@@ -53,11 +65,39 @@ export default function ChecklistPage() {
       setChecked({});
     }
     setCelebrate(false);
+
+    if (userRef.current) {
+      (async () => {
+        const sb = createSupabaseBrowserClient();
+        const { data } = await sb.from("user_checklists").select("data").eq("user_id", userRef.current!).eq("date", date).limit(1);
+        if (data && data.length > 0) {
+          try {
+            const parsed = JSON.parse(data[0].data);
+            setChecked(parsed);
+            localStorage.setItem(storageKey(date), JSON.stringify(parsed));
+          } catch { /* use local */ }
+        }
+      })();
+    }
   }, [date]);
 
-  /* localStorage 저장 */
+  /* localStorage + 클라우드 저장 */
+  const cloudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const persist = useCallback((next: CheckedMap) => {
     localStorage.setItem(storageKey(date), JSON.stringify(next));
+
+    if (cloudTimer.current) clearTimeout(cloudTimer.current);
+    cloudTimer.current = setTimeout(async () => {
+      if (!userRef.current) return;
+      const sb = createSupabaseBrowserClient();
+      const payload = { user_id: userRef.current, date, data: JSON.stringify(next) };
+      const { data: existing } = await sb.from("user_checklists").select("id").eq("user_id", userRef.current).eq("date", date).limit(1);
+      if (existing && existing.length > 0) {
+        await sb.from("user_checklists").update(payload).eq("user_id", userRef.current).eq("date", date);
+      } else {
+        await sb.from("user_checklists").insert(payload);
+      }
+    }, 1500);
   }, [date]);
 
   const toggle = (item: string) => {

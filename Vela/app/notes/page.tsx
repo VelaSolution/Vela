@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import NavBar from "@/components/NavBar";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 /* ── types ── */
 type Mood = "good" | "normal" | "bad";
@@ -60,19 +61,53 @@ export function NotesWidget() {
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const loaded = useRef(false);
 
-  /* load once */
+  const userRef = useRef<string | null>(null);
+
+  /* load: localStorage 먼저, 로그인 시 클라우드 우선 */
   useEffect(() => {
-    setData(loadData());
+    const local = loadData();
+    setData(local);
     loaded.current = true;
+
+    (async () => {
+      const sb = createSupabaseBrowserClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+      userRef.current = user.id;
+      const { data: cloud } = await sb.from("user_notes").select("data").eq("user_id", user.id).limit(1);
+      if (cloud && cloud.length > 0) {
+        try {
+          const parsed = JSON.parse(cloud[0].data);
+          setData(parsed);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        } catch { /* use local */ }
+      } else if (local.journal.length > 0 || local.todos.length > 0 || local.memo) {
+        await sb.from("user_notes").insert({ user_id: user.id, data: JSON.stringify(local) });
+      }
+    })();
   }, []);
 
-  /* auto-save */
+  /* auto-save: localStorage + 클라우드 */
+  const cloudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const save = useCallback((next: NotesData) => {
     setData(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setToast(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(false), 1200);
+
+    if (cloudTimer.current) clearTimeout(cloudTimer.current);
+    cloudTimer.current = setTimeout(async () => {
+      if (!userRef.current) return;
+      const sb = createSupabaseBrowserClient();
+      const payload = { user_id: userRef.current, data: JSON.stringify(next) };
+      const { data: existing } = await sb.from("user_notes").select("id").eq("user_id", userRef.current).limit(1);
+      if (existing && existing.length > 0) {
+        await sb.from("user_notes").update(payload).eq("user_id", userRef.current);
+      } else {
+        await sb.from("user_notes").insert(payload);
+      }
+    }, 2000);
   }, []);
 
   /* ── journal helpers ── */

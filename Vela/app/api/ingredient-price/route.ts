@@ -17,7 +17,60 @@ type PriceItem = {
   updatedAt: string;
 };
 
-// 주요 외식업 식재료 시세 (수동 관리 — 추후 KAMIS API 연동 시 교체)
+// KAMIS API 품목 코드 매핑
+const KAMIS_ITEMS: { code: string; name: string; category: string; unit: string }[] = [
+  { code: "212", name: "삼겹살", category: "육류", unit: "1kg" },
+  { code: "214", name: "목심(목살)", category: "육류", unit: "1kg" },
+  { code: "215", name: "닭고기", category: "육류", unit: "1kg" },
+  { code: "312", name: "쌀", category: "곡류", unit: "20kg" },
+  { code: "111", name: "사과", category: "과일", unit: "10개" },
+  { code: "141", name: "배추", category: "채소", unit: "1포기" },
+  { code: "142", name: "양배추", category: "채소", unit: "1포기" },
+  { code: "143", name: "시금치", category: "채소", unit: "1kg" },
+  { code: "144", name: "상추", category: "채소", unit: "100g" },
+  { code: "151", name: "무", category: "채소", unit: "1개" },
+  { code: "152", name: "건고추", category: "채소", unit: "600g" },
+  { code: "154", name: "대파", category: "채소", unit: "1kg" },
+  { code: "155", name: "양파", category: "채소", unit: "1kg" },
+  { code: "156", name: "마늘", category: "채소", unit: "1kg" },
+  { code: "221", name: "계란", category: "유제품", unit: "30개" },
+];
+
+async function fetchKamisPrices(apiKey: string): Promise<PriceItem[]> {
+  const today = new Date();
+  const regday = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const url = `https://www.kamis.or.kr/service/price/xml.do?action=dailyPriceByCategoryList&p_product_cls_code=01&p_country_code=1101&p_regday=${regday}&p_convert_kg_yn=Y&p_cert_key=${apiKey}&p_cert_id=velaanalytics&p_returntype=json`;
+
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  if (!res.ok) throw new Error(`KAMIS ${res.status}`);
+  const json = await res.json();
+
+  const items = json?.data?.item;
+  if (!Array.isArray(items)) return getManualPrices();
+
+  const result: PriceItem[] = [];
+  for (const mapping of KAMIS_ITEMS) {
+    const found = items.find((i: Record<string, string>) => i.item_code === mapping.code);
+    if (!found) continue;
+    const price = parseInt(String(found.dpr1 ?? "0").replace(/,/g, "")) || 0;
+    const prevPrice = parseInt(String(found.dpr2 ?? "0").replace(/,/g, "")) || price;
+    if (price <= 0) continue;
+    const change = prevPrice > 0 ? parseFloat(((price - prevPrice) / prevPrice * 100).toFixed(1)) : 0;
+    result.push({
+      name: mapping.name,
+      category: mapping.category,
+      unit: mapping.unit,
+      price,
+      prevPrice,
+      change,
+      updatedAt: today.toISOString().slice(0, 10),
+    });
+  }
+
+  return result.length > 0 ? result : getManualPrices();
+}
+
+// 주요 외식업 식재료 시세 (수동 관리 — KAMIS API 미연결 시 폴백)
 function getManualPrices(): PriceItem[] {
   const today = new Date().toISOString().slice(0, 10);
   return [
@@ -54,11 +107,20 @@ export async function GET(req: NextRequest) {
   const rl = checkRateLimit(ip, { key: "ingredient-price", limit: 20 });
   if (!rl.ok) return rateLimitResponse();
 
-  // 추후 KAMIS API 연동 시 여기를 교체
-  // const kamisKey = process.env.KAMIS_API_KEY;
-  // if (kamisKey) { ... fetch from KAMIS ... }
+  // KAMIS API 연동
+  const kamisKey = process.env.KAMIS_API_KEY;
+  let prices: PriceItem[];
 
-  const prices = getManualPrices();
+  if (kamisKey) {
+    try {
+      prices = await fetchKamisPrices(kamisKey);
+    } catch (e) {
+      console.error("KAMIS API error, falling back to manual:", e);
+      prices = getManualPrices();
+    }
+  } else {
+    prices = getManualPrices();
+  }
 
   // 카테고리별 그룹핑
   const categories = [...new Set(prices.map((p) => p.category))];
@@ -67,7 +129,7 @@ export async function GET(req: NextRequest) {
   );
 
   return NextResponse.json({
-    source: "manual",
+    source: kamisKey ? "kamis" : "manual",
     updatedAt: new Date().toISOString().slice(0, 10),
     totalItems: prices.length,
     categories: grouped,

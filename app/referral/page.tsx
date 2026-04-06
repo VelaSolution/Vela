@@ -11,13 +11,19 @@ export default function ReferralPage() {
   const [referralCount, setReferralCount] = useState(0);
 
   useEffect(() => {
-    const sb = createSupabaseBrowserClient();
-    sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string; email?: string } | null } }) => {
+    (async () => {
+      const sb = createSupabaseBrowserClient();
+      const { data: { user } } = await sb.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      // 추천 코드: user ID 앞 8자리
       setReferralCode(user.id.slice(0, 8).toUpperCase());
-    });
+
+      // 추천 횟수 조회
+      const { count } = await sb.from("referrals")
+        .select("id", { count: "exact", head: true })
+        .eq("referrer_id", user.id);
+      setReferralCount(count ?? 0);
+    })();
   }, []);
 
   const referralLink = typeof window !== "undefined"

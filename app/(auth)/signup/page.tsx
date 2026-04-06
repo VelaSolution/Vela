@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
@@ -23,6 +23,8 @@ const BUSINESS_STATUS = [
 
 function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref") ?? "";
   const [step, setStep] = useState(1); // 1: 계정정보, 2: 매장정보
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,6 +90,20 @@ function SignUpForm() {
         plan: "standard",
         plan_updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
+
+      // 추천인 기록
+      if (refCode) {
+        const { data: referrer } = await supabase.from("profiles")
+          .select("id")
+          .ilike("id", `${refCode.toLowerCase()}%`)
+          .limit(1);
+        if (referrer && referrer.length > 0) {
+          await supabase.from("referrals").insert({
+            referrer_id: referrer[0].id,
+            referred_id: signInData.user.id,
+          }).catch(() => {});
+        }
+      }
     }
 
     setLoading(false);

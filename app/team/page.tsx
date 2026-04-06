@@ -114,6 +114,12 @@ export default function TeamPage() {
     if (insertError) {
       setError("초대에 실패했습니다. 다시 시도해주세요.");
     } else {
+      // 초대 이메일 발송
+      fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), storeName: "VELA 매장" }),
+      }).catch(() => {});
       setInviteEmail("");
       await fetchMembers();
     }
