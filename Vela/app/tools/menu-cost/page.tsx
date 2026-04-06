@@ -145,9 +145,8 @@ function MenuCard({
     try {
       await onSave(item);
       setSaving("done");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Menu save error:", err);
-      alert("저장 에러: " + (err?.message || JSON.stringify(err)));
       setSaving("error");
     }
     setTimeout(() => setSaving("idle"), 2500);
@@ -555,7 +554,6 @@ export default function MenuCostPage() {
   function buildMenuRow(m: MenuItem, userId: string) {
     const totalCost = m.ingredients.reduce((s, i) => s + (parseInt(i.cost) || 0), 0);
     const sellPrice = num(m.price);
-    const costRate = sellPrice > 0 ? (totalCost / sellPrice) * 100 : 0;
     return {
       user_id: userId,
       name: m.name,
@@ -563,8 +561,6 @@ export default function MenuCostPage() {
       industry,
       price: sellPrice,
       cost: totalCost,
-      cost_rate: parseFloat(costRate.toFixed(2)),
-      margin: sellPrice - totalCost,
       note: "",
     };
   }
