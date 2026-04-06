@@ -34,7 +34,14 @@
       "Bash(printf \"mnhyuk@velaanalytics.com,mnhyuk0213@gmail.com\")",
       "Bash(ls \"C:/Users/user/Vela/Vela/middleware\"*)",
       "Bash(ls \"C:/Users/user/Vela/Vela/src/middleware\"*)",
-      "Bash(ls -d C:/Users/user/Vela/Vela/app/*/)"
+      "Bash(ls -d C:/Users/user/Vela/Vela/app/*/)",
+      "Bash(npx next:*)",
+      "Bash(ls -la /Users/mnhyuk/my-rose-app/.env*)",
+      "Read(//tmp/**)",
+      "Bash(find .:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }
