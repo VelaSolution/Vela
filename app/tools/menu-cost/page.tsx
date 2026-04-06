@@ -566,7 +566,6 @@ export default function MenuCostPage() {
       cogs_rate: parseFloat(cogsRate.toFixed(2)),
       margin: sellPrice - totalCost,
       ingredients: m.ingredients.map(i => ({ name: i.name, amount: "", cost: parseInt(i.cost) || 0 })),
-      memo: "",
     };
   }
 
