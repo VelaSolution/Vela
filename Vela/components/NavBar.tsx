@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import type { User } from "@supabase/supabase-js";
-import { getLocale, setLocale, type Locale } from "@/lib/i18n";
+import { getLocale, setLocale, t, type Locale } from "@/lib/i18n";
 
 const TOOLS = [
   // 경영 분석
@@ -57,9 +57,9 @@ export default function NavBar() {
           <Link href="/" className="vela-nav-logo" style={{fontSize:20,fontWeight:800,color:"#191F28",textDecoration:"none",letterSpacing:"-0.02em"}}>VELA<span style={{color:"#3182F6"}}>.</span></Link>
 
           <div className="vela-nav-links">
-            <a href="/info#features">서비스</a>
+            <a href="/info#features">{t("nav.service", locale)}</a>
             <div className="vela-dropdown">
-              <Link href="/tools" className="vela-dropdown-btn" style={{ textDecoration:"none" }}>도구 <span className="vela-dropdown-arrow">▾</span></Link>
+              <Link href="/tools" className="vela-dropdown-btn" style={{ textDecoration:"none" }}>{t("nav.tools", locale)} <span className="vela-dropdown-arrow">▾</span></Link>
               <div className="vela-dropdown-menu">
                 {TOOLS.map(item => (
                   <Link key={item.href} href={item.href} className="vela-dropdown-item">
@@ -72,9 +72,9 @@ export default function NavBar() {
                 ))}
               </div>
             </div>
-            <Link href="/community">커뮤니티</Link>
-            <Link href="/guide">가이드</Link>
-            <Link href="/pricing">요금제</Link>
+            <Link href="/community">{t("nav.community", locale)}</Link>
+            <Link href="/guide">{t("nav.guide", locale)}</Link>
+            <Link href="/pricing">{t("nav.pricing", locale)}</Link>
           </div>
 
           <div className="vela-nav-actions">
@@ -83,14 +83,14 @@ export default function NavBar() {
                 <Link href="/profile" className="vela-user-name">
                   {user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}
                 </Link>
-                <Link href="/dashboard" className="vela-btn-dashboard">대시보드</Link>
-                <button className="vela-btn-logout" onClick={handleLogout}>로그아웃</button>
-                <Link href="/simulator" className="vela-btn-start">시뮬레이터 →</Link>
+                <Link href="/dashboard" className="vela-btn-dashboard">{t("nav.dashboard", locale)}</Link>
+                <button className="vela-btn-logout" onClick={handleLogout}>{t("nav.logout", locale)}</button>
+                <Link href="/simulator" className="vela-btn-start">{t("nav.simulator", locale)}</Link>
               </>
             ) : (
               <>
-                <Link href="/login" className="vela-btn-login">로그인</Link>
-                <Link href="/signup" className="vela-btn-start">무료 시작</Link>
+                <Link href="/login" className="vela-btn-login">{t("nav.login", locale)}</Link>
+                <Link href="/signup" className="vela-btn-start">{t("nav.signup", locale)}</Link>
               </>
             )}
           </div>

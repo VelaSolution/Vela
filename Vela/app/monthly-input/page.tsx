@@ -62,7 +62,7 @@ export default function MonthlyInputPage() {
         .select("*")
         .eq("user_id", user.id)
         .eq("month", targetMonth)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setIndustry(data.industry ?? "restaurant");

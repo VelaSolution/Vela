@@ -19,6 +19,7 @@ import {
 } from "@/lib/vela";
 import VelaChat from "@/components/VelaChat";
 import KakaoShare from "@/components/KakaoShare";
+import EventBanner from "@/components/EventBanner";
 
 const CHART_COLORS = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 type Briefing = { currentStatus: string; mainIssue: string; topAction: string; actionHint: string };
@@ -707,6 +708,9 @@ function ResultContent() {
             <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
               👥 커뮤니티에 공유
             </button>
+            <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500">
+              🏆 성적표 공유
+            </button>
             <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
               {userId ? "☁️ 클라우드 저장" : "🔒 로그인 후 저장"}
             </button>
@@ -717,6 +721,11 @@ function ResultContent() {
                 대시보드 →
               </button>
             )}
+          </div>
+
+          {/* 이벤트 배너 */}
+          <div className="mt-6 print:hidden">
+            <EventBanner />
           </div>
 
           {/* 클라우드 저장 모달 */}

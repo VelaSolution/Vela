@@ -7,6 +7,8 @@ import OnboardingModal from "@/components/OnboardingModal";
 import { PLANS } from "@/lib/plans";
 import MonthlyReminder from "@/components/MonthlyReminder";
 import PromoModal from "@/components/PromoModal";
+import EventBanner from "@/components/EventBanner";
+import { useTranslation } from "@/lib/i18n";
 
 function useInView() {
   const ref = useRef<HTMLDivElement>(null);
@@ -31,11 +33,12 @@ function FadeIn({ children, delay = 0, className = "" }: { children: React.React
 }
 
 function HeroMiniSim() {
-  const [seats, setSeats] = useState(20);
-  const [spend, setSpend] = useState(12000);
-  const [turn, setTurn] = useState(2.0);
+  const t = useTranslation();
+  const [seats, setSeats] = useState(36);
+  const [spend, setSpend] = useState(25000);
+  const [turn, setTurn] = useState(1.6);
   const sales = Math.round(seats * spend * turn * 26);
-  const cost = Math.round(sales * 0.32 + 3500000 + 1500000 + 500000);
+  const cost = Math.round(sales * 0.35 + 6500000 + 2000000 + 500000);
   const profit = sales - cost;
   const margin = sales > 0 ? ((profit / sales) * 100).toFixed(1) : "0";
   const fmt = (n: number) => Math.abs(n).toLocaleString("ko-KR");
@@ -45,32 +48,32 @@ function HeroMiniSim() {
       <div style={{position:"absolute",top:0,right:0,width:120,height:120,background:"radial-gradient(circle,rgba(49,130,246,0.08),transparent)",borderRadius:"0 0 0 120px"}} />
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>🔮 실시간 미리보기</span>
+          <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>🔮 {t("hero.preview")}</span>
         </div>
-        <span style={{fontSize:11,color:"#9EA6B3",background:"#F2F4F6",padding:"3px 10px",borderRadius:100,fontWeight:600}}>드래그해서 조절</span>
+        <span style={{fontSize:11,color:"#9EA6B3",background:"#F2F4F6",padding:"3px 10px",borderRadius:100,fontWeight:600}}>{t("hero.drag")}</span>
       </div>
 
       <div style={{display:"flex",flexDirection:"column",gap:14,marginBottom:20}}>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>좌석 수</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{seats}석</span>
+            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>{t("hero.seats")}</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{seats}</span>
           </div>
           <input type="range" min={5} max={80} value={seats} onChange={e=>setSeats(Number(e.target.value))}
             style={{width:"100%",accentColor:"#3182F6",height:6}} />
         </div>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>객단가</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{spend.toLocaleString()}원</span>
+            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>{t("hero.avgSpend")}</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{spend.toLocaleString()} KRW</span>
           </div>
           <input type="range" min={3000} max={100000} step={1000} value={spend} onChange={e=>setSpend(Number(e.target.value))}
             style={{width:"100%",accentColor:"#3182F6",height:6}} />
         </div>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>일 회전율</span>
-            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{turn.toFixed(1)}회</span>
+            <span style={{fontSize:13,color:"#6B7684",fontWeight:500}}>{t("hero.turnover")}</span>
+            <span style={{fontSize:14,fontWeight:700,color:"#191F28"}}>{turn.toFixed(1)}x</span>
           </div>
           <input type="range" min={0.5} max={6} step={0.1} value={turn} onChange={e=>setTurn(Number(e.target.value))}
             style={{width:"100%",accentColor:"#3182F6",height:6}} />
@@ -79,29 +82,30 @@ function HeroMiniSim() {
 
       <div style={{background:"#F9FAFB",borderRadius:16,padding:16,marginBottom:12}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:12,color:"#9EA6B3",fontWeight:600}}>월 예상 매출</span>
-          <span style={{fontSize:20,fontWeight:800,color:"#191F28",letterSpacing:-1}}>{fmt(sales)}원</span>
+          <span style={{fontSize:12,color:"#9EA6B3",fontWeight:600}}>{t("hero.monthlySales")}</span>
+          <span style={{fontSize:20,fontWeight:800,color:"#191F28",letterSpacing:-1}}>{fmt(sales)} KRW</span>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:12,color:"#9EA6B3",fontWeight:600}}>예상 순이익</span>
-          <span style={{fontSize:22,fontWeight:800,color:profit>=0?"#059669":"#EF4444",letterSpacing:-1}}>{profit>=0?"+":"-"}{fmt(profit)}원</span>
+          <span style={{fontSize:12,color:"#9EA6B3",fontWeight:600}}>{t("hero.profit")}</span>
+          <span style={{fontSize:22,fontWeight:800,color:profit>=0?"#059669":"#EF4444",letterSpacing:-1}}>{profit>=0?"+":"-"}{fmt(profit)} KRW</span>
         </div>
         <div style={{marginTop:8,height:4,borderRadius:4,background:"#E5E8EB",overflow:"hidden"}}>
           <div style={{height:"100%",borderRadius:4,background:profit>=0?"#059669":"#EF4444",width:`${Math.min(Math.max(Number(margin),0),100)}%`,transition:"width 0.3s"}} />
         </div>
         <div style={{textAlign:"right",marginTop:4}}>
-          <span style={{fontSize:11,color:profit>=0?"#059669":"#EF4444",fontWeight:600}}>순이익률 {margin}%</span>
+          <span style={{fontSize:11,color:profit>=0?"#059669":"#EF4444",fontWeight:600}}>{t("hero.margin")} {margin}%</span>
         </div>
       </div>
 
       <Link href="/simulator" style={{display:"block",width:"100%",textAlign:"center",background:"#3182F6",color:"#fff",padding:"13px 0",borderRadius:12,fontSize:14,fontWeight:700,textDecoration:"none",transition:"background 0.15s"}}>
-        상세 분석하기 →
+        {t("hero.analyze")}
       </Link>
     </div>
   );
 }
 
 function LandingContent() {
+  const t = useTranslation();
   const formMsgRef = useRef<HTMLParagraphElement>(null);
   const submitBtnRef = useRef<HTMLButtonElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -293,12 +297,12 @@ function LandingContent() {
         <div className="hero-inner">
           <div>
             <div className="fade-init d1">
-              <div className="hero-tag"><span className="hero-tag-dot" />외식업 경영 분석 플랫폼</div>
-              <h1 className="hero-title">원가 모르면<br /><span>매달 수백만원</span> 손실</h1>
-              <p className="hero-desc">매출·원가·인건비를 3분 만에 시뮬레이션하고<br />AI가 찾아주는 절감 포인트로 순이익을 올리세요.</p>
+              <div className="hero-tag"><span className="hero-tag-dot" />{t("hero.tag")}</div>
+              <h1 className="hero-title">{t("hero.title1")}<br /><span>{t("hero.title2")}</span></h1>
+              <p className="hero-desc">{t("hero.desc")}</p>
               <div className="hero-actions">
-                <Link href="/signup" className="btn-primary">무료로 시작하기 →</Link>
-                <a href="#features" className="btn-secondary">서비스 알아보기</a>
+                <Link href="/signup" className="btn-primary">{t("hero.cta")}</Link>
+                <a href="#features" className="btn-secondary">{t("hero.cta2")}</a>
               </div>
               <p style={{fontSize:13,color:"var(--gray-400)",marginTop:12}}>카카오 로그인으로 3초 만에 시작 · 무료 플랜 제공</p>
               <div className="hero-stats">
@@ -318,17 +322,26 @@ function LandingContent() {
       {/* FEATURES */}
       <section id="features" className="features-bg">
         <div className="section-inner">
-          <FadeIn><span className="section-tag">도구</span><h2 className="section-title">사업에 필요한 모든 도구</h2><p className="section-desc">외식업 사장님을 위한 실무 도구 모음. 계산부터 콘텐츠 생성까지 한 곳에서.</p></FadeIn>
+          <FadeIn><span className="section-tag">{t("features.tag")}</span><h2 className="section-title">{t("features.title")}</h2><p className="section-desc">{t("features.desc")}</p></FadeIn>
           <div className="features-grid">
             {[
               { icon:"🧮", title:"메뉴별 원가 계산기",  desc:"식재료 원가 입력 → 원가율·건당 순익 자동 계산. 메뉴 가격 결정에 바로 활용하세요.",      tag:"원가 계산",  href:"/tools/menu-cost" },
-              { icon:"👥", title:"인건비 스케줄러",      desc:"직원별 시급·근무시간 설정 → 주간·월간 인건비 예측. 알바 채용 계획에 필수.",              tag:"인건비 관리", href:"/tools/labor" },
-              { icon:"🧾", title:"세금 계산기",          desc:"매출 기반 부가세·종합소득세 예상액 자동 산출. 세금 폭탄 없이 미리 준비하세요.",           tag:"세금 예측",  href:"/tools/tax" },
-              { icon:"📄", title:"손익계산서 PDF",       desc:"시뮬레이션 데이터로 월별 P&L 리포트 PDF 출력. 투자자·세무사에게 바로 공유 가능.",        tag:"PDF 출력",   href:"/tools/pl-report" },
-              { icon:"✅", title:"창업 체크리스트",      desc:"업종별 인허가·준비물·타임라인 단계별 가이드. 창업 전 놓치는 것 없이 준비하세요.",         tag:"창업 준비",  href:"/tools/startup-checklist" },
+              { icon:"💰", title:"AI 메뉴 가격 추천",   desc:"원가 + 경쟁 가격대 입력 → AI가 적정 메뉴 가격과 가격 전략을 추천합니다.",              tag:"AI · NEW",   href:"/tools/menu-pricing" },
+              { icon:"⚖️", title:"인건비 계산기 (법정)", desc:"주휴수당·야간수당·4대보험까지 자동 반영. 실제 인건비를 정확하게 파악하세요.",            tag:"법정 계산",  href:"/tools/labor-law" },
+              { icon:"🛵", title:"배달앱 매출 분석기",   desc:"배민·쿠팡이츠 정산서 업로드 → 수수료·실매출·건당 이익을 AI가 자동 분석합니다.",         tag:"AI · NEW",   href:"/tools/delivery-analysis" },
+              { icon:"📊", title:"리뷰 감정 분석",      desc:"네이버·배민 리뷰 붙여넣기 → AI가 감정·키워드·개선점을 분석해 한눈에 보여줍니다.",       tag:"AI · NEW",   href:"/tools/review-analysis" },
+              { icon:"💳", title:"카드매출 자동 수집",   desc:"사업자등록번호만 입력하면 여신금융협회를 통해 카드사별 매출을 자동으로 조회합니다.",       tag:"자동 연동",  href:"/tools/card-sales" },
+              { icon:"📝", title:"일일 매출 기록",       desc:"매일 매출·고객수만 입력하면 월간 자동 집계 + 요일별 매출 패턴을 분석합니다.",           tag:"매출 관리",  href:"/tools/daily-sales" },
               { icon:"📱", title:"SNS 콘텐츠 생성기",   desc:"메뉴·이벤트 정보 입력 → 인스타 캡션 AI 자동 생성. 매일 고민하는 SNS 포스팅 해결.",     tag:"AI · SNS",   href:"/tools/sns-content" },
               { icon:"💬", title:"리뷰 답변 생성기",     desc:"고객 리뷰 붙여넣기 → AI가 맞춤 답변 초안 작성. 악성 리뷰도 프로답게 대응하세요.",        tag:"AI · 리뷰",  href:"/tools/review-reply" },
               { icon:"🗺️", title:"상권 분석 도우미",    desc:"입지 조건 입력 → AI 상권 적합도 평가 리포트. 창업 전 상권 리스크를 미리 파악하세요.",    tag:"AI · 상권",  href:"/tools/area-analysis" },
+              { icon:"🧾", title:"세금 계산기",          desc:"매출 기반 부가세·종합소득세 예상액 자동 산출. 세금 폭탄 없이 미리 준비하세요.",           tag:"세금 예측",  href:"/tools/tax" },
+              { icon:"📄", title:"손익계산서 PDF",       desc:"시뮬레이션 데이터로 월별 P&L 리포트 PDF 출력. 투자자·세무사에게 바로 공유 가능.",        tag:"PDF 출력",   href:"/tools/pl-report" },
+              { icon:"🔍", title:"경쟁매장 가격 조사",   desc:"주변 매장 메뉴 가격을 기록하고 내 가격 포지셔닝을 파악하세요.",                          tag:"경쟁 분석",  href:"/tools/competitor-pricing" },
+              { icon:"🔄", title:"인수인계 체크리스트",   desc:"매장 양도양수 시 빠뜨리면 안 되는 36개 필수 항목을 체크하세요.",                          tag:"인수인계",   href:"/tools/handover" },
+              { icon:"🧾", title:"세무사 연결",          desc:"외식업 전문 세무사 매칭. 시뮬레이션 데이터 기반으로 정확한 세무 상담을 받으세요.",          tag:"세무 상담",  href:"/tools/tax-advisor" },
+              { icon:"🤝", title:"식자재 공동구매",       desc:"같은 동네 사장님끼리 식자재 공동구매하면 단가를 10~20% 낮출 수 있어요.",                 tag:"공동구매",   href:"/tools/group-buy" },
+              { icon:"🎁", title:"사장님 추천 프로그램",   desc:"친구를 초대하면 양쪽 모두 스탠다드 플랜 1개월 무료 혜택!",                              tag:"추천 보상",  href:"/referral" },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 60}>
                 <Link href={f.href} style={{ textDecoration: "none" }}>
@@ -348,7 +361,7 @@ function LandingContent() {
       {/* HOW */}
       <section>
         <div className="section-inner">
-          <FadeIn><div style={{ textAlign: "center" }}><span className="section-tag">사용 방법</span><h2 className="section-title" style={{ textAlign: "center" }}>3단계로 끝납니다</h2></div></FadeIn>
+          <FadeIn><div style={{ textAlign: "center" }}><span className="section-tag">{t("steps.tag")}</span><h2 className="section-title" style={{ textAlign: "center" }}>{t("steps.title")}</h2></div></FadeIn>
           <div className="steps-grid">
             {[
               { num: "1", icon: "📝", title: "3분 만에 입력", desc: "업종·좌석·객단가·비용 구조를 3단계로 간단하게 입력합니다. POS 파일이 있으면 바로 업로드해도 됩니다.", delay: 0, accent: "#3182F6" },
@@ -372,7 +385,7 @@ function LandingContent() {
       {/* PRICING */}
       <section id="pricing" className="features-bg">
         <div className="section-inner">
-          <FadeIn><span className="section-tag">요금제</span><h2 className="section-title">합리적인 가격으로</h2><p className="section-desc">매장 규모에 맞는 플랜을 선택하세요.</p></FadeIn>
+          <FadeIn><span className="section-tag">{t("pricing.tag")}</span><h2 className="section-title">{t("pricing.title")}</h2><p className="section-desc">{t("pricing.desc")}</p></FadeIn>
           <div className="pricing-grid">
             {PLANS.map((p) => (
               <FadeIn key={p.plan}>
@@ -393,7 +406,7 @@ function LandingContent() {
       {/* TESTIMONIALS */}
       <section className="testi-bg">
         <div className="section-inner">
-          <FadeIn><span className="section-tag" style={{ background: "rgba(255,255,255,.1)", color: "#93C5FD" }}>후기</span><h2 className="section-title">실제 사장님들의 이야기</h2></FadeIn>
+          <FadeIn><span className="section-tag" style={{ background: "rgba(255,255,255,.1)", color: "#93C5FD" }}>{t("reviews.tag")}</span><h2 className="section-title">{t("reviews.title")}</h2></FadeIn>
           <div className="testi-grid">
             {[
               { text: "원가율이 38%인 줄 몰랐는데 VELA로 확인하고 메뉴를 조정했더니 월 120만원 절감됐어요. 숫자를 보니 어디서 돈이 새는지 바로 보이더라고요.", name: "김○○", role: "카페 운영 3년차", av: "김", delay: 0 },
@@ -419,9 +432,9 @@ function LandingContent() {
       <section className="cta-bg">
         <div className="section-inner">
           <FadeIn>
-            <h2 className="cta-title">지금 바로 내 매장을 분석해보세요</h2>
-            <p className="cta-desc">카카오 로그인으로 바로 시작하세요. 무료 플랜 제공.</p>
-            <Link href="/signup" className="btn-white">무료로 시작하기 →</Link>
+            <h2 className="cta-title">{t("cta.title")}</h2>
+            <p className="cta-desc">{t("cta.desc")}</p>
+            <Link href="/signup" className="btn-white">{t("cta.btn")} →</Link>
           </FadeIn>
         </div>
       </section>
@@ -734,7 +747,7 @@ function MemberHome() {
       if (data.user) {
         const m = new Date().toISOString().slice(0,7);
         const { data: snap } = await sb.from("monthly_snapshots")
-          .select("total_sales,net_profit,month").eq("user_id", data.user.id).eq("month", m).single();
+          .select("total_sales,net_profit,month").eq("user_id", data.user.id).eq("month", m).maybeSingle();
         setThisSnap(snap ?? null);
       }
       setLoading(false);
@@ -769,7 +782,6 @@ function MemberHome() {
   return (
     <div className="min-h-screen bg-slate-50">
       <OnboardingModal />
-      <PromoModal />
 
       <main className="px-4 py-8 md:px-8">
         <div className="mx-auto max-w-4xl space-y-5">
@@ -791,6 +803,9 @@ function MemberHome() {
               <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-white text-blue-600 text-xs font-bold px-4 py-2">시작하기 →</Link>
             </div>
           )}
+
+          {/* 이벤트 배너 */}
+          <EventBanner />
 
           {/* 빠른 실행 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -886,6 +901,10 @@ export default function HomePage() {
 
   // 해시 앵커(#features 등) 접근 시 랜딩페이지 표시
   const hasHash = typeof window !== "undefined" && window.location.hash.length > 0;
-  if (hasHash) return <LandingContent />;
-  return loggedIn ? <MemberHome /> : <LandingContent />;
+  return (
+    <>
+      <PromoModal />
+      {hasHash ? <LandingContent /> : loggedIn ? <MemberHome /> : <LandingContent />}
+    </>
+  );
 }

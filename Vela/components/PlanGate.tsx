@@ -12,11 +12,16 @@ export default function PlanGate({ children }: { children: React.ReactNode }) {
     const sb = createSupabaseBrowserClient();
     sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
       if (!user) { setPlan("free"); return; }
-      sb.from("payments").select("plan").eq("user_id", user.id).eq("status", "done")
-        .order("created_at", { ascending: false }).limit(1)
-        .then(({ data }: { data: { plan: string }[] | null }) => {
-          setPlan(data && data.length > 0 ? data[0].plan : "free");
-        });
+
+      Promise.all([
+        sb.from("payments").select("plan").eq("user_id", user.id).eq("status", "done")
+          .order("created_at", { ascending: false }).limit(1),
+        sb.from("profiles").select("plan").eq("id", user.id).single(),
+      ]).then(([paymentsRes, profileRes]) => {
+        const paymentPlan = paymentsRes.data?.[0]?.plan;
+        const profilePlan = profileRes.data?.plan;
+        setPlan(paymentPlan ?? profilePlan ?? "free");
+      });
     });
   }, []);
 

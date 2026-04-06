@@ -12,6 +12,10 @@ export const INDUSTRY_LABELS: Record<string, string> = {
 
 // 1단계: 매출 정보
 export type Step1Form = {
+  storeName: string;
+  storeLocation: string;
+  openTime: string;
+  closeTime: string;
   industry: IndustryKey;
   seats: number;
   avgSpend: number;
@@ -136,6 +140,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 8, cogsWarnRate: 30, laborWarnRate: 30, netMarginWarn: 10,
     simPctMin: 0.05, simPctMax: 0.20, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "10:00", closeTime: "22:00",
       seats: 20, avgSpend: 6000, turnover: 4,
       weekdayDays: 20, weekendDays: 8, weekendMultiplier: 1.5,
       takeoutRatio: 30, cashPaymentRate: 10,
@@ -166,6 +171,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 3, cogsWarnRate: 35, laborWarnRate: 25, netMarginWarn: 8,
     simPctMin: 0.05, simPctMax: 0.25, simSteps: 5,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "11:00", closeTime: "22:00",
       seats: 36, avgSpend: 25000, turnover: 1.6,
       weekdayDays: 20, weekendDays: 6, weekendMultiplier: 1.4,
       takeoutRatio: 10, cashPaymentRate: 15,
@@ -196,6 +202,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 2, cogsWarnRate: 25, laborWarnRate: 20, netMarginWarn: 15,
     simPctMin: 0.05, simPctMax: 0.20, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "18:00", closeTime: "02:00",
       seats: 24, avgSpend: 35000, turnover: 1.2,
       weekdayDays: 16, weekendDays: 8, weekendMultiplier: 2.0,
       takeoutRatio: 0, cashPaymentRate: 20,
@@ -226,6 +233,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 1.5, cogsWarnRate: 35, laborWarnRate: 30, netMarginWarn: 12,
     simPctMin: 0.10, simPctMax: 0.30, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "17:00", closeTime: "23:00",
       seats: 16, avgSpend: 80000, turnover: 0.9,
       weekdayDays: 18, weekendDays: 6, weekendMultiplier: 1.3,
       takeoutRatio: 0, cashPaymentRate: 5,
@@ -256,6 +264,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 2.5, cogsWarnRate: 42, laborWarnRate: 25, netMarginWarn: 7,
     simPctMin: 0.05, simPctMax: 0.25, simSteps: 5,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "17:00", closeTime: "23:00",
       seats: 40, avgSpend: 45000, turnover: 1.4,
       weekdayDays: 22, weekendDays: 8, weekendMultiplier: 1.5,
       takeoutRatio: 0, cashPaymentRate: 10,
@@ -288,6 +297,7 @@ export const VALID_INDUSTRIES: IndustryKey[] = ["cafe", "restaurant", "bar", "fi
 /** 빈 폼 초기화 */
 export function createEmptyForm(industry: IndustryKey = "restaurant"): FullForm {
   return {
+    storeName: "", storeLocation: "", openTime: "10:00", closeTime: "22:00",
     industry,
     seats: 0, avgSpend: 0, turnover: 0,
     weekdayDays: 0, weekendDays: 0, weekendMultiplier: 1.0,
@@ -329,6 +339,10 @@ export function sanitizeFullForm(raw: Record<string, unknown>): FullForm {
     options.includes(raw[k] as T) ? (raw[k] as T) : fallback;
 
   return {
+    storeName:            typeof raw.storeName === "string" ? raw.storeName : "",
+    storeLocation:        typeof raw.storeLocation === "string" ? raw.storeLocation : "",
+    openTime:             typeof raw.openTime === "string" ? raw.openTime : "10:00",
+    closeTime:            typeof raw.closeTime === "string" ? raw.closeTime : "22:00",
     industry,
     seats:                num("seats", def.seats, 1, 10000),
     avgSpend:             num("avgSpend", def.avgSpend, 100, 10000000),

@@ -14,7 +14,6 @@ export const PLANS = [
       { text: "AI 브리핑 & 전략 추천", included: false },
       { text: "AI 도구 (SNS/리뷰/상권)", included: false },
       { text: "POS 분석 · PDF · 대시보드", included: false },
-      { text: "다점포 · 팀 관리", included: false },
     ],
     landingFeatures: ["수익 시뮬레이터 (월 3회)", "기본 도구 5개", "커뮤니티 접근", "결과 저장 1개"],
     btn: "무료로 시작",
@@ -38,35 +37,12 @@ export const PLANS = [
       { text: "손익계산서 PDF 출력", included: true },
       { text: "대시보드 월별 매출 관리", included: true },
       { text: "CSV 내보내기 · 12개월 히스토리", included: true },
-      { text: "다점포 관리", included: false },
-      { text: "팀 멤버 초대", included: false },
     ],
-    landingFeatures: ["시뮬레이터 무제한", "AI 브리핑·전략 무제한", "AI 도구 3종 무제한", "POS·PDF·대시보드·CSV"],
+    landingFeatures: ["시뮬레이터 무제한", "AI 브리핑·전략 무제한", "AI 도구 무제한", "POS·PDF·대시보드·CSV"],
     btn: "스탠다드 시작",
     cls: "pricing-btn-blue",
     href: "/pricing",
     popular: true,
-  },
-  {
-    id: "pro",
-    plan: "프로",
-    price: "29,900",
-    priceNum: 29900,
-    unit: "원/월",
-    desc: "다점포·프랜차이즈 운영자를 위한 올인원",
-    features: [
-      { text: "스탠다드 모든 기능", included: true },
-      { text: "다점포 관리 (최대 5개)", included: true },
-      { text: "팀 멤버 초대 (최대 10명)", included: true },
-      { text: "무제한 히스토리", included: true },
-      { text: "우선 고객 지원", included: true },
-      { text: "월간 경영 리포트 이메일", included: true },
-    ],
-    landingFeatures: ["스탠다드 전체 기능", "다점포 관리 (5개)", "팀 멤버 초대 (10명)", "우선 지원 · 월간 리포트"],
-    btn: "프로 시작",
-    cls: "pricing-btn-gray",
-    href: "/pricing",
-    popular: false,
   },
 ];
 
@@ -80,34 +56,19 @@ export const PLAN_LIMITS = {
     pdfEnabled: false,
     dashboardEnabled: false,
     csvEnabled: false,
-    storeMax: 1,
-    teamMax: 0,
   },
   standard: {
     simulatorPerMonth: Infinity,
-    historyMax: 100, // ~12개월
+    historyMax: 100,
     aiEnabled: true,
     posEnabled: true,
     pdfEnabled: true,
     dashboardEnabled: true,
     csvEnabled: true,
-    storeMax: 1,
-    teamMax: 0,
-  },
-  pro: {
-    simulatorPerMonth: Infinity,
-    historyMax: Infinity,
-    aiEnabled: true,
-    posEnabled: true,
-    pdfEnabled: true,
-    dashboardEnabled: true,
-    csvEnabled: true,
-    storeMax: 5,
-    teamMax: 10,
   },
 } as const;
 
-export type PlanId = "free" | "standard" | "pro";
+export type PlanId = "free" | "standard";
 
 /** 플랜별 결제 가격 (원) — 결제 검증에 사용 */
 export const PLAN_PRICES: Record<string, number> = Object.fromEntries(

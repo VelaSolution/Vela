@@ -38,6 +38,8 @@ export default function DashboardHome() {
   const [monthlyGoal, setMonthlyGoal] = useState<number|null>(null);
   const [goalInput, setGoalInput]     = useState("");
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [todaySales, setTodaySales] = useState("");
+  const [todaySaved, setTodaySaved] = useState(false);
   const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null;
 
   useEffect(() => {
@@ -65,6 +67,16 @@ export default function DashboardHome() {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem("vela-monthly-goal");
     if (saved) setMonthlyGoal(Number(saved));
+  }, []);
+
+  // 오늘의 매출: localStorage에서 불러오기
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const saved = JSON.parse(localStorage.getItem("vela-today-sales") ?? "{}");
+      if (saved.date === today) { setTodaySales(String(saved.sales)); setTodaySaved(true); }
+    } catch { /* */ }
   }, []);
 
   const handleSetGoal = () => {
@@ -195,8 +207,6 @@ export default function DashboardHome() {
               <h1 className="text-2xl font-bold text-slate-900 mt-1">{greeting}, {name}! 👋</h1>
             </div>
             <div className="flex gap-2">
-              <Link href="/stores" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">🏪 매장 관리</Link>
-              <Link href="/team" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">👥 팀</Link>
               <Link href="/simulator" className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">시뮬레이터 →</Link>
             </div>
           </div>
@@ -234,6 +244,47 @@ export default function DashboardHome() {
               </div>
             ))}
           </div>
+
+          {/* 오늘의 매출 퀵 입력 */}
+          {(() => {
+            const todayKey = "vela-today-sales";
+            const today = new Date().toISOString().slice(0, 10);
+            const dailyGoal = monthlyGoal ? Math.round(monthlyGoal / 26) : 0;
+            const todayNum = Number(todaySales.replace(/[^0-9]/g, "")) || 0;
+            const goalPct = dailyGoal > 0 ? Math.min(Math.round((todayNum / dailyGoal) * 100), 100) : 0;
+            return (
+              <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-bold text-slate-900">📊 오늘의 매출</h2>
+                  <span className="text-xs text-slate-400">{today}</span>
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="text" inputMode="numeric" value={todaySaved ? fmt(todayNum) : todaySales}
+                    onChange={(e) => { setTodaySales(e.target.value.replace(/[^0-9]/g, "")); setTodaySaved(false); }}
+                    placeholder="오늘 매출 입력"
+                    className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button onClick={() => {
+                    if (!todaySales) return;
+                    localStorage.setItem(todayKey, JSON.stringify({ date: today, sales: todayNum }));
+                    setTodaySaved(true);
+                  }} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-700">{todaySaved ? "저장됨 ✓" : "저장"}</button>
+                </div>
+                {dailyGoal > 0 && todayNum > 0 && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                      <span>일 목표 {fmt(dailyGoal)}원</span>
+                      <span className={goalPct >= 100 ? "text-emerald-500 font-semibold" : ""}>{goalPct}% 달성</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div className={`h-full rounded-full transition-all ${goalPct >= 100 ? "bg-emerald-500" : goalPct >= 70 ? "bg-blue-500" : "bg-amber-400"}`} style={{ width: `${goalPct}%` }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 목표 달성 게이지 */}
           <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">

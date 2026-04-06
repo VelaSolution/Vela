@@ -4,20 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const PROMO_KEY = "vela-promo-dismissed";
-const PROMO_ID = "launch-2026-04"; // 프로모션 변경 시 ID만 바꾸면 다시 표시
+const PROMO_ID = "launch-2026-04";
 const PROMO_TODAY_KEY = "vela-promo-today";
 
 export default function PromoModal() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // 영구 닫기 체크
     const dismissed = localStorage.getItem(PROMO_KEY);
     if (dismissed === PROMO_ID) return;
-    // 오늘 하루 안보기 체크
     const todayDismissed = localStorage.getItem(PROMO_TODAY_KEY);
     if (todayDismissed === new Date().toISOString().slice(0, 10)) return;
-    // 페이지 로드 후 0.5초 뒤 표시 (자연스러운 진입)
     const timer = setTimeout(() => setShow(true), 500);
     return () => clearTimeout(timer);
   }, []);
@@ -27,85 +24,118 @@ export default function PromoModal() {
     setShow(false);
   };
 
+  const dismissToday = () => {
+    localStorage.setItem(PROMO_TODAY_KEY, new Date().toISOString().slice(0, 10));
+    setShow(false);
+  };
+
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-4" onClick={dismiss}>
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)", padding: 16 }}
+      onClick={dismissToday}
+    >
       <div
-        className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95"
         onClick={(e) => e.stopPropagation()}
-        style={{ animation: "modalIn 0.3s ease-out" }}
+        style={{
+          background: "#fff",
+          borderRadius: 24,
+          padding: 28,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
+          border: "1px solid #E5E8EB",
+          position: "relative",
+          overflow: "hidden",
+          width: "100%",
+          maxWidth: 420,
+          animation: "promoIn 0.3s ease-out",
+        }}
       >
-        {/* 상단 그라데이션 */}
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 px-6 pt-8 pb-6 text-center">
-          <div className="text-5xl mb-3">🎉</div>
-          <h2 className="text-2xl font-extrabold text-white leading-tight">
-            출시 기념 이벤트
-          </h2>
-          <p className="text-blue-200 text-sm mt-2">지금 가입하면 모든 기능이 무료!</p>
-        </div>
+        {/* 장식 */}
+        <div style={{ position: "absolute", top: 0, right: 0, width: 120, height: 120, background: "radial-gradient(circle,rgba(49,130,246,0.08),transparent)", borderRadius: "0 0 0 120px" }} />
 
-        {/* 본문 */}
-        <div className="px-6 py-6 space-y-4">
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-center">
-            <p className="text-lg font-extrabold text-amber-700">스탠다드 플랜 1개월 무료</p>
-            <p className="text-xs text-amber-600 mt-1">회원가입만 하면 자동 적용 · 카드 등록 없음</p>
+        {/* 헤더 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#191F28" }}>🎉 출시 기념 이벤트</span>
           </div>
-
-          <div className="space-y-2">
-            {[
-              "수익 시뮬레이터 무제한",
-              "AI 브리핑 & 전략 추천 무제한",
-              "AI 도구 (SNS · 리뷰 · 상권) 무제한",
-              "POS 분석 · 손익계산서 PDF",
-              "대시보드 · 월별 매출 관리",
-            ].map((f) => (
-              <div key={f} className="flex items-center gap-2 text-sm text-slate-700">
-                <span className="text-blue-500 text-base">✓</span>
-                {f}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-center text-xs text-slate-400">
-            이벤트 기간: 2026.04.04 ~ 2026.05.04
-          </p>
-
-          <Link
-            href="/signup"
-            onClick={dismiss}
-            className="block w-full rounded-2xl bg-blue-600 py-4 text-center text-base font-bold text-white hover:bg-blue-700 transition"
-          >
-            지금 무료로 시작하기 →
-          </Link>
-
           <button
-            onClick={() => {
-              localStorage.setItem(PROMO_TODAY_KEY, new Date().toISOString().slice(0, 10));
-              setShow(false);
-            }}
-            className="block w-full text-center text-sm text-slate-400 hover:text-slate-600 py-1"
+            onClick={dismissToday}
+            aria-label="닫기"
+            style={{ fontSize: 11, color: "#9EA6B3", background: "#F2F4F6", padding: "3px 10px", borderRadius: 100, fontWeight: 600, border: "none", cursor: "pointer" }}
           >
-            오늘 하루 안 보기
+            닫기
           </button>
         </div>
 
-        {/* 닫기 버튼 */}
-        <button
-          onClick={dismiss}
-          aria-label="닫기"
-          className="absolute top-4 right-4 text-white/70 hover:text-white text-xl leading-none"
-        >
-          &times;
-        </button>
+        {/* 타이틀 */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "#191F28", letterSpacing: "-0.02em", lineHeight: 1.4, margin: 0 }}>
+            스탠다드 플랜<br />
+            <span style={{ color: "#3182F6" }}>1개월 무료</span>
+          </h2>
+          <p style={{ fontSize: 13, color: "#6B7684", marginTop: 8 }}>회원가입만 하면 자동 적용</p>
+        </div>
 
-        <style>{`
-          @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-          }
-        `}</style>
+        {/* 혜택 목록 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+          {[
+            "수익 시뮬레이터 무제한",
+            "AI 브리핑 & 전략 추천",
+            "AI 도구 (SNS / 리뷰 / 상권)",
+            "POS 분석 / 손익계산서 PDF",
+            "대시보드 / 월별 매출 관리",
+          ].map((text) => (
+            <div key={text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ width: 18, height: 18, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#059669", flexShrink: 0 }}>
+                ✓
+              </span>
+              <span style={{ fontSize: 14, color: "#333D4B", fontWeight: 500 }}>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 가격 영역 */}
+        <div style={{ background: "#F9FAFB", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: "#9EA6B3", fontWeight: 600 }}>정상가</span>
+            <span style={{ fontSize: 14, color: "#9EA6B3", textDecoration: "line-through" }}>월 9,900원</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: "#9EA6B3", fontWeight: 600 }}>이벤트 가격</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: "#059669", letterSpacing: -1 }}>0원</span>
+          </div>
+          <div style={{ marginTop: 8, height: 4, borderRadius: 4, background: "#E5E8EB", overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: 4, background: "#059669", width: "100%", transition: "width 0.3s" }} />
+          </div>
+          <div style={{ textAlign: "right", marginTop: 4 }}>
+            <span style={{ fontSize: 11, color: "#059669", fontWeight: 600 }}>100% 할인</span>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <Link
+          href="/signup"
+          onClick={dismiss}
+          style={{ display: "block", width: "100%", textAlign: "center", background: "#3182F6", color: "#fff", padding: "13px 0", borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: "none", transition: "background 0.15s" }}
+        >
+          무료로 시작하기 →
+        </Link>
+
+        <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "#9EA6B3" }}>
+          카드 등록 없이 시작 ·{" "}
+          <button onClick={dismissToday} style={{ background: "none", border: "none", color: "#9EA6B3", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+            오늘 하루 안 보기
+          </button>
+        </p>
       </div>
+
+      <style>{`
+        @keyframes promoIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }
