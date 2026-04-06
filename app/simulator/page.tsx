@@ -494,53 +494,36 @@ function InputCard({
   }, [value, focused]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{label}</p>
-          <p className="mt-1 text-xs text-slate-400">{hint}</p>
-        </div>
-        {suffix && (
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
-            {suffix}
-          </span>
-        )}
+    <div className="bg-white rounded-2xl p-5">
+      <p className="text-[15px] font-semibold text-slate-900">{label}</p>
+      <p className="text-xs text-slate-400 mt-0.5 mb-4">{hint}</p>
+
+      <div className="flex items-end gap-2 max-w-[220px]">
+        <input
+          type={money && focused ? "number" : money ? "text" : "number"}
+          inputMode="numeric"
+          value={money ? (focused ? raw : fmt(value)) : String(value)}
+          onFocus={() => { setFocused(true); setRaw(String(value)); }}
+          onChange={(e) => {
+            const v = e.target.value.replace(/[^0-9.]/g, "");
+            setRaw(v);
+            const n = Number(v);
+            if (!isNaN(n)) onChange(n);
+          }}
+          onBlur={() => {
+            setFocused(false);
+            const n = Number(raw.replace(/[^0-9.]/g, ""));
+            if (!isNaN(n)) onChange(n);
+          }}
+          className={`w-full border-0 border-b-2 bg-transparent pb-2 text-[28px] font-bold text-slate-900 outline-none transition caret-blue-500 ${
+            error ? "border-red-400" : focused ? "border-blue-500" : "border-slate-200"
+          }`}
+          style={{ lineHeight: 1.2 }}
+        />
+        <span className="pb-2.5 text-[15px] font-medium text-slate-400 shrink-0">{suffix}</span>
       </div>
 
-      <input
-        type={money && focused ? "number" : money ? "text" : "number"}
-        inputMode="numeric"
-        value={money ? (focused ? raw : fmt(value)) : String(value)}
-        onFocus={() => {
-          setFocused(true);
-          setRaw(String(value));
-        }}
-        onChange={(e) => {
-          const v = e.target.value.replace(/[^0-9.]/g, "");
-          setRaw(v);
-          const n = Number(v);
-          if (!isNaN(n)) onChange(n);
-        }}
-        onBlur={() => {
-          setFocused(false);
-          const n = Number(raw.replace(/[^0-9.]/g, ""));
-          if (!isNaN(n)) onChange(n);
-        }}
-        className={`h-14 w-full rounded-2xl border bg-slate-50 px-4 text-xl font-semibold text-slate-900 outline-none transition focus:bg-white ${
-          error
-            ? "border-red-300 focus:border-red-400"
-            : "border-slate-200 focus:border-slate-400"
-        }`}
-      />
-
-      {error ? (
-        <p className="mt-2 text-xs text-red-500">{error}</p>
-      ) : (
-        <p className="mt-2 text-xs text-slate-400">
-          현재 입력값: {money ? fmt(value) : value}
-          {suffix ?? ""}
-        </p>
-      )}
+      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
@@ -567,46 +550,28 @@ function SliderCard({
   error?: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <div className="bg-white rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm font-semibold text-slate-900">{label}</p>
-          <p className="mt-1 text-xs text-slate-400">{hint}</p>
+          <p className="text-[15px] font-semibold text-slate-900">{label}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{hint}</p>
         </div>
-        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
-          {suffix}
-        </span>
+        <span className="text-[28px] font-bold text-slate-900">{value}<span className="text-[15px] font-medium text-slate-400 ml-1">{suffix}</span></span>
       </div>
 
-      <div className={`rounded-2xl p-4 ${error ? "bg-red-50" : "bg-slate-50"}`}>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm text-slate-500">현재 값</span>
-          <span className="text-lg font-bold text-slate-900">
-            {value}
-            {suffix}
-          </span>
-        </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="vela-slider"
+      />
 
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full"
-        />
-
-        <div className="mt-2 flex justify-between text-xs text-slate-400">
-          <span>
-            {min}
-            {suffix}
-          </span>
-          <span>
-            {max}
-            {suffix}
-          </span>
-        </div>
+      <div className="mt-2 flex justify-between text-[11px] text-slate-300">
+        <span>{min}{suffix}</span>
+        <span>{max}{suffix}</span>
       </div>
 
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
@@ -650,10 +615,10 @@ function Toggle({
 }
 
 function StepIndicator({ current }: { current: number }) {
-  const steps = ["매출 정보", "운영 비용", "초기비용 & 부채"];
+  const steps = ["매출 정보", "운영 비용", "초기비용"];
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1">
       {steps.map((label, i) => {
         const step = i + 1;
         const done = step < current;
@@ -661,33 +626,7 @@ function StepIndicator({ current }: { current: number }) {
 
         return (
           <React.Fragment key={step}>
-            <div className="flex items-center gap-2">
-              <div
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition ${
-                  active
-                    ? "bg-slate-900 text-white"
-                    : done
-                    ? "bg-emerald-500 text-white"
-                    : "bg-slate-200 text-slate-400"
-                }`}
-              >
-                {done ? "✓" : step}
-              </div>
-              <span
-                className={`text-sm ${
-                  active
-                    ? "font-semibold text-slate-900"
-                    : done
-                    ? "text-emerald-600"
-                    : "text-slate-400"
-                }`}
-              >
-                {label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`h-px flex-1 ${done ? "bg-emerald-400" : "bg-slate-200"}`} />
-            )}
+            <div className={`flex-1 rounded-full h-1.5 transition-all ${done ? "bg-blue-500" : active ? "bg-blue-500" : "bg-slate-200"}`} />
           </React.Fragment>
         );
       })}
@@ -700,44 +639,72 @@ function PreviewBar({ form }: { form: FullForm }) {
   const isProfit = result.profit >= 0;
 
   return (
-    <div className="rounded-[28px] bg-slate-900 p-5 text-white">
-      <p className="mb-3 text-xs font-medium text-slate-400">실시간 미리보기</p>
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 p-5 lg:p-5 max-lg:p-3">
+      {/* 데스크톱: 풀 버전 */}
+      <div className="hidden lg:block">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[13px] font-semibold text-slate-500">실시간 미리보기</p>
+          <span className={`text-[13px] font-bold ${isProfit ? "text-emerald-500" : "text-red-500"}`}>
+            {isProfit ? "흑자" : "적자"} · 순이익률 {pct(result.netMargin)}
+          </span>
+        </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-slate-400">월 총 매출</p>
-          <p className="mt-1 text-sm font-bold break-all">{fmt(result.totalSales)}원</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-slate-400">세전 순이익</p>
-          <p className={`mt-1 text-sm font-bold break-all ${isProfit ? "text-emerald-400" : "text-red-400"}`}>
-            {fmt(result.profit)}원
+        <div className="text-center mb-4">
+          <p className="text-[13px] text-slate-400">세후 실수령</p>
+          <p className={`text-[32px] font-extrabold tracking-tight mt-1 ${result.netProfit >= 0 ? "text-slate-900" : "text-red-500"}`}>
+            {result.netProfit >= 0 ? "+" : ""}{fmt(result.netProfit)}<span className="text-[18px] font-bold text-slate-400">원</span>
           </p>
         </div>
-        <div className="min-w-0">
-          <p className="text-xs text-slate-400">세후 실수령</p>
-          <p className={`mt-1 text-sm font-bold break-all ${result.netProfit >= 0 ? "text-emerald-300" : "text-red-300"}`}>
-            {fmt(result.netProfit)}원
-          </p>
+
+        <div className="h-1.5 w-full rounded-full bg-slate-100 mb-4">
+          <div className={`h-full rounded-full transition-all duration-500 ${isProfit ? "bg-blue-500" : "bg-red-400"}`} style={{ width: `${Math.min(Math.abs(result.netMargin) * 5, 100)}%` }} />
         </div>
-        <div className="min-w-0">
-          <p className="text-xs text-slate-400">현금흐름</p>
-          <p className={`mt-1 text-sm font-bold break-all ${result.cashFlow >= 0 ? "text-blue-300" : "text-red-300"}`}>
-            {fmt(result.cashFlow)}원
-          </p>
+
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "월 매출", value: result.totalSales },
+            { label: "세전 순이익", value: result.profit, colored: true },
+            { label: "현금흐름", value: result.cashFlow, colored: true },
+          ].map((item) => (
+            <div key={item.label} className="text-center">
+              <p className="text-[11px] text-slate-400">{item.label}</p>
+              <p className={`text-[14px] font-bold mt-0.5 ${item.colored ? (item.value >= 0 ? "text-slate-900" : "text-red-500") : "text-slate-900"}`}>{fmt(item.value)}원</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-700">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${isProfit ? "bg-emerald-400" : "bg-red-400"}`}
-            style={{ width: `${Math.min(Math.abs(result.netMargin) * 5, 100)}%` }}
-          />
+      {/* 모바일: 컴팩트 바 */}
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3">
+          {/* 프로그레스 링 */}
+          <div className="relative w-12 h-12 shrink-0">
+            <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
+              <circle cx="18" cy="18" r="14" fill="none" stroke="#E5E8EB" strokeWidth="3" />
+              <circle cx="18" cy="18" r="14" fill="none" stroke={isProfit ? "#3182F6" : "#EF4444"} strokeWidth="3" strokeLinecap="round"
+                strokeDasharray={`${Math.min(Math.abs(result.netMargin) * 2.5, 88)} 88`} />
+            </svg>
+            <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold ${isProfit ? "text-blue-600" : "text-red-500"}`}>
+              {pct(result.netMargin)}
+            </span>
+          </div>
+
+          {/* 지표 3개 */}
+          <div className="flex-1 grid grid-cols-3 gap-1">
+            <div>
+              <p className="text-[10px] text-slate-400">매출</p>
+              <p className="text-[13px] font-bold text-slate-900 truncate">{fmt(result.totalSales)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">순이익</p>
+              <p className={`text-[13px] font-bold truncate ${isProfit ? "text-slate-900" : "text-red-500"}`}>{fmt(result.profit)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400">실수령</p>
+              <p className={`text-[13px] font-bold truncate ${result.netProfit >= 0 ? "text-blue-600" : "text-red-500"}`}>{fmt(result.netProfit)}</p>
+            </div>
+          </div>
         </div>
-        <span className={`text-xs font-semibold whitespace-nowrap ${isProfit ? "text-emerald-400" : "text-red-400"}`}>
-          순이익률 {pct(result.netMargin)}
-        </span>
       </div>
     </div>
   );
@@ -763,52 +730,91 @@ function Step1({
 
   return (
     <div className="space-y-6">
+      {/* 가게 정보 */}
+      <section className="rounded-2xl bg-white p-5">
+        <h2 className="text-[17px] font-bold text-slate-900 mb-1">가게 정보</h2>
+        <p className="text-xs text-slate-400 mb-4">기본적인 매장 정보를 입력해주세요.</p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-[13px] font-semibold text-slate-700 mb-1.5 block">가게 이름</label>
+            <input
+              value={form.storeName}
+              onChange={(e) => update("storeName", e.target.value)}
+              placeholder="예: 민혁이네 카페"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition focus:bg-white focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="text-[13px] font-semibold text-slate-700 mb-1.5 block">주소지 (동)</label>
+            <input
+              value={form.storeLocation}
+              onChange={(e) => update("storeLocation", e.target.value)}
+              placeholder="예: 서울 마포구 서교동"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition focus:bg-white focus:border-blue-500"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[13px] font-semibold text-slate-700 mb-1.5 block">오픈 시간</label>
+              <input
+                type="time"
+                value={form.openTime}
+                onChange={(e) => update("openTime", e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition focus:bg-white focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="text-[13px] font-semibold text-slate-700 mb-1.5 block">마감 시간</label>
+              <input
+                type="time"
+                value={form.closeTime}
+                onChange={(e) => update("closeTime", e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[15px] text-slate-900 outline-none transition focus:bg-white focus:border-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* POS 파일 업로드 */}
       <PosUploader industry={form.industry} onApply={applyPosResult} plan={plan} />
 
-      <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-xl font-bold text-slate-900">업종 선택</h2>
-        <p className="mb-4 text-sm text-slate-500">
-          업종별 벤치마크 기준과 기본값이 자동 적용됩니다.
-        </p>
+      <section className="rounded-2xl bg-white p-5">
+        <h2 className="text-[17px] font-bold text-slate-900 mb-1">업종 선택</h2>
+        <p className="text-xs text-slate-400 mb-4">업종에 맞는 기준값이 자동 적용됩니다.</p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-5 gap-2">
           {VALID_INDUSTRIES.map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => update("industry", key)}
-              className={`flex flex-col items-center gap-2 rounded-3xl border p-4 text-center transition ${
+              className={`flex flex-col items-center gap-1.5 rounded-2xl p-3 text-center transition ${
                 form.industry === key
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  ? "bg-blue-50 ring-2 ring-blue-500"
+                  : "bg-slate-50 hover:bg-slate-100"
               }`}
             >
-              <span className="text-2xl">{INDUSTRY_CONFIG[key].icon}</span>
-              <span className="text-xs font-semibold">{INDUSTRY_CONFIG[key].label}</span>
+              <span className="text-xl">{INDUSTRY_CONFIG[key].icon}</span>
+              <span className={`text-[11px] font-semibold ${form.industry === key ? "text-blue-600" : "text-slate-500"}`}>{INDUSTRY_CONFIG[key].label}</span>
             </button>
           ))}
-        </div>
-
-        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">
-          <span className="font-semibold text-slate-700">{config.label} 기준</span>
-          &nbsp;— 원가율 {config.cogsWarnRate}% · 인건비 {config.laborWarnRate}% · 최대
-          회전율 {config.maxTurnover}회 · 순이익률 {config.netMarginWarn}% 이상
         </div>
 
         <button
           type="button"
           onClick={loadIndustryDefaults}
-          className="mt-3 w-full rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
+          className="mt-4 w-full rounded-xl bg-slate-50 px-4 py-3 text-[13px] font-medium text-slate-500 transition hover:bg-slate-100"
         >
-          {config.label} 샘플 기본값 불러오기 →
+          {config.label} 기본값 불러오기
         </button>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
-        <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">홀 매출</h2>
-          <p className="mt-1 text-sm text-slate-500">매장 내 홀 영업 수치를 입력하세요.</p>
+      <section className="space-y-3 rounded-2xl bg-slate-50 p-3">
+        <div className="px-2 pt-2">
+          <h2 className="text-[17px] font-bold text-slate-900">홀 매출</h2>
+          <p className="text-xs text-slate-400 mt-0.5">매장 내 홀 영업 수치를 입력하세요.</p>
         </div>
 
         <InputCard
@@ -898,52 +904,35 @@ function Step1({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
-        <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">시간대별 매출 비중</h2>
-          <p className="mt-1 text-sm text-slate-500">합계가 100%가 되도록 입력하세요.</p>
+      <section className="rounded-2xl bg-white p-5">
+        <h2 className="text-[17px] font-bold text-slate-900 mb-1">시간대별 매출 비중</h2>
+        <p className="text-xs text-slate-400 mb-4">합계 100%가 되도록 조절하세요.</p>
+
+        <div className="space-y-5">
+          {[
+            { label: "점심", time: "11~14시", key: "lunchRatio" as const, value: form.lunchRatio, color: "#3182F6" },
+            { label: "저녁", time: "17~22시", key: "dinnerRatio" as const, value: form.dinnerRatio, color: "#6366F1" },
+            { label: "심야", time: "22~06시", key: "nightRatio" as const, value: form.nightRatio, color: "#0EA5E9" },
+          ].map((item) => (
+            <div key={item.key}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[14px] font-semibold text-slate-800">{item.label} <span className="text-[12px] font-normal text-slate-400">{item.time}</span></span>
+                <span className="text-[18px] font-bold" style={{ color: item.color }}>{item.value}%</span>
+              </div>
+              <input
+                type="range" min={0} max={100} step={5}
+                value={item.value}
+                onChange={(e) => update(item.key, Number(e.target.value))}
+                className="vela-slider"
+              />
+            </div>
+          ))}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <SliderCard
-            label="점심"
-            hint="런치 타임 매출 비중"
-            value={form.lunchRatio}
-            onChange={(v) => update("lunchRatio", v)}
-            min={0}
-            max={100}
-            step={5}
-            suffix="%"
-          />
-          <SliderCard
-            label="저녁"
-            hint="디너 타임 매출 비중"
-            value={form.dinnerRatio}
-            onChange={(v) => update("dinnerRatio", v)}
-            min={0}
-            max={100}
-            step={5}
-            suffix="%"
-          />
-          <SliderCard
-            label="심야"
-            hint="심야 시간대 매출 비중"
-            value={form.nightRatio}
-            onChange={(v) => update("nightRatio", v)}
-            min={0}
-            max={100}
-            step={5}
-            suffix="%"
-          />
-        </div>
-
-        <div
-          className={`rounded-2xl px-4 py-3 text-xs ${
-            ratioSum === 100 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
-          }`}
-        >
-          합계: {ratioSum}%
-          {ratioSum !== 100 && " · 합계가 100%가 되어야 합니다"}
+        <div className={`mt-4 rounded-xl px-4 py-2.5 text-[13px] font-medium text-center ${
+          ratioSum === 100 ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+        }`}>
+          합계 {ratioSum}%{ratioSum !== 100 && " · 100%로 맞춰주세요"}
         </div>
       </section>
 
@@ -1935,28 +1924,20 @@ export default function Page() {
           />
         )}
 
-        <section className="mb-6 rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <div className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">VELA</div>
-                <button type="button" onClick={() => router.push("/")} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50 transition">
-                  ← 홈으로
-                </button>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">사업의 방향을 계산하다</h1>
-              <p className="mt-2 text-slate-500">입력값을 모두 작성한 뒤 결과 보기를 누르시면 다음 화면에서 월 매출, 순이익, 손익분기점, 추천 전략을 한 번에 확인하실 수 있습니다.</p>
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <button type="button" onClick={() => router.push("/")} className="text-sm text-slate-400 hover:text-slate-700 transition">← 홈</button>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowSaveModal(true)} className="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50">불러오기</button>
+              <button type="button" onClick={() => { const label = saveSlot(form); showMessage(`${label} 저장 완료`); }} className="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 hover:bg-slate-50">저장</button>
+              <button type="button" onClick={() => { setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700">클라우드</button>
             </div>
-            <div className="w-full max-w-sm"><StepIndicator current={step} /></div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <button type="button" onClick={() => { const label = saveSlot(form); showMessage(`${label} 저장 완료`); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">💾 현재 값 저장</button>
-            <button type="button" onClick={() => { setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">☁️ 클라우드 저장</button>
-            <button type="button" onClick={() => setShowSaveModal(true)} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">📂 저장값 불러오기</button>
-            <button type="button" onClick={() => { setForm(createEmptyForm(form.industry)); setStep(1); setStepError(""); showMessage("초기화가 완료되었습니다."); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">초기화</button>
-            <button type="button" onClick={async () => { try { const url = `${window.location.origin}${window.location.pathname}?${buildQuery(form)}`; await navigator.clipboard.writeText(url); showMessage("링크가 복사되었습니다."); } catch (error) { console.error(error); showMessage("링크 복사에 실패했습니다."); } }} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 공유</button>
-          </div>
-          {saveMessage && <p className="mt-3 text-sm font-medium text-emerald-600">{saveMessage}</p>}
+
+          <h1 className="text-[26px] font-extrabold tracking-tight text-slate-900 mb-1">수익 시뮬레이터</h1>
+          <p className="text-[14px] text-slate-400 mb-5">{["매출 정보", "운영 비용", "초기비용"][step - 1]} · {step}/3단계</p>
+          <StepIndicator current={step} />
+          {saveMessage && <p className="mt-3 text-sm font-medium text-blue-500">{saveMessage}</p>}
 
           {/* 클라우드 저장 모달 */}
           {showCloudSave && (
@@ -1988,7 +1969,7 @@ export default function Page() {
         </section>
 
         {/* 모바일 플로팅 미리보기 — 스크롤 시 상단 고정 */}
-        <div className="lg:hidden sticky top-16 z-40 mb-4">
+        <div className="lg:hidden sticky top-[64px] z-40 mb-4 -mx-4 px-4 pt-2 pb-1 bg-slate-50">
           <PreviewBar form={form} />
         </div>
 
@@ -1999,28 +1980,44 @@ export default function Page() {
             {step === 2 && <Step2 form={form} update={update} errors={step2Errors} />}
             {step === 3 && <Step3 form={form} update={update} errors={step3Errors} />}
 
-            <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
-              {stepError && <div className="mb-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
+            {/* 데스크톱 네비게이션 */}
+            <section className="hidden lg:block rounded-2xl bg-white p-5 ring-1 ring-slate-100">
+              {stepError && <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
               <div className="flex gap-3">
                 {step > 1 && (
-                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-2xl border border-slate-200 px-6 py-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">← 이전</button>
+                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">이전</button>
                 )}
                 {step < 3 ? (
-                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-2xl bg-slate-900 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-700 active:scale-95">다음 단계 →</button>
+                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">다음 단계</button>
                 ) : (
-                  <button type="button" onClick={goToResult} className="flex-1 rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95">결과 보기 →</button>
+                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">결과 보기</button>
                 )}
               </div>
             </section>
 
-            <div className="lg:hidden">
+            {/* 모바일 하단 고정 네비게이션 */}
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-3 safe-bottom">
+              {stepError && <p className="text-xs text-red-500 text-center mb-2">{stepError}</p>}
+              <div className="flex gap-3 max-w-lg mx-auto">
+                {step > 1 && (
+                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-5 py-3.5 text-sm font-semibold text-slate-600">이전</button>
+                )}
+                {step < 3 ? (
+                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 py-3.5 text-sm font-bold text-white active:scale-[0.98]">다음 단계</button>
+                ) : (
+                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 py-3.5 text-sm font-bold text-white active:scale-[0.98]">결과 보기</button>
+                )}
+              </div>
             </div>
+
+            {/* 모바일 하단 고정 버튼 여백 */}
+            <div className="lg:hidden h-20" />
           </div>
 
-          <div className="hidden lg:block">
-            <div className="sticky top-6 space-y-4">
+          <div className="hidden lg:block relative">
+            <div className="fixed top-20 w-[420px] space-y-4" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
               <PreviewBar form={form} />
-              <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">입력 단계</p>
                 <div className="space-y-2">
                   {(["매출 정보", "운영 비용", "초기비용 & 부채"] as const).map((label, i) => {

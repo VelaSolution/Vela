@@ -66,7 +66,7 @@ function SignUpForm() {
           industry,
           seats: Number(seats) || 0,
           address: address.trim(),
-          plan: "free",
+          plan: "standard",
         },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
@@ -79,11 +79,20 @@ function SignUpForm() {
     }
 
     // 가입 완료 후 자동 로그인 시도
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    // 출시 이벤트: 가입 시 프로 플랜 자동 부여
+    if (signInData?.user) {
+      await supabase.from("profiles").upsert({
+        id: signInData.user.id,
+        plan: "standard",
+        plan_updated_at: new Date().toISOString(),
+      }, { onConflict: "id" });
+    }
+
     setLoading(false);
 
     if (signInError) {
-      // 이메일 인증 필요한 경우
       router.push("/?signup=success");
     } else {
       router.push("/");

@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import type { User } from "@supabase/supabase-js";
 import { NotesWidget } from "@/app/notes/page";
 import PlanGate from "@/components/PlanGate";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 const IND: Record<string, string> = { cafe:"☕", restaurant:"🍽️", bar:"🍺", finedining:"✨", gogi:"🥩" };
@@ -37,6 +38,8 @@ export default function DashboardHome() {
   const [monthlyGoal, setMonthlyGoal] = useState<number|null>(null);
   const [goalInput, setGoalInput]     = useState("");
   const [showGoalModal, setShowGoalModal] = useState(false);
+  const [todaySales, setTodaySales] = useState("");
+  const [todaySaved, setTodaySaved] = useState(false);
   const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null;
 
   useEffect(() => {
@@ -64,6 +67,16 @@ export default function DashboardHome() {
     if (typeof window === "undefined") return;
     const saved = localStorage.getItem("vela-monthly-goal");
     if (saved) setMonthlyGoal(Number(saved));
+  }, []);
+
+  // 오늘의 매출: localStorage에서 불러오기
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const saved = JSON.parse(localStorage.getItem("vela-today-sales") ?? "{}");
+      if (saved.date === today) { setTodaySales(String(saved.sales)); setTodaySaved(true); }
+    } catch { /* */ }
   }, []);
 
   const handleSetGoal = () => {
@@ -194,8 +207,6 @@ export default function DashboardHome() {
               <h1 className="text-2xl font-bold text-slate-900 mt-1">{greeting}, {name}! 👋</h1>
             </div>
             <div className="flex gap-2">
-              <Link href="/stores" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">🏪 매장 관리</Link>
-              <Link href="/team" className="rounded-2xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">👥 팀</Link>
               <Link href="/simulator" className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">시뮬레이터 →</Link>
             </div>
           </div>
@@ -233,6 +244,47 @@ export default function DashboardHome() {
               </div>
             ))}
           </div>
+
+          {/* 오늘의 매출 퀵 입력 */}
+          {(() => {
+            const todayKey = "vela-today-sales";
+            const today = new Date().toISOString().slice(0, 10);
+            const dailyGoal = monthlyGoal ? Math.round(monthlyGoal / 26) : 0;
+            const todayNum = Number(todaySales.replace(/[^0-9]/g, "")) || 0;
+            const goalPct = dailyGoal > 0 ? Math.min(Math.round((todayNum / dailyGoal) * 100), 100) : 0;
+            return (
+              <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-bold text-slate-900">📊 오늘의 매출</h2>
+                  <span className="text-xs text-slate-400">{today}</span>
+                </div>
+                <div className="flex gap-3">
+                  <input
+                    type="text" inputMode="numeric" value={todaySaved ? fmt(todayNum) : todaySales}
+                    onChange={(e) => { setTodaySales(e.target.value.replace(/[^0-9]/g, "")); setTodaySaved(false); }}
+                    placeholder="오늘 매출 입력"
+                    className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button onClick={() => {
+                    if (!todaySales) return;
+                    localStorage.setItem(todayKey, JSON.stringify({ date: today, sales: todayNum }));
+                    setTodaySaved(true);
+                  }} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-700">{todaySaved ? "저장됨 ✓" : "저장"}</button>
+                </div>
+                {dailyGoal > 0 && todayNum > 0 && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                      <span>일 목표 {fmt(dailyGoal)}원</span>
+                      <span className={goalPct >= 100 ? "text-emerald-500 font-semibold" : ""}>{goalPct}% 달성</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100">
+                      <div className={`h-full rounded-full transition-all ${goalPct >= 100 ? "bg-emerald-500" : goalPct >= 70 ? "bg-blue-500" : "bg-amber-400"}`} style={{ width: `${goalPct}%` }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 목표 달성 게이지 */}
           <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200">
@@ -319,8 +371,8 @@ export default function DashboardHome() {
                 {snapshots.length === 0 ? (
                   <div className="text-center py-10">
                     <p className="text-3xl mb-2">📊</p>
-                    <p className="text-slate-400 text-sm mb-3">아직 등록된 매출이 없어요</p>
-                    <Link href="/dashboard" className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white">+ 매출 등록하기</Link>
+                    <p className="text-slate-400 text-sm mb-3">매출을 등록하면 여기에 차트가 표시됩니다</p>
+                    <Link href="/monthly-input" className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white">매출 입력 →</Link>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -351,6 +403,30 @@ export default function DashboardHome() {
                 )}
               </div>
               </PlanGate>
+
+              {/* 월별 추이 LineChart — 스탠다드 이상 */}
+              {snapshots.length >= 2 && (
+              <PlanGate>
+              <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
+                <h2 className="text-base font-bold text-slate-900 mb-4">📊 매출·순이익 추이</h2>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={[...snapshots].reverse().map(s => ({
+                    month: s.month.slice(2).replace("-", "/"),
+                    매출: Math.round(s.total_sales / 10000),
+                    순이익: Math.round(s.net_profit / 10000),
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="#94a3b8" />
+                    <YAxis tick={{ fontSize: 12 }} stroke="#94a3b8" tickFormatter={(v: number) => `${v}만`} />
+                    <Tooltip formatter={(value) => [`${Number(value).toLocaleString()}만원`]} />
+                    <Legend />
+                    <Line type="monotone" dataKey="매출" stroke="#3182F6" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="순이익" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              </PlanGate>
+              )}
 
               {/* 매출 예측 — 스탠다드 이상 */}
               <PlanGate>

@@ -10,7 +10,6 @@ import { PLANS as PLAN_DATA } from "@/lib/plans";
 const PLANS = [
   { ...PLAN_DATA[0], name: "무료", price: 0, color: "#6B7684" },
   { ...PLAN_DATA[1], name: "스탠다드", price: 9900, color: "#3182F6", popular: true },
-  { ...PLAN_DATA[2], name: "프로", price: 29900, color: "#6366F1" },
 ];
 
 export default function PricingPage() {

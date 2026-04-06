@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import type { User } from "@supabase/supabase-js";
+import { getLocale, setLocale, t, type Locale } from "@/lib/i18n";
 
 const TOOLS = [
   // 경영 분석
@@ -30,6 +31,9 @@ const TOOLS = [
 export default function NavBar() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [locale, setLocaleState] = useState<Locale>("ko");
+
+  useEffect(() => { setLocaleState(getLocale()); }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -48,14 +52,14 @@ export default function NavBar() {
 
   return (
     <>
-      <nav className="vela-nav" style={{position:"fixed",top:0,left:0,right:0,zIndex:100,height:64,background:"rgba(255,255,255,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid #E5E8EB",display:"flex",alignItems:"center"}}>
+      <nav className="vela-nav" role="navigation" aria-label="메인 내비게이션" style={{position:"fixed",top:0,left:0,right:0,zIndex:100,height:64,background:"rgba(255,255,255,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid #E5E8EB",display:"flex",alignItems:"center"}}>
         <div className="vela-nav-inner" style={{maxWidth:1200,margin:"0 auto",padding:"0 24px",width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <Link href="/" className="vela-nav-logo" style={{fontSize:20,fontWeight:800,color:"#191F28",textDecoration:"none",letterSpacing:"-0.02em"}}>VELA<span style={{color:"#3182F6"}}>.</span></Link>
 
           <div className="vela-nav-links">
-            <a href="/info#features">서비스</a>
+            <a href="/info#features">{t("nav.service", locale)}</a>
             <div className="vela-dropdown">
-              <Link href="/tools" className="vela-dropdown-btn" style={{ textDecoration:"none" }}>도구 <span className="vela-dropdown-arrow">▾</span></Link>
+              <Link href="/tools" className="vela-dropdown-btn" style={{ textDecoration:"none" }}>{t("nav.tools", locale)} <span className="vela-dropdown-arrow">▾</span></Link>
               <div className="vela-dropdown-menu">
                 {TOOLS.map(item => (
                   <Link key={item.href} href={item.href} className="vela-dropdown-item">
@@ -68,9 +72,9 @@ export default function NavBar() {
                 ))}
               </div>
             </div>
-            <Link href="/community">커뮤니티</Link>
-            <Link href="/guide">가이드</Link>
-            <Link href="/pricing">요금제</Link>
+            <Link href="/community">{t("nav.community", locale)}</Link>
+            <Link href="/guide">{t("nav.guide", locale)}</Link>
+            <Link href="/pricing">{t("nav.pricing", locale)}</Link>
           </div>
 
           <div className="vela-nav-actions">
@@ -79,26 +83,29 @@ export default function NavBar() {
                 <Link href="/profile" className="vela-user-name">
                   {user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}
                 </Link>
-                <Link href="/dashboard" className="vela-btn-dashboard">대시보드</Link>
-                <button className="vela-btn-logout" onClick={handleLogout}>로그아웃</button>
-                <Link href="/simulator" className="vela-btn-start">시뮬레이터 →</Link>
+                <Link href="/dashboard" className="vela-btn-dashboard">{t("nav.dashboard", locale)}</Link>
+                <button className="vela-btn-logout" onClick={handleLogout}>{t("nav.logout", locale)}</button>
+                <Link href="/simulator" className="vela-btn-start">{t("nav.simulator", locale)}</Link>
               </>
             ) : (
               <>
-                <Link href="/login" className="vela-btn-login">로그인</Link>
-                <Link href="/signup" className="vela-btn-start">무료 시작</Link>
+                <Link href="/login" className="vela-btn-login">{t("nav.login", locale)}</Link>
+                <Link href="/signup" className="vela-btn-start">{t("nav.signup", locale)}</Link>
               </>
             )}
           </div>
 
-          <button className="vela-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="메뉴">
+          <button onClick={() => setLocale(locale === "ko" ? "en" : "ko")} className="vela-nav-lang" style={{fontSize:12,color:"#9EA6B3",background:"none",border:"1px solid #E5E8EB",borderRadius:4,padding:"2px 8px",cursor:"pointer",marginRight:8}}>
+            {locale === "ko" ? "EN" : "한국어"}
+          </button>
+          <button className="vela-hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "메뉴 닫기" : "메뉴 열���"} aria-expanded={menuOpen}>
             <span /><span /><span />
           </button>
         </div>
       </nav>
 
       {/* 모바일 메뉴 */}
-      <div className={`vela-mobile-menu${menuOpen ? " open" : ""}`}>
+      <div className={`vela-mobile-menu${menuOpen ? " open" : ""}`} role="menu" aria-hidden={!menuOpen}>
         <a href="/info#features" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>서비스</a>
         <div style={{ borderBottom:"1px solid #F2F4F6", paddingBottom:"8px" }}>
           <p style={{ fontSize:"11px", fontWeight:700, color:"#9EA6B3", padding:"12px 0 6px", letterSpacing:"0.5px" }}>도구</p>
@@ -122,9 +129,12 @@ export default function NavBar() {
             <Link href="/signup" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>무료 시작</Link>
           </>
         )}
-        <div style={{borderTop:"1px solid #E5E8EB",marginTop:12,paddingTop:12,display:"flex",gap:16}}>
+        <div style={{borderTop:"1px solid #E5E8EB",marginTop:12,paddingTop:12,display:"flex",gap:16,alignItems:"center"}}>
           <Link href="/terms" className="vela-mobile-link" onClick={() => setMenuOpen(false)} style={{fontSize:12,color:"#9EA6B3",padding:0}}>이용약관</Link>
           <Link href="/privacy" className="vela-mobile-link" onClick={() => setMenuOpen(false)} style={{fontSize:12,color:"#9EA6B3",padding:0}}>개인정보처리방침</Link>
+          <button onClick={() => setLocale(locale === "ko" ? "en" : "ko")} style={{marginLeft:"auto",fontSize:12,color:"#9EA6B3",background:"none",border:"1px solid #E5E8EB",borderRadius:4,padding:"2px 8px",cursor:"pointer"}}>
+            {locale === "ko" ? "EN" : "한국어"}
+          </button>
         </div>
       </div>
     </>
