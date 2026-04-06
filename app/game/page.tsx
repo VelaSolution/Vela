@@ -341,6 +341,45 @@ function delSave() {
   localStorage.removeItem(SAVE_KEY);
 }
 
+// ── 클라우드 저장/불러오기 ──────────────────────────────────────
+async function cloudSave(state: S) {
+  const sb = createSupabaseBrowserClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return false;
+  const payload = { user_id: user.id, state: JSON.stringify(state), updated_at: new Date().toISOString() };
+  const { data: existing } = await sb.from("game_saves").select("id").eq("user_id", user.id).limit(1);
+  if (existing && existing.length > 0) {
+    await sb.from("game_saves").update(payload).eq("user_id", user.id);
+  } else {
+    await sb.from("game_saves").insert(payload);
+  }
+  return true;
+}
+async function cloudLoad(): Promise<S|null> {
+  const sb = createSupabaseBrowserClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+  const { data } = await sb.from("game_saves").select("state").eq("user_id", user.id).limit(1);
+  if (!data || data.length === 0) return null;
+  try { return JSON.parse(data[0].state); } catch { return null; }
+}
+async function cloudDelete() {
+  const sb = createSupabaseBrowserClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  await sb.from("game_saves").delete().eq("user_id", user.id);
+}
+
+// ── 튜토리얼 ──────────────────────────────────────────────────
+const TUTORIAL_KEY = "vela-game-tutorial-done";
+const TUTORIAL_STEPS = [
+  { icon: "🏪", title: "내 가게 키우기에 오신 걸 환영해요!", desc: "90일간 식당을 운영하며 경영을 체험하는 시뮬레이션 게임이에요." },
+  { icon: "🌅", title: "매일 아침, 영업을 시작해요", desc: "날씨와 직원 상태를 확인한 뒤 '영업 시작' 버튼을 눌러 하루를 시작하세요." },
+  { icon: "📢", title: "이벤트가 발생할 수 있어요", desc: "40% 확률로 돌발 이벤트가 발생합니다. 선택에 따라 매출·평판·비용이 달라져요." },
+  { icon: "📊", title: "하루 결산을 확인하세요", desc: "매출, 원가, 인건비, 순이익이 자동 계산됩니다. 30일마다 월세도 빠져나가요." },
+  { icon: "🏆", title: "목표를 달성하세요!", desc: "게임 모드에 따라 목표가 달라져요. 높은 점수를 달성해 랭킹에 도전하세요!" },
+];
+
 function calcScore(s: S) {
   return Math.max(0,Math.floor(s.totalProfit/10000))
     + Math.floor(s.rep*5)
@@ -357,10 +396,45 @@ function gradeOf(sc: number) {
 }
 
 // ── 메인 메뉴 ───────────────────────────────────────────────
-function Menu({onNew,onLoad,saved}:{onNew:()=>void;onLoad:()=>void;saved:S|null}) {
+function Tutorial({onDone}:{onDone:()=>void}) {
+  const [step, setStep] = useState(0);
+  const t = TUTORIAL_STEPS[step];
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.5)",padding:16}}>
+      <div style={{background:"#fff",borderRadius:24,padding:32,maxWidth:400,width:"100%",textAlign:"center",animation:"fadeUp .3s ease"}}>
+        <div style={{fontSize:48,marginBottom:12}}>{t.icon}</div>
+        <h2 style={{fontSize:20,fontWeight:800,color:G900,marginBottom:8}}>{t.title}</h2>
+        <p style={{fontSize:14,color:G600,lineHeight:1.7,marginBottom:24}}>{t.desc}</p>
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:20}}>
+          {TUTORIAL_STEPS.map((_,i)=>(
+            <div key={i} style={{width:8,height:8,borderRadius:4,background:i===step?B:G200,transition:"all .2s"}} />
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+          {step > 0 && <button onClick={()=>setStep(step-1)} style={{padding:"10px 20px",borderRadius:10,border:"1px solid "+G200,background:"#fff",color:G800,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>이전</button>}
+          {step < TUTORIAL_STEPS.length-1 ? (
+            <button onClick={()=>setStep(step+1)} style={{padding:"10px 24px",borderRadius:10,border:"none",background:B,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>다음</button>
+          ) : (
+            <button onClick={()=>{localStorage.setItem(TUTORIAL_KEY,"1");onDone();}} style={{padding:"10px 24px",borderRadius:10,border:"none",background:B,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>시작하기!</button>
+          )}
+        </div>
+        <button onClick={()=>{localStorage.setItem(TUTORIAL_KEY,"1");onDone();}} style={{marginTop:12,background:"none",border:"none",color:G400,fontSize:12,cursor:"pointer"}}>건너뛰기</button>
+      </div>
+      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}`}</style>
+    </div>
+  );
+}
+
+function Menu({onNew,onLoad,saved,cloudSaved,onCloudLoad}:{onNew:()=>void;onLoad:()=>void;saved:S|null;cloudSaved:S|null;onCloudLoad:()=>void}) {
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(()=>{
+    if (!localStorage.getItem(TUTORIAL_KEY)) setShowTutorial(true);
+  },[]);
+
   return (
     <div style={{minHeight:"100vh",background:G50,fontFamily:"'Pretendard','Apple SD Gothic Neo',system-ui,sans-serif"}}>
-      
+      {showTutorial && <Tutorial onDone={()=>setShowTutorial(false)} />}
       <div style={{maxWidth:480,margin:"0 auto",padding:"48px 20px"}}>
         <div style={{textAlign:"center",marginBottom:40}}>
           <div style={{fontSize:60,marginBottom:12}}>🏪</div>
@@ -374,8 +448,16 @@ function Menu({onNew,onLoad,saved}:{onNew:()=>void;onLoad:()=>void;saved:S|null}
           {saved && (
             <button onClick={onLoad} style={{padding:"15px 20px",borderRadius:14,border:"1px solid "+G200,background:"#fff",color:G800,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span>📂 이어하기</span>
-                <span style={{fontSize:13,color:G400}}>{saved.name} · {saved.day}일차{saved.savedAt?" · "+new Date(saved.savedAt).toLocaleDateString("ko-KR"):""}</span>
+                <span>📂 이어하기 (로컬)</span>
+                <span style={{fontSize:13,color:G400}}>{saved.name} · {saved.day}일차</span>
+              </div>
+            </button>
+          )}
+          {cloudSaved && (
+            <button onClick={onCloudLoad} style={{padding:"15px 20px",borderRadius:14,border:"1px solid "+BL,background:BL,color:B,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span>☁️ 클라우드 이어하기</span>
+                <span style={{fontSize:13,color:G400}}>{cloudSaved.name} · {cloudSaved.day}일차</span>
               </div>
             </button>
           )}
@@ -383,10 +465,13 @@ function Menu({onNew,onLoad,saved}:{onNew:()=>void;onLoad:()=>void;saved:S|null}
             📊 시뮬레이터로 내 매장 분석하기 →
           </Link>
         </div>
-        <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:20,padding:20,marginTop:28}}>
+        <div style={{display:"flex",gap:8,marginTop:16}}>
+          <button onClick={()=>setShowTutorial(true)} style={{flex:1,padding:"10px",borderRadius:10,border:"1px solid "+G200,background:"#fff",color:G600,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>📖 튜토리얼 다시 보기</button>
+        </div>
+        <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:20,padding:20,marginTop:20}}>
           <p style={{fontSize:15,fontWeight:700,color:G900,marginBottom:14}}>게임 안내</p>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            {[["🗓️","기간","90일 일별 운영"],["🌦️","날씨","매일 랜덤 변화"],["📢","이벤트","10가지 돌발 상황"],["🏆","목표","최대 순이익 달성"]].map(([icon,t,d])=>(
+            {[["🗓️","기간","90일 일별 운영"],["🌦️","날씨","매일 랜덤 변화"],["📢","이벤트","35가지 돌발 상황"],["🏆","목표","최대 순이익 달성"]].map(([icon,t,d])=>(
               <div key={t} style={{background:G50,borderRadius:12,padding:"12px 14px"}}>
                 <p style={{fontSize:16,margin:"0 0 3px"}}>{icon}</p>
                 <p style={{fontSize:14,fontWeight:600,color:G900,margin:0}}>{t}</p>
@@ -946,7 +1031,8 @@ function Play({s, setS, onOver}:{s:S; setS:React.Dispatch<React.SetStateAction<S
             </div>
           )}
           <div style={{display:"flex",gap:6,marginTop:8,justifyContent:"flex-end"}}>
-            <button onClick={()=>{saveGame(s);alert("저장됐어요 💾");}} style={{fontSize:13,color:G400,background:"none",border:"1px solid "+G200,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"inherit"}}>💾 저장</button>
+            <button onClick={()=>{saveGame(s);alert("로컬 저장 완료 💾");}} style={{fontSize:13,color:G400,background:"none",border:"1px solid "+G200,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"inherit"}}>💾 저장</button>
+            <button onClick={async()=>{const ok=await cloudSave(s);alert(ok?"클라우드 저장 완료 ☁️":"로그인 후 이용해주세요");}} style={{fontSize:13,color:B,background:"none",border:"1px solid "+B+"44",borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"inherit"}}>☁️ 클라우드</button>
             <button onClick={()=>{if(confirm("종료할까요?"))onOver();}} style={{fontSize:13,color:G400,background:"none",border:"1px solid "+G200,borderRadius:8,padding:"4px 10px",cursor:"pointer",fontFamily:"inherit"}}>🚪 나가기</button>
           </div>
         </div>
@@ -1120,6 +1206,7 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
 
   useEffect(()=>{
     delSave();
+    cloudDelete();
     (async()=>{
       try {
         const sb2 = createSupabaseBrowserClient();
@@ -1249,10 +1336,22 @@ export default function GamePage() {
   const [phase, setPhase] = useState<Phase>("menu");
   const [gs, setGs]       = useState<S|null>(null);
   const [saved, setSaved] = useState<S|null>(null);
+  const [cloudSaved, setCloudSaved] = useState<S|null>(null);
 
-  useEffect(()=>{ setSaved(loadGame()); }, []);
+  useEffect(()=>{
+    setSaved(loadGame());
+    cloudLoad().then(s => setCloudSaved(s));
+  }, []);
 
-  if (phase==="menu")    return <Menu onNew={()=>setPhase("setup")} onLoad={()=>{setGs(saved);setPhase("playing");}} saved={saved} />;
+  if (phase==="menu") return (
+    <Menu
+      onNew={()=>setPhase("setup")}
+      onLoad={()=>{setGs(saved);setPhase("playing");}}
+      saved={saved}
+      cloudSaved={cloudSaved}
+      onCloudLoad={()=>{setGs(cloudSaved);setPhase("playing");}}
+    />
+  );
   if (phase==="setup")   return <Setup onStart={s=>{setGs(s);setPhase("playing");}} />;
   if (phase==="playing" && gs) return <Play s={gs} setS={setGs} onOver={()=>setPhase("gameover")} />;
   if (phase==="gameover" && gs) return <Over s={gs} onMenu={()=>{setGs(null);setSaved(null);setPhase("menu");}} onRestart={()=>setPhase("setup")} />;
