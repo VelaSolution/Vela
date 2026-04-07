@@ -6,7 +6,7 @@ export default function EventBanner() {
   return (
     <>
       <style>{`
-        .event-banner{max-width:768px;margin:0 auto 32px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:20px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden}
+        .event-banner{width:100%;margin:0 0 16px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:20px;padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden}
         .event-banner::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:rgba(49,130,246,0.15);border-radius:50%}
         .event-banner-text{z-index:1}
         .event-banner-tag{display:inline-block;background:rgba(49,130,246,0.2);color:#60A5FA;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-bottom:8px}

@@ -8,6 +8,7 @@ import { NotesWidget } from "@/app/notes/page";
 import PlanGate from "@/components/PlanGate";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { fmt } from "@/lib/vela";
+import EventBanner from "@/components/EventBanner";
 const IND: Record<string, string> = { cafe:"☕", restaurant:"🍽️", bar:"🍺", finedining:"✨", gogi:"🥩" };
 const IND_LABEL: Record<string, string> = { cafe:"카페", restaurant:"음식점", bar:"술집/바", finedining:"파인다이닝", gogi:"고깃집" };
 
@@ -209,6 +210,9 @@ export default function DashboardHome() {
               <Link href="/simulator" className="rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition">시뮬레이터 →</Link>
             </div>
           </div>
+
+          {/* 이벤트 배너 */}
+          <EventBanner />
 
           {/* 알림 센터 */}
           {(() => {
