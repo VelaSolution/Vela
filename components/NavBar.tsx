@@ -73,7 +73,7 @@ export default function NavBar() {
   return (
     <>
       <nav className="vela-nav" role="navigation" aria-label="메인 내비게이션" style={{position:"fixed",top:0,left:0,right:0,zIndex:100,height:64,background:"rgba(255,255,255,0.95)",backdropFilter:"blur(12px)",borderBottom:"1px solid #E5E8EB",display:"flex",alignItems:"center"}}>
-        <div className="vela-nav-inner" style={{maxWidth:1200,margin:"0 auto",padding:"0 24px",width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div className="vela-nav-inner" style={{maxWidth:1152,margin:"0 auto",padding:"0 32px",width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <Link href="/" className="vela-nav-logo" style={{fontSize:20,fontWeight:800,color:"#191F28",textDecoration:"none",letterSpacing:"-0.02em"}}>VELA<span style={{color:"#3182F6"}}>.</span></Link>
 
           <div className="vela-nav-links">

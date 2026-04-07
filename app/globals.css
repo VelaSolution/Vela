@@ -64,7 +64,7 @@ input[type="range"].vela-slider::-moz-range-thumb {
 
 /* ── NavBar ──────────────────────────────────────────── */
                 .vela-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid #E5E8EB;display:flex;align-items:center;font-family:var(--font-geist-sans),'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
-        .vela-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;justify-content:space-between}
+        .vela-nav-inner{max-width:1152px;margin:0 auto;padding:0 32px;width:100%;display:flex;align-items:center;justify-content:space-between}
         .vela-nav-logo{font-size:20px;font-weight:800;color:#191F28;text-decoration:none;letter-spacing:-0.02em;font-family:inherit}
         .vela-nav-logo span{color:#3182F6}
         .vela-nav-links{display:flex;align-items:center;gap:28px}
