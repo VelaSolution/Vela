@@ -350,6 +350,14 @@ function LandingContent() {
               { icon:"🧾", title:"세무사 연결",          desc:"외식업 전문 세무사 매칭. 시뮬레이션 데이터 기반으로 정확한 세무 상담을 받으세요.",          tag:"세무 상담",  href:"/tools/tax-advisor" },
               { icon:"🤝", title:"식자재 공동구매",       desc:"같은 동네 사장님끼리 식자재 공동구매하면 단가를 10~20% 낮출 수 있어요.",                 tag:"공동구매",   href:"/tools/group-buy" },
               { icon:"🎁", title:"사장님 추천 프로그램",   desc:"친구를 초대하면 양쪽 모두 스탠다드 플랜 1개월 무료 혜택!",                              tag:"추천 보상",  href:"/referral" },
+              // 창업 도우미
+              { icon:"📝", title:"사업계획서 도우미",     desc:"6단계로 사업계획서 작성 → 미리보기·복사. 투자자용·정부지원금용 모두 대응.",               tag:"창업 · NEW", href:"/tools/business-plan" },
+              { icon:"🏛️", title:"정부 지원사업 매칭",    desc:"사업 단계·지역·조건 입력하면 20개 이상 정부 지원 프로그램 중 내게 맞는 것을 매칭.",       tag:"창업 · NEW", href:"/tools/gov-support" },
+              { icon:"🏢", title:"법인 설립 가이드",      desc:"개인 vs 법인 세금 비교 계산 + 설립 절차 체크리스트 + 비용 시뮬레이터.",                  tag:"창업 · NEW", href:"/tools/incorporation" },
+              { icon:"📈", title:"재무 시뮬레이션",       desc:"런웨이·BEP·12개월 현금흐름 시뮬레이션. 보수적/기본/낙관적 3가지 시나리오 비교.",         tag:"창업 · NEW", href:"/tools/financial-sim" },
+              { icon:"💎", title:"투자 유치 도구",        desc:"밸류에이션 계산기 + IR 덱 12슬라이드 가이드 + 투자자 미팅 준비 체크리스트.",              tag:"창업 · NEW", href:"/tools/fundraising" },
+              { icon:"🧾", title:"세무·회계 가이드",      desc:"세금 캘린더 + 부가세·소득세·4대보험 계산기 + 외식업 절세 전략 10선.",                    tag:"세무 · NEW", href:"/tools/tax-guide" },
+              { icon:"👥", title:"인력 채용 도구",        desc:"급여 계산기 + 근로계약서 자동 생성 + 업종별 채용공고 템플릿 3종.",                       tag:"인사 · NEW", href:"/tools/hiring" },
             ].map((f, i) => (
               <FadeIn key={f.title} delay={i * 60}>
                 <Link href={f.href} style={{ textDecoration: "none" }}>

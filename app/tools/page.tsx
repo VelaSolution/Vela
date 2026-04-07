@@ -40,6 +40,18 @@ const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] 
     ],
   },
   {
+    key: "startup", label: "🚀 창업 도우미", desc: "사업계획·자금·세무·채용 올인원",
+    tools: [
+      { href: "/tools/business-plan", emoji: "📝", title: "사업계획서 도우미", desc: "단계별 사업계획서 작성 + 미리보기 + 복사", color: "#4F46E5", bg: "#EEF2FF", badge: "NEW" },
+      { href: "/tools/gov-support", emoji: "🏛️", title: "정부 지원사업 매칭", desc: "내 조건에 맞는 정부 지원금·대출·보증 자동 매칭", color: "#059669", bg: "#ECFDF5", badge: "NEW" },
+      { href: "/tools/incorporation", emoji: "🏢", title: "법인 설립 가이드", desc: "개인 vs 법인 세금 비교 + 설립 절차 + 비용 시뮬레이터", color: "#7C3AED", bg: "#F5F3FF", badge: "NEW" },
+      { href: "/tools/financial-sim", emoji: "📈", title: "재무 시뮬레이션", desc: "런웨이·BEP·현금흐름 12개월 시뮬레이션", color: "#3182F6", bg: "#EBF3FF", badge: "NEW" },
+      { href: "/tools/fundraising", emoji: "💎", title: "투자 유치 도구", desc: "밸류에이션 계산 + IR 덱 가이드 + 투자자 미팅 준비", color: "#D97706", bg: "#FFFBEB", badge: "NEW" },
+      { href: "/tools/tax-guide", emoji: "🧾", title: "세무·회계 가이드", desc: "세금 캘린더 + 부가세·소득세·4대보험 계산기 + 절세 전략", color: "#EA580C", bg: "#FFF7ED", badge: "NEW" },
+      { href: "/tools/hiring", emoji: "👥", title: "인력 채용 도구", desc: "급여 계산기 + 근로계약서 생성 + 채용공고 템플릿", color: "#0D9488", bg: "#F0FDFA", badge: "NEW" },
+    ],
+  },
+  {
     key: "ops", label: "🏪 매장 운영", desc: "일일 관리·식재료·창업 준비",
     tools: [
       { href: "/checklist", emoji: "📋", title: "매장 일일 체크리스트", desc: "오픈·마감 체크리스트 (날짜별 자동 저장)", color: "#6366F1", bg: "#EEF2FF", badge: null },

@@ -26,6 +26,14 @@ const TOOLS = [
   { icon:"🥬", label:"식재료 가격 트래커",  desc:"식재료 가격 기록·변동 추이",       href:"/ingredient-tracker" },
   { icon:"✅", label:"창업 체크리스트",     desc:"인허가·준비물 단계별 가이드",       href:"/tools/startup-checklist" },
   { icon:"🎮", label:"경영 시뮬레이션 게임", desc:"90일 가상 매장 운영 체험",        href:"/game" },
+  // 창업 도우미
+  { icon:"📝", label:"사업계획서 도우미",   desc:"단계별 작성 + 미리보기 + 복사",    href:"/tools/business-plan" },
+  { icon:"🏛️", label:"정부 지원사업 매칭",  desc:"내 조건 맞는 지원금·대출 매칭",    href:"/tools/gov-support" },
+  { icon:"🏢", label:"법인 설립 가이드",    desc:"개인 vs 법인 비교 + 설립 절차",    href:"/tools/incorporation" },
+  { icon:"📈", label:"재무 시뮬레이션",     desc:"런웨이·BEP·현금흐름 12개월",       href:"/tools/financial-sim" },
+  { icon:"💎", label:"투자 유치 도구",      desc:"밸류에이션 + IR 덱 + 미팅 준비",   href:"/tools/fundraising" },
+  { icon:"🧾", label:"세무·회계 가이드",    desc:"세금 캘린더 + 계산기 + 절세 전략",  href:"/tools/tax-guide" },
+  { icon:"👥", label:"인력 채용 도구",      desc:"급여 계산 + 계약서 + 채용공고",     href:"/tools/hiring" },
 ] as const;
 
 export default function NavBar() {

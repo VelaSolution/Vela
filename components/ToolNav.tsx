@@ -23,6 +23,13 @@ const TOOL_SECTIONS = [
     tools: [
       { href: "/tools/startup-checklist", emoji: "✅", label: "창업 체크리스트" },
       { href: "/tools/area-analysis", emoji: "🗺️", label: "상권 분석 도우미" },
+      { href: "/tools/business-plan", emoji: "📝", label: "사업계획서 도우미" },
+      { href: "/tools/gov-support", emoji: "🏛️", label: "정부 지원사업" },
+      { href: "/tools/incorporation", emoji: "🏢", label: "법인 설립 가이드" },
+      { href: "/tools/financial-sim", emoji: "📈", label: "재무 시뮬레이션" },
+      { href: "/tools/fundraising", emoji: "💎", label: "투자 유치 도구" },
+      { href: "/tools/tax-guide", emoji: "🧾", label: "세무·회계 가이드" },
+      { href: "/tools/hiring", emoji: "👥", label: "인력 채용 도구" },
     ],
   },
   {

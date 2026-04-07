@@ -96,18 +96,23 @@ input[type="range"].vela-slider::-moz-range-thumb {
 
 /* ── 페이지 전환 애니메이션 ─────────────────────────────── */
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-main,
-.min-h-screen {
-  animation: pageIn 0.18s ease-out;
+main {
+  animation: pageIn 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* 페이지 로딩 중 배경 유지 */
 html, body {
   background: #F9FAFB !important;
+}
+
+/* 전환 중 흰색 깜빡임 방지 */
+html, body, #__next {
+  min-height: 100vh;
+  background-color: #F9FAFB;
 }
 
 /* ── Dark Mode ─────────────────────────────────────── */
