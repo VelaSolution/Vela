@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { t, getLocale } from "@/lib/i18n";
 
 const SECTIONS = [
   {
@@ -44,11 +45,11 @@ const SECTIONS = [
     icon: "✅",
     items: [
       { label: "창업 체크리스트", href: "/tools/startup-checklist", desc: "업종별 인허가·준비물·타임라인을 단계별로 안내합니다." },
-      { label: "사업계획서 도우미", href: "/tools/business-plan", desc: "6단계로 사업계획서를 작성하고 미리보기·복사할 수 있습니다." },
-      { label: "정부 지원사업 매칭", href: "/tools/gov-support", desc: "사업 단계·지역·조건 입력 → 20개 이상 정부 지원 프로그램 중 매칭." },
-      { label: "법인 설립 가이드", href: "/tools/incorporation", desc: "개인 vs 법인 세금 비교, 설립 절차 체크리스트, 비용 시뮬레이터." },
-      { label: "재무 시뮬레이션", href: "/tools/financial-sim", desc: "런웨이, 손익분기점, 12개월 현금흐름을 3가지 시나리오로 비교." },
-      { label: "투자 유치 도구", href: "/tools/fundraising", desc: "밸류에이션 계산, IR 덱 12슬라이드 가이드, 투자자 미팅 체크리스트." },
+      { label: "사업계획서 도우미", href: "/tools/business-plan", desc: "6단계로 사업계획서를 작성하고 미리보기·복사할 수 있습니다.", i18nKey: "businessPlan" },
+      { label: "정부 지원사업 매칭", href: "/tools/gov-support", desc: "사업 단계·지역·조건 입력 → 20개 이상 정부 지원 프로그램 중 매칭.", i18nKey: "govSupport" },
+      { label: "법인 설립 가이드", href: "/tools/incorporation", desc: "개인 vs 법인 세금 비교, 설립 절차 체크리스트, 비용 시뮬레이터.", i18nKey: "incorporation" },
+      { label: "재무 시뮬레이션", href: "/tools/financial-sim", desc: "런웨이, 손익분기점, 12개월 현금흐름을 3가지 시나리오로 비교.", i18nKey: "financialSim" },
+      { label: "투자 유치 도구", href: "/tools/fundraising", desc: "밸류에이션 계산, IR 덱 12슬라이드 가이드, 투자자 미팅 체크리스트.", i18nKey: "fundraising" },
       { label: "손익계산서 PDF", href: "/tools/pl-report", desc: "시뮬레이션 데이터로 월별 P&L 리포트를 PDF로 출력합니다." },
       { label: "초기 투자금 계산", href: "/simulator", desc: "시뮬레이터에서 보증금·인테리어·장비 비용을 입력하면 투자 회수 기간을 계산합니다." },
     ],
@@ -57,8 +58,8 @@ const SECTIONS = [
     title: "세무·인사 관리",
     icon: "🧾",
     items: [
-      { label: "세무·회계 가이드", href: "/tools/tax-guide", desc: "세금 캘린더, 부가세·소득세·4대보험 계산기, 외식업 절세 전략 10선." },
-      { label: "인력 채용 도구", href: "/tools/hiring", desc: "급여 계산기, 근로계약서 자동 생성, 채용공고 템플릿 3종." },
+      { label: "세무·회계 가이드", href: "/tools/tax-guide", desc: "세금 캘린더, 부가세·소득세·4대보험 계산기, 외식업 절세 전략 10선.", i18nKey: "taxGuide" },
+      { label: "인력 채용 도구", href: "/tools/hiring", desc: "급여 계산기, 근로계약서 자동 생성, 채용공고 템플릿 3종.", i18nKey: "hiring" },
       { label: "인건비 계산기 (법정)", href: "/tools/labor-law", desc: "주휴수당·야간수당·4대보험까지 자동 반영한 실제 인건비를 계산합니다." },
     ],
   },
@@ -120,18 +121,22 @@ export default function GuidePage() {
                   {section.icon} {section.title}
                 </h2>
                 <div className="space-y-3">
-                  {section.items.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="block rounded-2xl bg-slate-50 p-4 hover:bg-slate-100 transition group"
-                    >
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
-                    </Link>
-                  ))}
+                  {section.items.map((item) => {
+                    const lbl = "i18nKey" in item && item.i18nKey ? t(`tool.${item.i18nKey}.title`) : item.label;
+                    const dsc = "i18nKey" in item && item.i18nKey ? t(`tool.${item.i18nKey}.descFull`) : item.desc;
+                    return (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        className="block rounded-2xl bg-slate-50 p-4 hover:bg-slate-100 transition group"
+                      >
+                        <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition">
+                          {lbl}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{dsc}</p>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             ))}

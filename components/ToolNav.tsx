@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { t, getLocale } from "@/lib/i18n";
 
 const TOOL_SECTIONS = [
   {
@@ -23,13 +24,13 @@ const TOOL_SECTIONS = [
     tools: [
       { href: "/tools/startup-checklist", emoji: "✅", label: "창업 체크리스트" },
       { href: "/tools/area-analysis", emoji: "🗺️", label: "상권 분석 도우미" },
-      { href: "/tools/business-plan", emoji: "📝", label: "사업계획서 도우미" },
-      { href: "/tools/gov-support", emoji: "🏛️", label: "정부 지원사업" },
-      { href: "/tools/incorporation", emoji: "🏢", label: "법인 설립 가이드" },
-      { href: "/tools/financial-sim", emoji: "📈", label: "재무 시뮬레이션" },
-      { href: "/tools/fundraising", emoji: "💎", label: "투자 유치 도구" },
-      { href: "/tools/tax-guide", emoji: "🧾", label: "세무·회계 가이드" },
-      { href: "/tools/hiring", emoji: "👥", label: "인력 채용 도구" },
+      { href: "/tools/business-plan", emoji: "📝", label: "사업계획서 도우미", i18nKey: "businessPlan" },
+      { href: "/tools/gov-support", emoji: "🏛️", label: "정부 지원사업", i18nKey: "govSupport" },
+      { href: "/tools/incorporation", emoji: "🏢", label: "법인 설립 가이드", i18nKey: "incorporation" },
+      { href: "/tools/financial-sim", emoji: "📈", label: "재무 시뮬레이션", i18nKey: "financialSim" },
+      { href: "/tools/fundraising", emoji: "💎", label: "투자 유치 도구", i18nKey: "fundraising" },
+      { href: "/tools/tax-guide", emoji: "🧾", label: "세무·회계 가이드", i18nKey: "taxGuide" },
+      { href: "/tools/hiring", emoji: "👥", label: "인력 채용 도구", i18nKey: "hiring" },
     ],
   },
   {
@@ -51,10 +52,15 @@ const MOBILE_TABS = [
   { href: "/tools", emoji: "🛠️", label: "도구목록" },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const toolLabel = (tool: any, locale?: Parameters<typeof t>[1]) =>
+  tool.i18nKey ? t(`tool.${tool.i18nKey}.title`, locale) : tool.label;
+
 export default function ToolNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const locale = typeof window !== "undefined" ? getLocale() : "ko";
 
   // Close panel when clicking outside
   useEffect(() => {
@@ -135,7 +141,7 @@ export default function ToolNav() {
                       }`}
                     >
                       <span className="text-base">{tool.emoji}</span>
-                      <span>{tool.label}</span>
+                      <span>{toolLabel(tool, locale)}</span>
                     </Link>
                   ))}
                 </div>
@@ -173,7 +179,7 @@ export default function ToolNav() {
                 }`}
               >
                 <span className="text-sm">{tool.emoji}</span>
-                <span className="leading-tight">{tool.label}</span>
+                <span className="leading-tight">{toolLabel(tool, locale)}</span>
               </Link>
             ))}
           </div>

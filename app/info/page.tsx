@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { PLANS } from "@/lib/plans";
+import { t } from "@/lib/i18n";
 
 function useInView() {
   const ref = useRef<HTMLDivElement>(null);
@@ -258,23 +259,27 @@ export default function InfoPage() {
               { icon:"📱", title:"SNS 콘텐츠 생성기",   desc:"메뉴·이벤트 정보 입력 → 인스타 캡션 AI 자동 생성. 매일 고민하는 SNS 포스팅 해결.",     tag:"AI · SNS",   href:"/tools/sns-content" },
               { icon:"💬", title:"리뷰 답변 생성기",     desc:"고객 리뷰 붙여넣기 → AI가 맞춤 답변 초안 작성. 악성 리뷰도 프로답게 대응하세요.",        tag:"AI · 리뷰",  href:"/tools/review-reply" },
               { icon:"🗺️", title:"상권 분석 도우미",    desc:"입지 조건 입력 → AI 상권 적합도 평가 리포트. 창업 전 상권 리스크를 미리 파악하세요.",    tag:"AI · 상권",  href:"/tools/area-analysis" },
-              { icon:"📝", title:"사업계획서 도우미",   desc:"6단계 사업계획서 작성 + 미리보기 + 복사. 투자용·지원금용 모두 대응.",                      tag:"창업 · NEW", href:"/tools/business-plan" },
-              { icon:"🏛️", title:"정부 지원사업 매칭",  desc:"내 조건에 맞는 정부 지원금·대출·보증 프로그램을 자동으로 매칭합니다.",                      tag:"창업 · NEW", href:"/tools/gov-support" },
-              { icon:"📈", title:"재무 시뮬레이션",     desc:"런웨이·BEP·12개월 현금흐름을 3가지 시나리오로 시뮬레이션합니다.",                          tag:"창업 · NEW", href:"/tools/financial-sim" },
-              { icon:"🧾", title:"세무·회계 가이드",    desc:"세금 캘린더 + 부가세·소득세·4대보험 계산기 + 절세 전략.",                                  tag:"세무 · NEW", href:"/tools/tax-guide" },
-              { icon:"👥", title:"인력 채용 도구",      desc:"급여 계산기 + 근로계약서 생성 + 채용공고 템플릿 3종.",                                     tag:"인사 · NEW", href:"/tools/hiring" },
-            ].map((f, i) => (
-              <FadeIn key={f.title} delay={i * 60}>
-                <Link href={f.href} style={{ textDecoration: "none" }}>
-                  <div className="feature-card">
-                    <div className="feature-icon">{f.icon}</div>
-                    <div className="feature-title">{f.title}</div>
-                    <div className="feature-desc">{f.desc}</div>
-                    <span className="feature-tag">{f.tag}</span>
-                  </div>
-                </Link>
-              </FadeIn>
-            ))}
+              { icon:"📝", title:"사업계획서 도우미",   desc:"6단계 사업계획서 작성 + 미리보기 + 복사. 투자용·지원금용 모두 대응.",                      tag:"창업 · NEW", href:"/tools/business-plan", i18nKey:"businessPlan" },
+              { icon:"🏛️", title:"정부 지원사업 매칭",  desc:"내 조건에 맞는 정부 지원금·대출·보증 프로그램을 자동으로 매칭합니다.",                      tag:"창업 · NEW", href:"/tools/gov-support",   i18nKey:"govSupport" },
+              { icon:"📈", title:"재무 시뮬레이션",     desc:"런웨이·BEP·12개월 현금흐름을 3가지 시나리오로 시뮬레이션합니다.",                          tag:"창업 · NEW", href:"/tools/financial-sim",  i18nKey:"financialSim" },
+              { icon:"🧾", title:"세무·회계 가이드",    desc:"세금 캘린더 + 부가세·소득세·4대보험 계산기 + 절세 전략.",                                  tag:"세무 · NEW", href:"/tools/tax-guide",     i18nKey:"taxGuide" },
+              { icon:"👥", title:"인력 채용 도구",      desc:"급여 계산기 + 근로계약서 생성 + 채용공고 템플릿 3종.",                                     tag:"인사 · NEW", href:"/tools/hiring",        i18nKey:"hiring" },
+            ].map((f, i) => {
+              const fTitle = "i18nKey" in f && f.i18nKey ? t(`tool.${f.i18nKey}.title`) : f.title;
+              const fDesc  = "i18nKey" in f && f.i18nKey ? t(`tool.${f.i18nKey}.descFull`) : f.desc;
+              return (
+                <FadeIn key={f.title} delay={i * 60}>
+                  <Link href={f.href} style={{ textDecoration: "none" }}>
+                    <div className="feature-card">
+                      <div className="feature-icon">{f.icon}</div>
+                      <div className="feature-title">{fTitle}</div>
+                      <div className="feature-desc">{fDesc}</div>
+                      <span className="feature-tag">{f.tag}</span>
+                    </div>
+                  </Link>
+                </FadeIn>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -174,26 +174,35 @@ function LandingContent() {
         @keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
         @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
         @keyframes pulse-glow{0%,100%{box-shadow:0 0 0 0 rgba(49,130,246,0.4)}50%{box-shadow:0 0 0 8px rgba(49,130,246,0)}}
+        @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+        @keyframes featureFadeIn{from{opacity:0;transform:translateY(30px) scale(0.97)}to{opacity:1;transform:none}}
+        @keyframes statPop{0%{opacity:0;transform:scale(0.7) translateY(20px)}60%{transform:scale(1.05) translateY(-4px)}100%{opacity:1;transform:none}}
+        @keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(30px,-20px) scale(1.1)}50%{transform:translate(-10px,20px) scale(0.95)}75%{transform:translate(-30px,-10px) scale(1.05)}}
         .fade-init{opacity:0;animation:fadeUp .7s ease forwards}
         .d1{animation-delay:.1s}.d2{animation-delay:.25s}.d3{animation-delay:.4s}.d4{animation-delay:.55s}
         .step-card-hover:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.08);border-color:transparent}
-        .hero{min-height:100vh;display:flex;align-items:center;padding:120px 24px 80px;position:relative;overflow:hidden}
-        .hero-bg{position:absolute;top:-200px;right:-200px;width:800px;height:800px;background:radial-gradient(ellipse,rgba(49,130,246,0.08) 0%,transparent 70%);pointer-events:none;filter:blur(40px)}
-        .hero-bg2{position:absolute;bottom:-100px;left:-100px;width:500px;height:500px;background:radial-gradient(ellipse,rgba(99,102,241,0.06) 0%,transparent 70%);pointer-events:none;filter:blur(40px)}
+        .hero{min-height:100vh;display:flex;align-items:center;padding:120px 24px 80px;position:relative;overflow:hidden;background:linear-gradient(135deg,#f8faff 0%,#eef4ff 25%,#f0f0ff 50%,#f8faff 75%,#eef6ff 100%);background-size:400% 400%;animation:gradientMove 15s ease infinite}
+        .hero-bg{position:absolute;top:-200px;right:-200px;width:800px;height:800px;background:radial-gradient(ellipse,rgba(49,130,246,0.12) 0%,transparent 70%);pointer-events:none;filter:blur(40px);animation:floatOrb 20s ease-in-out infinite}
+        .hero-bg2{position:absolute;bottom:-100px;left:-100px;width:500px;height:500px;background:radial-gradient(ellipse,rgba(99,102,241,0.1) 0%,transparent 70%);pointer-events:none;filter:blur(40px);animation:floatOrb 25s ease-in-out infinite reverse}
+        .hero-bg3{position:absolute;top:50%;left:50%;width:600px;height:600px;background:radial-gradient(ellipse,rgba(16,185,129,0.05) 0%,transparent 70%);pointer-events:none;filter:blur(50px);animation:floatOrb 18s ease-in-out infinite 5s}
         .hero-inner{max-width:1100px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;position:relative;z-index:1}
         .hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--blue-light);color:var(--blue);font-size:13px;font-weight:600;padding:6px 14px;border-radius:100px;margin-bottom:24px}
         .hero-tag-dot{width:6px;height:6px;background:var(--blue);border-radius:50%}
-        .hero-title{font-size:clamp(36px,4.5vw,58px);font-weight:800;line-height:1.15;color:var(--gray-900);margin-bottom:20px;letter-spacing:-0.02em}
-        .hero-title span{color:var(--blue)}
+        .hero-title{font-size:clamp(40px,5vw,64px);font-weight:900;line-height:1.1;color:var(--gray-900);margin-bottom:24px;letter-spacing:-0.03em}
+        .hero-title span{background:linear-gradient(135deg,var(--blue),#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .hero-desc{font-size:18px;color:var(--gray-600);line-height:1.7;margin-bottom:40px}
         .hero-actions{display:flex;gap:12px;flex-wrap:wrap}
-        .btn-primary{background:var(--blue);color:#fff;padding:16px 32px;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(49,130,246,0.3)}
-        .btn-primary:hover{background:var(--blue-dark);transform:translateY(-2px);box-shadow:0 6px 20px rgba(49,130,246,0.4)}
+        .btn-primary{background:linear-gradient(135deg,var(--blue),#1B64DA);color:#fff;padding:16px 32px;border-radius:14px;font-size:16px;font-weight:700;text-decoration:none;transition:all .25s cubic-bezier(.34,1.56,.64,1);display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(49,130,246,0.35)}
+        .btn-primary:hover{background:linear-gradient(135deg,#1B64DA,#1554b8);transform:translateY(-3px) scale(1.02);box-shadow:0 8px 28px rgba(49,130,246,0.45)}
         .btn-secondary{background:var(--gray-100);color:var(--gray-800);padding:16px 28px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;transition:background .15s;display:inline-flex;align-items:center;gap:8px}
         .btn-secondary:hover{background:var(--gray-200)}
         .hero-stats{display:flex;gap:32px;margin-top:48px;padding-top:40px;border-top:1px solid var(--gray-200)}
-        .stat-num{font-size:32px;font-weight:900;color:var(--gray-900);letter-spacing:-0.03em;animation:countUp .8s ease forwards;animation-delay:.6s;opacity:0}
-        .stat-num span{color:var(--blue)}
+        .stat-num{font-size:36px;font-weight:900;color:var(--gray-900);letter-spacing:-0.03em;animation:statPop .8s ease forwards;opacity:0}
+        .stat-num span{background:linear-gradient(135deg,var(--blue),#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .hero-stats > div:nth-child(1) .stat-num{animation-delay:.4s}
+        .hero-stats > div:nth-child(2) .stat-num{animation-delay:.6s}
+        .hero-stats > div:nth-child(3) .stat-num{animation-delay:.8s}
+        .hero-stats > div:nth-child(4) .stat-num{animation-delay:1s}
         .stat-label{font-size:13px;color:var(--gray-400);margin-top:2px}
         .hero-card{background:var(--gray-50);border-radius:24px;padding:32px;border:1px solid var(--gray-200)}
         .hero-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
@@ -214,9 +223,19 @@ function LandingContent() {
         .section-desc{font-size:17px;color:var(--gray-600);line-height:1.7;max-width:500px}
         .features-bg{background:var(--gray-50)}
         .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
-        .feature-card{background:#fff;border-radius:20px;padding:32px;border:1px solid var(--gray-200);transition:transform .2s,box-shadow .2s}
-        .feature-card:hover{transform:translateY(-6px);box-shadow:0 16px 48px rgba(0,0,0,.1);border-color:var(--blue)}
-        .feature-icon{width:48px;height:48px;border-radius:14px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px}
+        .feature-card{background:#fff;border-radius:20px;padding:32px;border:1px solid var(--gray-200);transition:transform .3s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease,border-color .3s ease;opacity:0;animation:featureFadeIn .6s ease forwards}
+        .feature-card:hover{transform:translateY(-8px) scale(1.02);box-shadow:0 20px 60px rgba(49,130,246,.15),0 8px 24px rgba(0,0,0,.06);border-color:var(--blue)}
+        .features-grid > div:nth-child(1) .feature-card{animation-delay:.05s}
+        .features-grid > div:nth-child(2) .feature-card{animation-delay:.1s}
+        .features-grid > div:nth-child(3) .feature-card{animation-delay:.15s}
+        .features-grid > div:nth-child(4) .feature-card{animation-delay:.2s}
+        .features-grid > div:nth-child(5) .feature-card{animation-delay:.25s}
+        .features-grid > div:nth-child(6) .feature-card{animation-delay:.3s}
+        .features-grid > div:nth-child(7) .feature-card{animation-delay:.35s}
+        .features-grid > div:nth-child(8) .feature-card{animation-delay:.4s}
+        .features-grid > div:nth-child(9) .feature-card{animation-delay:.45s}
+        .feature-icon{width:48px;height:48px;border-radius:14px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;transition:transform .3s ease,background .3s ease}
+        .feature-card:hover .feature-icon{transform:scale(1.15) rotate(-3deg);background:var(--blue);filter:brightness(1.1)}
         .feature-title{font-size:18px;font-weight:700;color:var(--gray-900);margin-bottom:10px}
         .feature-desc{font-size:14px;color:var(--gray-600);line-height:1.7}
         .feature-tag{display:inline-block;margin-top:16px;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-light);padding:4px 10px;border-radius:100px}
@@ -242,16 +261,29 @@ function LandingContent() {
         .pricing-btn-blue:hover{background:var(--blue-dark)}
         .pricing-btn-gray{background:var(--gray-100);color:var(--gray-800)}
         .pricing-btn-gray:hover{background:var(--gray-200)}
-        .testi-bg{background:var(--gray-900)}
+        .testi-bg{background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)}
         .testi-bg .section-title{color:#fff}
-        .testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:56px}
-        .testi-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px}
-        .testi-stars{color:#F59E0B;font-size:14px;margin-bottom:16px}
-        .testi-text{font-size:15px;color:rgba(255,255,255,.8);line-height:1.7;margin-bottom:20px}
+        .testi-bg .section-desc{color:rgba(255,255,255,.5)}
+        .testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+        .testi-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:32px;transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease;backdrop-filter:blur(10px)}
+        .testi-card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,.3);border-color:rgba(49,130,246,.4)}
+        .testi-stars{color:#F59E0B;font-size:16px;margin-bottom:16px;letter-spacing:2px}
+        .testi-text{font-size:15px;color:rgba(255,255,255,.85);line-height:1.8;margin-bottom:24px;font-style:italic}
         .testi-author{display:flex;align-items:center;gap:12px}
-        .testi-avatar{width:40px;height:40px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+        .testi-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#7C3AED);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
         .testi-name{font-size:14px;font-weight:600;color:#fff}
         .testi-role{font-size:12px;color:var(--gray-400)}
+        .stats-section{background:linear-gradient(135deg,var(--blue) 0%,#1B64DA 40%,#7C3AED 100%);padding:80px 24px}
+        .stats-grid{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:32px;text-align:center}
+        .stats-item{opacity:0;animation:statPop .7s ease forwards}
+        .stats-item:nth-child(1){animation-delay:.1s}
+        .stats-item:nth-child(2){animation-delay:.25s}
+        .stats-item:nth-child(3){animation-delay:.4s}
+        .stats-item:nth-child(4){animation-delay:.55s}
+        .stats-number{font-size:clamp(40px,5vw,64px);font-weight:900;color:#fff;letter-spacing:-0.03em;line-height:1}
+        .stats-number span{font-size:clamp(24px,3vw,36px)}
+        .stats-unit{font-size:16px;font-weight:600;color:rgba(255,255,255,.9);margin-top:8px}
+        .stats-desc{font-size:13px;color:rgba(255,255,255,.6);margin-top:4px}
         .cta-bg{background:var(--blue);text-align:center}
         .cta-title{font-size:clamp(28px,4vw,48px);font-weight:800;color:#fff;letter-spacing:-0.02em;margin-bottom:16px}
         .cta-desc{font-size:18px;color:rgba(255,255,255,.8);margin-bottom:40px}
@@ -270,7 +302,7 @@ function LandingContent() {
         .form-submit{background:var(--blue);color:#fff;padding:15px 28px;border-radius:10px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;transition:background .15s;align-self:flex-start}
         .form-submit:hover{background:var(--blue-dark)}
         .form-msg{font-size:13px;color:var(--blue);display:none;margin-top:4px}
-        footer{background:var(--gray-900);padding:60px 24px 40px}
+        footer{background:linear-gradient(180deg,#0f172a 0%,var(--gray-900) 100%);padding:60px 24px 40px}
         .footer-inner{max-width:1100px;margin:0 auto}
         .footer-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px}
         .footer-logo{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.02em}
@@ -283,8 +315,8 @@ function LandingContent() {
         .footer-legal{display:flex;gap:16px}
         .footer-legal a{font-size:13px;color:var(--gray-400);text-decoration:none}
         .footer-legal a:hover{color:#fff}
-        @media(max-width:1024px){.hero-inner{grid-template-columns:1fr;gap:48px}.features-grid,.pricing-grid,.testi-grid{grid-template-columns:1fr 1fr}.steps-grid{grid-template-columns:1fr 1fr}.contact-layout{grid-template-columns:1fr;gap:48px}}
-        @media(max-width:640px){.features-grid,.pricing-grid,.testi-grid,.steps-grid{grid-template-columns:1fr}.hero-stats{flex-direction:column;gap:20px}.form-row{grid-template-columns:1fr}.footer-top{flex-direction:column;gap:24px}.footer-bottom{flex-direction:column;gap:16px;text-align:center}.hero-actions{flex-direction:column}}
+        @media(max-width:1024px){.hero-inner{grid-template-columns:1fr;gap:48px}.features-grid,.pricing-grid,.testi-grid{grid-template-columns:1fr 1fr}.steps-grid{grid-template-columns:1fr 1fr}.contact-layout{grid-template-columns:1fr;gap:48px}.stats-grid{grid-template-columns:repeat(2,1fr);gap:24px}}
+        @media(max-width:640px){.features-grid,.pricing-grid,.testi-grid,.steps-grid{grid-template-columns:1fr}.hero-stats{flex-direction:column;gap:20px}.form-row{grid-template-columns:1fr}.footer-top{flex-direction:column;gap:24px}.footer-bottom{flex-direction:column;gap:16px;text-align:center}.hero-actions{flex-direction:column}.stats-grid{grid-template-columns:repeat(2,1fr);gap:20px}}
       `}</style>
 
       
@@ -292,18 +324,21 @@ function LandingContent() {
 
       {/* HERO */}
       <section className="hero" id="home">
-        <div className="hero-bg" /><div className="hero-bg2" />
+        <div className="hero-bg" /><div className="hero-bg2" /><div className="hero-bg3" />
         <div className="hero-inner">
           <div>
             <div className="fade-init d1">
-              <div className="hero-tag"><span className="hero-tag-dot" />{t("hero.tag")}</div>
+              <div className="hero-tag"><span className="hero-tag-dot" style={{animation:"pulse-glow 2s infinite"}} />{t("hero.tag")}</div>
               <h1 className="hero-title">{t("hero.title1")}<br /><span>{t("hero.title2")}</span></h1>
               <p className="hero-desc">{t("hero.desc")}</p>
               <div className="hero-actions">
-                <Link href="/signup" className="btn-primary">{t("hero.cta")}</Link>
-                <a href="#features" className="btn-secondary">{t("hero.cta2")}</a>
+                <Link href="/simulator" className="btn-primary" style={{padding:"18px 36px",fontSize:17,borderRadius:16,animation:"pulse-glow 3s infinite 2s"}}>시뮬레이터 시작 →</Link>
+                <a href="#features" className="btn-secondary" style={{padding:"18px 32px",fontSize:17,borderRadius:16}}>도구 둘러보기</a>
               </div>
-              <p style={{fontSize:13,color:"var(--gray-400)",marginTop:12}}>카카오 로그인으로 3초 만에 시작 · 무료 플랜 제공</p>
+              <p style={{fontSize:13,color:"var(--gray-400)",marginTop:16,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:"#059669",animation:"pulse-glow 2s infinite"}} />
+                500+ 사장님이 사용 중 · 카카오 로그인 3초 · 무료 플랜 제공
+              </p>
               <div className="hero-stats">
                 <div><div className="stat-num">500<span>+</span></div><div className="stat-label">사장님 사용 중</div></div>
                 <div><div className="stat-num">5<span>개</span></div><div className="stat-label">업종 지원</div></div>
@@ -348,26 +383,30 @@ function LandingContent() {
               { icon:"🧾", title:"세무사 연결",          desc:"외식업 전문 세무사 매칭. 시뮬레이션 데이터 기반으로 정확한 세무 상담을 받으세요.",          tag:"세무 상담",  href:"/tools/tax-advisor" },
               { icon:"🤝", title:"식자재 공동구매",       desc:"같은 동네 사장님끼리 식자재 공동구매하면 단가를 10~20% 낮출 수 있어요.",                 tag:"공동구매",   href:"/tools/group-buy" },
               { icon:"🎁", title:"사장님 추천 프로그램",   desc:"친구를 초대하면 양쪽 모두 스탠다드 플랜 1개월 무료 혜택!",                              tag:"추천 보상",  href:"/referral" },
-              // 창업 도우미
-              { icon:"📝", title:"사업계획서 도우미",     desc:"6단계로 사업계획서 작성 → 미리보기·복사. 투자자용·정부지원금용 모두 대응.",               tag:"창업 · NEW", href:"/tools/business-plan" },
-              { icon:"🏛️", title:"정부 지원사업 매칭",    desc:"사업 단계·지역·조건 입력하면 20개 이상 정부 지원 프로그램 중 내게 맞는 것을 매칭.",       tag:"창업 · NEW", href:"/tools/gov-support" },
-              { icon:"🏢", title:"법인 설립 가이드",      desc:"개인 vs 법인 세금 비교 계산 + 설립 절차 체크리스트 + 비용 시뮬레이터.",                  tag:"창업 · NEW", href:"/tools/incorporation" },
-              { icon:"📈", title:"재무 시뮬레이션",       desc:"런웨이·BEP·12개월 현금흐름 시뮬레이션. 보수적/기본/낙관적 3가지 시나리오 비교.",         tag:"창업 · NEW", href:"/tools/financial-sim" },
-              { icon:"💎", title:"투자 유치 도구",        desc:"밸류에이션 계산기 + IR 덱 12슬라이드 가이드 + 투자자 미팅 준비 체크리스트.",              tag:"창업 · NEW", href:"/tools/fundraising" },
-              { icon:"🧾", title:"세무·회계 가이드",      desc:"세금 캘린더 + 부가세·소득세·4대보험 계산기 + 외식업 절세 전략 10선.",                    tag:"세무 · NEW", href:"/tools/tax-guide" },
-              { icon:"👥", title:"인력 채용 도구",        desc:"급여 계산기 + 근로계약서 자동 생성 + 업종별 채용공고 템플릿 3종.",                       tag:"인사 · NEW", href:"/tools/hiring" },
-            ].map((f, i) => (
-              <FadeIn key={f.title} delay={i * 60}>
-                <Link href={f.href} style={{ textDecoration: "none" }}>
-                  <div className="feature-card">
-                    <div className="feature-icon">{f.icon}</div>
-                    <div className="feature-title">{f.title}</div>
-                    <div className="feature-desc">{f.desc}</div>
-                    <span className="feature-tag">{f.tag}</span>
-                  </div>
-                </Link>
-              </FadeIn>
-            ))}
+              // 창업 도우미 (i18n)
+              { icon:"📝", title:"사업계획서 도우미",     desc:"6단계로 사업계획서 작성 → 미리보기·복사. 투자자용·정부지원금용 모두 대응.",               tag:"창업 · NEW", href:"/tools/business-plan", i18nKey:"businessPlan" },
+              { icon:"🏛️", title:"정부 지원사업 매칭",    desc:"사업 단계·지역·조건 입력하면 20개 이상 정부 지원 프로그램 중 내게 맞는 것을 매칭.",       tag:"창업 · NEW", href:"/tools/gov-support",   i18nKey:"govSupport" },
+              { icon:"🏢", title:"법인 설립 가이드",      desc:"개인 vs 법인 세금 비교 계산 + 설립 절차 체크리스트 + 비용 시뮬레이터.",                  tag:"창업 · NEW", href:"/tools/incorporation", i18nKey:"incorporation" },
+              { icon:"📈", title:"재무 시뮬레이션",       desc:"런웨이·BEP·12개월 현금흐름 시뮬레이션. 보수적/기본/낙관적 3가지 시나리오 비교.",         tag:"창업 · NEW", href:"/tools/financial-sim",  i18nKey:"financialSim" },
+              { icon:"💎", title:"투자 유치 도구",        desc:"밸류에이션 계산기 + IR 덱 12슬라이드 가이드 + 투자자 미팅 준비 체크리스트.",              tag:"창업 · NEW", href:"/tools/fundraising",   i18nKey:"fundraising" },
+              { icon:"🧾", title:"세무·회계 가이드",      desc:"세금 캘린더 + 부가세·소득세·4대보험 계산기 + 외식업 절세 전략 10선.",                    tag:"세무 · NEW", href:"/tools/tax-guide",     i18nKey:"taxGuide" },
+              { icon:"👥", title:"인력 채용 도구",        desc:"급여 계산기 + 근로계약서 자동 생성 + 업종별 채용공고 템플릿 3종.",                       tag:"인사 · NEW", href:"/tools/hiring",        i18nKey:"hiring" },
+            ].map((f, i) => {
+              const fTitle = "i18nKey" in f && f.i18nKey ? t(`tool.${f.i18nKey}.title`) : f.title;
+              const fDesc  = "i18nKey" in f && f.i18nKey ? t(`tool.${f.i18nKey}.descFull`) : f.desc;
+              return (
+                <FadeIn key={f.title} delay={i * 60}>
+                  <Link href={f.href} style={{ textDecoration: "none" }}>
+                    <div className="feature-card">
+                      <div className="feature-icon">{f.icon}</div>
+                      <div className="feature-title">{fTitle}</div>
+                      <div className="feature-desc">{fDesc}</div>
+                      <span className="feature-tag">{f.tag}</span>
+                    </div>
+                  </Link>
+                </FadeIn>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -417,15 +456,35 @@ function LandingContent() {
         </div>
       </section>
 
+      {/* STATS */}
+      <section className="stats-section">
+        <div className="stats-grid">
+          {[
+            { num: "30", suffix: "+", unit: "경영 도구", desc: "원가 계산부터 AI 분석까지" },
+            { num: "500", suffix: "+", unit: "사장님", desc: "실제 매장에서 활용 중" },
+            { num: "5", suffix: "", unit: "업종 지원", desc: "카페, 음식점, 베이커리 등" },
+            { num: "24/7", suffix: "", unit: "AI 상담", desc: "언제든 경영 질문 가능" },
+          ].map((s, i) => (
+            <FadeIn key={s.unit} delay={i * 120}>
+              <div className="stats-item">
+                <div className="stats-number">{s.num}<span>{s.suffix}</span></div>
+                <div className="stats-unit">{s.unit}</div>
+                <div className="stats-desc">{s.desc}</div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </section>
+
       {/* TESTIMONIALS */}
       <section className="testi-bg">
         <div className="section-inner">
-          <FadeIn><span className="section-tag" style={{ background: "rgba(255,255,255,.1)", color: "#93C5FD" }}>{t("reviews.tag")}</span><h2 className="section-title">{t("reviews.title")}</h2></FadeIn>
+          <FadeIn><span className="section-tag" style={{ background: "rgba(255,255,255,.1)", color: "#93C5FD" }}>{t("reviews.tag")}</span><h2 className="section-title">{t("reviews.title")}</h2><p className="section-desc">실제 사장님들의 생생한 후기입니다.</p></FadeIn>
           <div className="testi-grid">
             {[
-              { text: "원가율이 38%인 줄 몰랐는데 VELA로 확인하고 메뉴를 조정했더니 월 120만원 절감됐어요. 숫자를 보니 어디서 돈이 새는지 바로 보이더라고요.", name: "김○○", role: "카페 운영 3년차", av: "김", delay: 0 },
-              { text: "AI가 배달 채널 추가를 추천해줬는데, 실행 후 월 매출이 20% 올랐습니다. 순이익도 월 80만원 증가했어요.", name: "박○○", role: "분식점 사장님", av: "박", delay: 80 },
-              { text: "창업 전에 VELA로 시뮬레이션 돌려보니 초기 투자금 회수에 14개월 걸린다는 걸 미리 알 수 있었어요. 덕분에 보증금 협상도 자신 있게 했습니다.", name: "이○○", role: "파인다이닝 예비 창업자", av: "이", delay: 160 },
+              { text: "카페 창업 전에 시뮬레이터로 미리 계산해봤는데 실제와 거의 비슷했어요. 덕분에 자신감 있게 오픈했습니다. 특히 원가율 분석이 정말 정확해서 메뉴 가격을 자신 있게 정할 수 있었어요.", name: "김○○", role: "강남 카페 사장님 · 운영 3년차", av: "김", delay: 0 },
+              { text: "원가율이 38%인 줄 몰랐는데 VELA로 확인하고 메뉴를 조정했더니 월 120만원 절감됐어요. AI가 배달 채널 추가도 추천해줬는데, 실행 후 월 매출이 20% 올랐습니다.", name: "박○○", role: "홍대 분식점 사장님 · 운영 5년차", av: "박", delay: 100 },
+              { text: "정부 지원사업 매칭 기능으로 소상공인 지원금 2천만원을 받았습니다. 혼자였으면 절대 찾지 못했을 거예요. 세금 계산기도 매달 쓰고 있어요. 세무사 비용도 아꼈습니다.", name: "이○○", role: "성수동 베이커리 사장님 · 운영 2년차", av: "이", delay: 200 },
             ].map((t) => (
               <FadeIn key={t.name} delay={t.delay}>
                 <div className="testi-card">
@@ -537,6 +596,7 @@ function LandingContent() {
             <div className="footer-legal">
               <Link href="/terms">이용약관</Link>
               <Link href="/privacy">개인정보처리방침</Link>
+              <a href="#contact">문의</a>
             </div>
           </div>
         </div>

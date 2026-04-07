@@ -7,8 +7,9 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import MonthlyTipCard from "@/components/MonthlyTipCard";
 import OnboardingModal from "@/components/OnboardingModal";
+import { t, getLocale } from "@/lib/i18n";
 
-type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean };
+type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean; i18nKey?: string };
 const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] = [
   {
     key: "calc", label: "💰 경영 분석", desc: "매출·원가·인건비·세금 계산",
@@ -43,13 +44,13 @@ const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] 
   {
     key: "startup", label: "🚀 창업 도우미", desc: "사업계획·자금·세무·채용 올인원",
     tools: [
-      { href: "/tools/business-plan", emoji: "📝", title: "사업계획서 도우미", desc: "단계별 사업계획서 작성 + 미리보기 + 복사", color: "#4F46E5", bg: "#EEF2FF", badge: "NEW" },
-      { href: "/tools/gov-support", emoji: "🏛️", title: "정부 지원사업 매칭", desc: "내 조건에 맞는 정부 지원금·대출·보증 자동 매칭", color: "#059669", bg: "#ECFDF5", badge: "NEW" },
-      { href: "/tools/incorporation", emoji: "🏢", title: "법인 설립 가이드", desc: "개인 vs 법인 세금 비교 + 설립 절차 + 비용 시뮬레이터", color: "#7C3AED", bg: "#F5F3FF", badge: "NEW" },
-      { href: "/tools/financial-sim", emoji: "📈", title: "재무 시뮬레이션", desc: "런웨이·BEP·현금흐름 12개월 시뮬레이션", color: "#3182F6", bg: "#EBF3FF", badge: "NEW" },
-      { href: "/tools/fundraising", emoji: "💎", title: "투자 유치 도구", desc: "밸류에이션 계산 + IR 덱 가이드 + 투자자 미팅 준비", color: "#D97706", bg: "#FFFBEB", badge: "NEW" },
-      { href: "/tools/tax-guide", emoji: "🧾", title: "세무·회계 가이드", desc: "세금 캘린더 + 부가세·소득세·4대보험 계산기 + 절세 전략", color: "#EA580C", bg: "#FFF7ED", badge: "NEW" },
-      { href: "/tools/hiring", emoji: "👥", title: "인력 채용 도구", desc: "급여 계산기 + 근로계약서 생성 + 채용공고 템플릿", color: "#0D9488", bg: "#F0FDFA", badge: "NEW" },
+      { href: "/tools/business-plan", emoji: "📝", title: "사업계획서 도우미", desc: "단계별 사업계획서 작성 + 미리보기 + 복사", color: "#4F46E5", bg: "#EEF2FF", badge: "NEW", i18nKey: "businessPlan" },
+      { href: "/tools/gov-support", emoji: "🏛️", title: "정부 지원사업 매칭", desc: "내 조건에 맞는 정부 지원금·대출·보증 자동 매칭", color: "#059669", bg: "#ECFDF5", badge: "NEW", i18nKey: "govSupport" },
+      { href: "/tools/incorporation", emoji: "🏢", title: "법인 설립 가이드", desc: "개인 vs 법인 세금 비교 + 설립 절차 + 비용 시뮬레이터", color: "#7C3AED", bg: "#F5F3FF", badge: "NEW", i18nKey: "incorporation" },
+      { href: "/tools/financial-sim", emoji: "📈", title: "재무 시뮬레이션", desc: "런웨이·BEP·현금흐름 12개월 시뮬레이션", color: "#3182F6", bg: "#EBF3FF", badge: "NEW", i18nKey: "financialSim" },
+      { href: "/tools/fundraising", emoji: "💎", title: "투자 유치 도구", desc: "밸류에이션 계산 + IR 덱 가이드 + 투자자 미팅 준비", color: "#D97706", bg: "#FFFBEB", badge: "NEW", i18nKey: "fundraising" },
+      { href: "/tools/tax-guide", emoji: "🧾", title: "세무·회계 가이드", desc: "세금 캘린더 + 부가세·소득세·4대보험 계산기 + 절세 전략", color: "#EA580C", bg: "#FFF7ED", badge: "NEW", i18nKey: "taxGuide" },
+      { href: "/tools/hiring", emoji: "👥", title: "인력 채용 도구", desc: "급여 계산기 + 근로계약서 생성 + 채용공고 템플릿", color: "#0D9488", bg: "#F0FDFA", badge: "NEW", i18nKey: "hiring" },
     ],
   },
   {
@@ -86,11 +87,17 @@ const BADGE_STYLES: Record<string, string> = {
   SOON: "bg-slate-200 text-slate-500",
 };
 
+const resolveTitle = (tool: Tool, locale?: Parameters<typeof t>[1]) =>
+  tool.i18nKey ? t(`tool.${tool.i18nKey}.title`, locale) : tool.title;
+const resolveDesc = (tool: Tool, locale?: Parameters<typeof t>[1]) =>
+  tool.i18nKey ? t(`tool.${tool.i18nKey}.descLong`, locale) : tool.desc;
+
 export default function ToolsPage() {
   const simData = useSimulatorData();
   const [plan, setPlan] = useState<string>("free");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [search, setSearch] = useState("");
+  const locale = typeof window !== "undefined" ? getLocale() : "ko";
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
@@ -111,7 +118,7 @@ export default function ToolsPage() {
     return CATEGORIES.map((cat) => ({
       ...cat,
       tools: cat.tools.filter(
-        (t) => t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)
+        (tool) => resolveTitle(tool, locale).toLowerCase().includes(q) || resolveDesc(tool, locale).toLowerCase().includes(q)
       ),
     })).filter((cat) => cat.tools.length > 0);
   }, [search]);
@@ -265,7 +272,7 @@ export default function ToolsPage() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1.5">
-                          <span className="font-bold text-slate-900 text-sm leading-tight">{tool.title}</span>
+                          <span className="font-bold text-slate-900 text-sm leading-tight">{resolveTitle(tool, locale)}</span>
                           {tool.badge && (
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${BADGE_STYLES[tool.badge] ?? "bg-slate-100 text-slate-500"}`}>
                               {tool.badge}
@@ -274,11 +281,11 @@ export default function ToolsPage() {
                         </div>
                         {locked ? (
                           <div>
-                            <p className="text-xs text-slate-400 leading-relaxed mb-1.5">{tool.desc}</p>
+                            <p className="text-xs text-slate-400 leading-relaxed mb-1.5">{resolveDesc(tool, locale)}</p>
                             <Link href="/pricing" className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 transition">업그레이드 →</Link>
                           </div>
                         ) : (
-                          <p className="text-xs text-slate-500 leading-relaxed">{tool.desc}</p>
+                          <p className="text-xs text-slate-500 leading-relaxed">{resolveDesc(tool, locale)}</p>
                         )}
                       </div>
                       {/* Arrow indicator on hover */}
