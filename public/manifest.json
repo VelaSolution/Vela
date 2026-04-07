@@ -1,0 +1,15 @@
+{
+  "name": "VELA — 외식업 경영 파트너",
+  "short_name": "VELA",
+  "description": "외식업 사장님을 위한 수익 시뮬레이터 & AI 경영 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#3182F6",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

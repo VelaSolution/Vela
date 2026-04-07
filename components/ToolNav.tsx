@@ -76,7 +76,7 @@ export default function ToolNav() {
   return (
     <>
       {/* 모바일: 고정 하단 탭 바 */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+      <nav role="navigation" aria-label="도구 네비게이션" className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-around h-14">
           {MOBILE_TABS.map(tab => {
             const isActive = tab.href === "/tools"
@@ -86,6 +86,7 @@ export default function ToolNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
                   isActive ? "text-blue-600" : "text-slate-400"
                 }`}
@@ -98,6 +99,7 @@ export default function ToolNav() {
           {/* 더보기 버튼 */}
           <button
             onClick={() => setOpen(v => !v)}
+            aria-expanded={open}
             className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
               open ? "text-blue-600" : "text-slate-400"
             }`}
@@ -115,6 +117,7 @@ export default function ToolNav() {
             <div className="fixed inset-0 bg-black/30 z-[-1]" />
             <div
               ref={panelRef}
+              aria-label="도구 전체 목록"
               className="absolute bottom-full left-0 right-0 bg-white rounded-t-2xl shadow-2xl ring-1 ring-slate-200 p-4 space-y-3 max-h-[70vh] overflow-y-auto animate-[slideUp_0.2s_ease-out]"
             >
               {TOOL_SECTIONS.map(section => (
@@ -124,6 +127,7 @@ export default function ToolNav() {
                     <Link
                       key={tool.href}
                       href={tool.href}
+                      aria-current={pathname === tool.href ? "page" : undefined}
                       className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                         pathname === tool.href
                           ? "bg-blue-50 text-blue-600"
@@ -161,6 +165,7 @@ export default function ToolNav() {
               <Link
                 key={tool.href}
                 href={tool.href}
+                aria-current={pathname === tool.href ? "page" : undefined}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
                   pathname === tool.href
                     ? "bg-slate-900 text-white"

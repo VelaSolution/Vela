@@ -7,6 +7,7 @@ import { useCloudSync } from "@/lib/useCloudSync";
 import CloudSyncBadge from "@/components/CloudSyncBadge";
 import ToolNav from "@/components/ToolNav";
 import EmptyState from "@/components/EmptyState";
+import { exportCSV } from "@/lib/exportCSV";
 
 type Competitor = {
   id: string;
@@ -76,7 +77,21 @@ export default function CompetitorPricingPage() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">경쟁매장 가격 조사</h1>
             <CloudSyncBadge status={status} userId={userId} />
           </div>
-          <p className="text-slate-500 text-sm">주변 매장 메뉴 가격을 기록하고 내 가격과 비교하세요.</p>
+          <div className="flex items-center gap-2">
+            <p className="text-slate-500 text-sm">주변 매장 메뉴 가격을 기록하고 내 가격과 비교하세요.</p>
+            {competitors.length > 0 && (
+              <button
+                onClick={() => exportCSV(
+                  `경쟁매장가격_${new Date().toISOString().slice(0, 10)}.csv`,
+                  ["매장명", "메뉴명", "가격", "비고", "기록일"],
+                  competitors.flatMap(c => c.menus.map(m => [c.name, m.name, m.price, m.note, c.recordedAt]))
+                )}
+                className="flex-shrink-0 text-xs text-slate-500 bg-white ring-1 ring-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50"
+              >
+                📥 CSV 내보내기
+              </button>
+            )}
+          </div>
         </div>
 
         {avgPrice > 0 && (

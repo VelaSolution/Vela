@@ -6,6 +6,7 @@ import { useSimulatorData } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import MonthlyTipCard from "@/components/MonthlyTipCard";
+import OnboardingModal from "@/components/OnboardingModal";
 
 type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean };
 const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] = [
@@ -123,6 +124,7 @@ export default function ToolsPage() {
 
   return (
     <>
+      <OnboardingModal />
       <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 pt-20 pb-16 px-4">
         <div className="mx-auto max-w-3xl">
           {/* Hero header */}
@@ -140,7 +142,7 @@ export default function ToolsPage() {
           </div>
 
           {/* Search bar */}
-          <div className="relative mb-8">
+          <div role="search" className="relative mb-8">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -150,6 +152,7 @@ export default function ToolsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label="도구 검색"
               placeholder="도구 이름이나 키워드로 검색..."
               className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-white border border-slate-200 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-300 transition"
             />

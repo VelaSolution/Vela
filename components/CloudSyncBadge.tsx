@@ -21,7 +21,7 @@ export default function CloudSyncBadge({
   if (status === "idle") {
     // 로그인 상태에서 idle이면 클라우드 연결 표시
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+      <span role="status" aria-live="polite" className="inline-flex items-center gap-1 text-[11px] text-slate-400 font-medium">
         ☁️ 클라우드 연결됨
       </span>
     );
@@ -29,7 +29,7 @@ export default function CloudSyncBadge({
 
   const s = STATUS_MAP[status];
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${s.bg} ${s.text} transition-all`}>
+    <span role="status" aria-live="polite" className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg ${s.bg} ${s.text} transition-all`}>
       {s.icon} {s.label}
     </span>
   );

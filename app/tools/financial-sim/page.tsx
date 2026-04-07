@@ -6,6 +6,7 @@ import ToolNav from "@/components/ToolNav";
 import { useCloudSync } from "@/lib/useCloudSync";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import CloudSyncBadge from "@/components/CloudSyncBadge";
+import { exportCSV } from "@/lib/exportCSV";
 
 const KEY = "vela-financial-sim";
 const fmt = (n: number) => n.toLocaleString("ko-KR");
@@ -91,6 +92,16 @@ export default function FinancialSimPage() {
             <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight mb-1">재무 시뮬레이션</h1>
             <div className="flex items-center gap-2">
               <p className="text-slate-500 text-sm">런웨이, 손익분기점, 현금 흐름을 시뮬레이션합니다.</p>
+              <button
+                onClick={() => exportCSV(
+                  `재무시뮬레이션_${new Date().toISOString().slice(0, 10)}.csv`,
+                  ["월", "매출", "고정비", "변동비", "순이익", "누적잔액"],
+                  result.months.map(m => [`${m.month}월`, m.rev, m.fixed, m.variable, m.profit, m.balance])
+                )}
+                className="flex-shrink-0 text-xs text-slate-500 bg-white ring-1 ring-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50"
+              >
+                📥 CSV 내보내기
+              </button>
               <CloudSyncBadge status={status} userId={userId} />
             </div>
             {simData && (

@@ -7,6 +7,7 @@ import { useCloudSync } from "@/lib/useCloudSync";
 import CloudSyncBadge from "@/components/CloudSyncBadge";
 import ToolNav from "@/components/ToolNav";
 import EmptyState from "@/components/EmptyState";
+import { exportCSV } from "@/lib/exportCSV";
 
 const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -70,7 +71,21 @@ export default function DailySalesPage() {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">일일 매출 기록</h1>
             <CloudSyncBadge status={status} userId={userId} />
           </div>
-          <p className="text-slate-500 text-sm">매일 매출과 고객수만 입력하면 월간 자동 집계 + 요일별 패턴을 분석합니다.</p>
+          <div className="flex items-center gap-2">
+            <p className="text-slate-500 text-sm">매일 매출과 고객수만 입력하면 월간 자동 집계 + 요일별 패턴을 분석합니다.</p>
+            {records.length > 0 && (
+              <button
+                onClick={() => exportCSV(
+                  `일일매출_${new Date().toISOString().slice(0, 10)}.csv`,
+                  ["날짜", "매출", "고객수", "메모"],
+                  records.map(r => [r.date, r.sales, r.customers, r.memo])
+                )}
+                className="flex-shrink-0 text-xs text-slate-500 bg-white ring-1 ring-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50"
+              >
+                📥 CSV 내보내기
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 탭 */}

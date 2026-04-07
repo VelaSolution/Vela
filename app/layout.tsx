@@ -33,6 +33,9 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   alternates: { canonical: "https://velaanalytics.com" },
+  manifest: "/manifest.json",
+  themeColor: "#3182F6",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "VELA" },
 };
 
 export default function RootLayout({
@@ -54,6 +57,13 @@ export default function RootLayout({
               document.documentElement.classList.add('dark');
             }
           } catch {}
+        ` }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+          }
         ` }} />
       </head>
       <body className="flex flex-col min-h-screen pt-16 bg-slate-50">
