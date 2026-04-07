@@ -1,76 +1,30 @@
-import { ImageResponse } from "next/og";
+import { ImageResponse } from 'next/og';
 
-export const runtime = "edge";
-export const alt = "VELA - 외식업 AI 경영 분석 플랫폼";
+export const runtime = 'edge';
+export const alt = 'VELA — 외식업 경영 파트너';
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = 'image/png';
 
-export default function OgImage() {
+export default async function Image() {
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {/* 로고 */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            marginBottom: 24,
-          }}
-        >
-          <span style={{ fontSize: 80, fontWeight: 900, color: "#ffffff", letterSpacing: "-0.04em" }}>
-            VELA
-          </span>
-          <span style={{ fontSize: 80, fontWeight: 900, color: "#3182F6" }}>.</span>
+      <div style={{
+        background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
+        width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: '60px',
+      }}>
+        <div style={{ fontSize: 72, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', marginBottom: 16, display: 'flex' }}>
+          VELA<span style={{ color: '#3182F6' }}>.</span>
         </div>
-
-        {/* 태그라인 */}
-        <div
-          style={{
-            fontSize: 32,
-            fontWeight: 700,
-            color: "#e2e8f0",
-            marginBottom: 16,
-            textAlign: "center",
-          }}
-        >
+        <div style={{ fontSize: 32, fontWeight: 600, color: '#94A3B8', textAlign: 'center', lineHeight: 1.4, display: 'flex' }}>
           외식업 사장님을 위한 숫자 경영 파트너
         </div>
-
-        {/* 서브 */}
-        <div
-          style={{
-            fontSize: 20,
-            color: "#94a3b8",
-            textAlign: "center",
-            maxWidth: 700,
-            lineHeight: 1.5,
-          }}
-        >
-          손익 시뮬레이터 | 메뉴 원가 계산 | AI 전략 추천
-        </div>
-
-        {/* 하단 URL */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 40,
-            fontSize: 18,
-            color: "#64748b",
-            letterSpacing: "0.05em",
-          }}
-        >
-          velaanalytics.com
+        <div style={{ display: 'flex', gap: 24, marginTop: 40 }}>
+          {['🧮 30+ 경영 도구', '🤖 AI 분석', '📊 수익 시뮬레이터'].map(t => (
+            <div key={t} style={{ background: 'rgba(49,130,246,0.15)', color: '#93C5FD', padding: '12px 24px', borderRadius: 12, fontSize: 20, fontWeight: 600, display: 'flex' }}>
+              {t}
+            </div>
+          ))}
         </div>
       </div>
     ),

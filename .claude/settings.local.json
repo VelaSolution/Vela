@@ -46,7 +46,8 @@
       "WebFetch(domain:localhost)",
       "Bash(/usr/bin/grep -oE 'useSimulatorData|시뮬레이터 데이터|applySimData|CloudSyncBadge')",
       "Bash(ls /Users/mnhyuk/my-rose-app/app/tools/*/page.tsx /Users/mnhyuk/my-rose-app/app/tools/*/*/page.tsx)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(ls:*)"
     ]
   }
 }

@@ -6,6 +6,7 @@ import { useSimulatorData } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import MonthlyTipCard from "@/components/MonthlyTipCard";
+import TaxReminder from "@/components/TaxReminder";
 import OnboardingModal from "@/components/OnboardingModal";
 import { t, getLocale } from "@/lib/i18n";
 
@@ -230,6 +231,9 @@ export default function ToolsPage() {
 
           {/* 월간 AI 시즌 팁 */}
           {isLoggedIn && !search.trim() && <div className="mb-8"><MonthlyTipCard /></div>}
+
+          {/* 세금 신고 마감 리마인더 */}
+          {!search.trim() && <div className="mb-8"><TaxReminder /></div>}
 
           {/* Categories */}
           {filteredCategories.map((cat) => (

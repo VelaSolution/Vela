@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import DataBackup from "@/components/DataBackup";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import type { User } from "@supabase/supabase-js";
@@ -425,6 +426,9 @@ export default function ProfilePage() {
           {/* ── 계정 관리 탭 ── */}
           {tab==="account" && (
             <div className="space-y-4">
+
+              {/* 데이터 백업 */}
+              <DataBackup />
 
               {/* 데이터 초기화 */}
               <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 space-y-3">

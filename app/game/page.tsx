@@ -1442,6 +1442,9 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
   const [myRank, setMyRank] = useState<number|null>(null);
   const [nick, setNick] = useState("익명 사장님");
   const [topRanks, setTopRanks] = useState<{nickname:string;score:number;grade:string;industry_icon:string}[]>([]);
+  const [seasonMode, setSeasonMode] = useState<"season"|"all">("season");
+  const currentSeason = new Date().toISOString().slice(0, 7);
+  const currentMonth = new Date().getMonth() + 1;
 
   useEffect(()=>{
     delSave();
@@ -1449,8 +1452,9 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
     (async()=>{
       try {
         const sb2 = createSupabaseBrowserClient();
-        // Top 10 리더보드 불러오기
+        // Top 10 리더보드 불러오기 (현재 시즌)
         sb2.from("game_rankings").select("nickname,score,grade,industry_icon")
+          .eq("season", currentSeason)
           .order("score",{ascending:false}).limit(10)
           .then(({data}:{data:{nickname:string;score:number;grade:string;industry_icon:string}[]|null})=>{
             if(data) setTopRanks(data);
@@ -1468,6 +1472,7 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
           nickname:n, score:sc, grade:g,
           industry:IND[s.ind].label, industry_icon:IND[s.ind].icon, store_name:s.name,
           total_profit:s.totalProfit, reputation:s.rep, days:s.day, streak:s.streak,
+          season: currentSeason,
         });
         const {count} = await sb2.from("game_rankings").select("*",{count:"exact",head:true}).gt("score",sc);
         setMyRank((count??0)+1);
@@ -1519,10 +1524,18 @@ function Over({s, onMenu, onRestart}:{s:S; onMenu:()=>void; onRestart:()=>void})
           )}
         </div>
 
-        {/* 글로벌 Top 10 리더보드 */}
+        {/* 시즌 / 전체 Top 10 리더보드 */}
         {topRanks.length > 0 && (
           <div style={{background:"#fff",border:"1px solid "+G200,borderRadius:16,padding:16,marginBottom:14}}>
-            <p style={{fontSize:15,fontWeight:700,color:G900,margin:"0 0 12px"}}>🏆 글로벌 랭킹 Top 10</p>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"0 0 12px"}}>
+              <p style={{fontSize:15,fontWeight:700,color:G900,margin:0}}>
+                {seasonMode==="season"?`🏆 ${currentMonth}월 시즌 랭킹 Top 10`:"🏆 전체 기간 랭킹 Top 10"}
+              </p>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={async()=>{setSeasonMode("season");try{const sb2=createSupabaseBrowserClient();const{data}=await sb2.from("game_rankings").select("nickname,score,grade,industry_icon").eq("season",currentSeason).order("score",{ascending:false}).limit(10);if(data)setTopRanks(data);}catch{}}} style={{fontSize:12,fontWeight:seasonMode==="season"?700:500,color:seasonMode==="season"?"#fff":G600,background:seasonMode==="season"?B:"transparent",border:"1px solid "+(seasonMode==="season"?B:G200),borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>이번 시즌</button>
+                <button onClick={async()=>{setSeasonMode("all");try{const sb2=createSupabaseBrowserClient();const{data}=await sb2.from("game_rankings").select("nickname,score,grade,industry_icon").order("score",{ascending:false}).limit(10);if(data)setTopRanks(data);}catch{}}} style={{fontSize:12,fontWeight:seasonMode==="all"?700:500,color:seasonMode==="all"?"#fff":G600,background:seasonMode==="all"?B:"transparent",border:"1px solid "+(seasonMode==="all"?B:G200),borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>전체 기간</button>
+              </div>
+            </div>
             {topRanks.map((r,i)=>{
               const isMe = r.nickname === nick && r.score === sc;
               return (

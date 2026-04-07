@@ -142,6 +142,18 @@ export default function GuidePage() {
             ))}
           </div>
 
+          {/* FAQ 링크 */}
+          <Link href="/help" className="block mt-8 rounded-3xl bg-white ring-1 ring-slate-200 p-6 hover:ring-blue-300 transition group">
+            <div className="flex items-center gap-4">
+              <span className="text-3xl">❓</span>
+              <div className="flex-1">
+                <p className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition">자주 묻는 질문 (FAQ)</p>
+                <p className="text-sm text-slate-500 mt-0.5">VELA 사용법, AI 기능, 결제, 게임 등에 대한 답변을 찾아보세요.</p>
+              </div>
+              <span className="text-slate-400 group-hover:text-blue-600 transition">→</span>
+            </div>
+          </Link>
+
           {/* CTA */}
           <div className="mt-8 rounded-3xl bg-blue-600 p-6 text-center">
             <p className="text-white font-bold text-lg mb-2">지금 바로 시작해보세요</p>
