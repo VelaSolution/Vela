@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import Toggle from "@/components/Toggle";
 
 interface ConsentData {
   terms_agreed_at: string | null;
@@ -88,13 +89,7 @@ export default function ConsentManager({ userId }: { userId: string | null }) {
               : "미동의 — 이벤트·할인 소식을 받지 않습니다"}
           </p>
         </div>
-        <button
-          onClick={toggleMarketing}
-          disabled={saving}
-          className={`relative w-11 h-6 rounded-full transition-colors ${consent?.marketing_agreed ? "bg-blue-600" : "bg-slate-200"} disabled:opacity-50`}
-        >
-          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${consent?.marketing_agreed ? "translate-x-5" : "translate-x-0.5"}`} />
-        </button>
+        <Toggle checked={!!consent?.marketing_agreed} onChange={toggleMarketing} label="마케팅 수신" />
       </div>
     </div>
   );

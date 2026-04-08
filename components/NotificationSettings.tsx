@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Toggle from "@/components/Toggle";
 
 export default function NotificationSettings() {
   const [taxReminder, setTaxReminder] = useState(true);
@@ -30,10 +31,7 @@ export default function NotificationSettings() {
             <p className="text-xs font-semibold text-slate-700">{item.label}</p>
             <p className="text-[11px] text-slate-400">{item.desc}</p>
           </div>
-          <button onClick={() => item.setter(!item.state)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${item.state ? "bg-blue-600" : "bg-slate-200"}`}>
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${item.state ? "translate-x-5" : "translate-x-0.5"}`} />
-          </button>
+          <Toggle checked={item.state} onChange={item.setter} label={item.label} />
         </div>
       ))}
 

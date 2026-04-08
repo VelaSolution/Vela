@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Toggle from "@/components/Toggle";
 
 export default function DarkModeToggle() {
   const [isDark, setIsDark] = useState(false);
@@ -9,11 +10,10 @@ export default function DarkModeToggle() {
     setIsDark(document.documentElement.classList.contains("dark"));
   }, []);
 
-  const toggle = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("vela-theme", next ? "dark" : "light");
+  const toggle = (v: boolean) => {
+    setIsDark(v);
+    document.documentElement.classList.toggle("dark", v);
+    localStorage.setItem("vela-theme", v ? "dark" : "light");
   };
 
   return (
@@ -23,15 +23,7 @@ export default function DarkModeToggle() {
           <h3 className="text-sm font-bold text-slate-900">🌙 다크 모드</h3>
           <p className="text-xs text-slate-400 mt-0.5">화면 테마를 변경합니다</p>
         </div>
-        <button
-          onClick={toggle}
-          className={`relative w-11 h-6 rounded-full transition-colors ${isDark ? "bg-blue-600" : "bg-slate-200"}`}
-          aria-label={isDark ? "라이트 모드로 전환" : "다크 모드로 전환"}
-        >
-          <span
-            className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${isDark ? "translate-x-5" : "translate-x-0.5"}`}
-          />
-        </button>
+        <Toggle checked={isDark} onChange={toggle} label="다크 모드" />
       </div>
     </div>
   );
