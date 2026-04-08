@@ -28,6 +28,9 @@ function SignUpForm() {
   const [step, setStep] = useState(1); // 1: 계정정보, 2: 매장정보
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMsg, setResendMsg] = useState("");
 
   // Step 1 - 계정정보
   const [name, setName] = useState("");
@@ -78,8 +81,9 @@ function SignUpForm() {
           seats: Number(seats) || 0,
           address: address.trim(),
           plan: "standard",
+          marketing_agreed: agreeMarketing,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/${refCode ? `&ref=${refCode}` : ""}`,
       },
     });
 
@@ -89,46 +93,8 @@ function SignUpForm() {
       return;
     }
 
-    // 가입 완료 후 자동 로그인 시도
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-    // 출시 이벤트: 가입 시 프로 플랜 자동 부여
-    if (signInData?.user) {
-      const now = new Date().toISOString();
-      await supabase.from("profiles").upsert({
-        id: signInData.user.id,
-        plan: "standard",
-        plan_updated_at: now,
-        terms_agreed_at: now,
-        terms_version: "2026-01-01",
-        privacy_agreed_at: now,
-        privacy_version: "2026-01-01",
-        marketing_agreed: agreeMarketing,
-        marketing_agreed_at: agreeMarketing ? now : null,
-      }, { onConflict: "id" });
-
-      // 추천인 기록
-      if (refCode) {
-        const { data: referrer } = await supabase.from("profiles")
-          .select("id")
-          .ilike("id", `${refCode.toLowerCase()}%`)
-          .limit(1);
-        if (referrer && referrer.length > 0) {
-          await supabase.from("referrals").insert({
-            referrer_id: referrer[0].id,
-            referred_id: signInData.user.id,
-          }).catch(() => {});
-        }
-      }
-    }
-
     setLoading(false);
-
-    if (signInError) {
-      router.push("/?signup=success");
-    } else {
-      router.push("/");
-    }
+    setSignupSuccess(true);
   }
 
   return (
@@ -156,6 +122,41 @@ function SignUpForm() {
           ))}
         </div>
 
+        {signupSuccess ? (
+          <div className="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200 p-8 text-center space-y-4">
+            <div className="text-5xl">📧</div>
+            <h2 className="text-xl font-extrabold text-slate-900">이메일 인증 필요</h2>
+            <p className="text-sm text-slate-500">인증 메일을 보냈습니다. 이메일을 확인해주세요.</p>
+            <div className="bg-slate-50 rounded-2xl p-4">
+              <p className="text-sm text-slate-700">
+                이메일 (<strong>{email}</strong>)로 인증 링크를 보냈습니다.<br />
+                링크를 클릭하면 자동으로 로그인됩니다.
+              </p>
+            </div>
+            {resendMsg && <p className="text-xs text-blue-600">{resendMsg}</p>}
+            <button
+              disabled={resending}
+              onClick={async () => {
+                setResending(true);
+                setResendMsg("");
+                const supabase = createSupabaseBrowserClient();
+                const { error: resendError } = await supabase.auth.resend({ type: "signup", email });
+                setResending(false);
+                if (resendError) {
+                  setResendMsg("재전송에 실패했습니다: " + resendError.message);
+                } else {
+                  setResendMsg("인증 메일을 다시 보냈습니다.");
+                }
+              }}
+              className="w-full rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition disabled:opacity-50"
+            >
+              {resending ? "전송 중..." : "다시 보내기"}
+            </button>
+            <p className="text-sm text-slate-400">
+              <Link href="/login" className="font-semibold text-slate-700 underline underline-offset-2">로그인 페이지로 이동</Link>
+            </p>
+          </div>
+        ) : (
         <div className="bg-white rounded-3xl shadow-sm ring-1 ring-slate-200 p-8">
 
           {step === 1 && (
@@ -339,6 +340,7 @@ function SignUpForm() {
             <Link href="/login" className="font-semibold text-slate-700 underline underline-offset-2">로그인</Link>
           </p>
         </div>
+        )}
       </div>
     </main>
   );

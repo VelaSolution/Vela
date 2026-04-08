@@ -543,7 +543,7 @@ function LandingContent() {
           <FadeIn>
             <h2 className="cta-title">{t("cta.title")}</h2>
             <p className="cta-desc">{t("cta.desc")}</p>
-            <Link href="/signup" className="btn-white">{t("cta.btn")} →</Link>
+            <Link href="/signup" className="btn-white">{t("cta.btn")}</Link>
           </FadeIn>
         </div>
       </section>
@@ -583,7 +583,7 @@ function LandingContent() {
                 ))}
                 <div style={{ paddingTop: 16, borderTop: "1px solid var(--gray-200)" }}>
                   <div className="contact-label" style={{ marginBottom: 12 }}>바로 시작하고 싶다면</div>
-                  <Link href="/simulator" className="btn-primary" style={{ display: "inline-flex" }}>시뮬레이터 →</Link>
+                  <Link href="/signup" className="btn-primary" style={{ display: "inline-flex" }}>무료로 시작하기</Link>
                 </div>
               </div>
             </FadeIn>
@@ -911,7 +911,7 @@ function MemberHome() {
                 <p className="text-white font-bold text-sm">환영합니다! VELA에 가입되었어요.</p>
                 <p className="text-blue-200 text-xs mt-0.5">시뮬레이터로 내 매장을 분석해보세요. 3분이면 충분합니다.</p>
               </div>
-              <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-white text-blue-600 text-xs font-bold px-4 py-2">시작하기 →</Link>
+              <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-white text-blue-600 text-xs font-bold px-4 py-2">무료로 시작하기</Link>
             </div>
           )}
 

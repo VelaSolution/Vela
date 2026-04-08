@@ -183,10 +183,10 @@ export default function GuidePage() {
             <p className="text-white font-bold text-lg mb-2">지금 바로 시작해보세요</p>
             <p className="text-blue-200 text-sm mb-4">시뮬레이터로 내 매장을 분석하는 데 3분이면 충분합니다.</p>
             <Link
-              href="/simulator"
+              href="/signup"
               className="inline-block rounded-2xl bg-white text-blue-600 font-bold text-sm px-6 py-3 hover:bg-blue-50 transition"
             >
-              시뮬레이터 시작하기 →
+              무료로 시작하기
             </Link>
           </div>
         </div>

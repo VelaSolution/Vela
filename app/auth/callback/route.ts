@@ -26,8 +26,43 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && sessionData?.user) {
+      // 프로필 upsert: 플랜 부여 + 동의 기록 (회원가입 이메일 인증 후)
+      const user = sessionData.user;
+      const meta = user.user_metadata ?? {};
+      const now = new Date().toISOString();
+      await supabase.from("profiles").upsert({
+        id: user.id,
+        plan: "standard",
+        plan_updated_at: now,
+        terms_agreed_at: now,
+        terms_version: "2026-01-01",
+        privacy_agreed_at: now,
+        privacy_version: "2026-01-01",
+        marketing_agreed: meta.marketing_agreed ?? false,
+        marketing_agreed_at: meta.marketing_agreed ? now : null,
+      }, { onConflict: "id" });
+
+      // 추천인 기록
+      const refCode = searchParams.get("ref");
+      if (refCode) {
+        const { data: referrer } = await supabase.from("profiles")
+          .select("id")
+          .ilike("id", `${refCode.toLowerCase()}%`)
+          .limit(1);
+        if (referrer && referrer.length > 0) {
+          try {
+            await supabase.from("referrals").insert({
+              referrer_id: referrer[0].id,
+              referred_id: user.id,
+            });
+          } catch {
+            // ignore duplicate referral
+          }
+        }
+      }
+
       return response;
     }
   }

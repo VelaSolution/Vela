@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { captureError } from "@/lib/sentry";
 
 /**
  * 범용 클라우드 동기화 훅
@@ -87,7 +88,8 @@ export function useCloudSync<T>(
             });
           }
         }
-      } catch {
+      } catch (err) {
+        captureError(err instanceof Error ? err : new Error(String(err)), { toolKey, phase: "initial-load" });
         setStatus("offline");
       } finally {
         setLoaded(true);
@@ -132,7 +134,8 @@ export function useCloudSync<T>(
       setStatus("saved");
       if (statusTimer.current) clearTimeout(statusTimer.current);
       statusTimer.current = setTimeout(() => setStatus("idle"), 2000);
-    } catch {
+    } catch (err) {
+      captureError(err instanceof Error ? err : new Error(String(err)), { toolKey, phase: "save-to-cloud" });
       setStatus("error");
       if (statusTimer.current) clearTimeout(statusTimer.current);
       statusTimer.current = setTimeout(() => setStatus("idle"), 3000);
@@ -161,7 +164,9 @@ export function useCloudSync<T>(
       const sb = createSupabaseBrowserClient();
       if (!sb) return;
       await sb.from(TABLE).delete().eq("user_id", userRef.current).eq("tool_key", toolKey);
-    } catch { /* noop */ }
+    } catch (err) {
+      captureError(err instanceof Error ? err : new Error(String(err)), { toolKey, phase: "delete-cloud" });
+    }
   }, [toolKey]);
 
   return { data, update, status, userId, loaded, saveNow, deleteCloud };

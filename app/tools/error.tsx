@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { captureError } from "@/lib/sentry";
 
 export default function ToolsError({
-  error: _error,
+  error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  captureError(error);
+
   return (
     <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 flex items-center justify-center">
       <div className="mx-auto max-w-md text-center">

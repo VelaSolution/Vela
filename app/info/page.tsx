@@ -216,8 +216,8 @@ export default function InfoPage() {
               <h1 className="hero-title">외식업 사장님을 위한<br /><span>숫자 경영</span> 파트너</h1>
               <p className="hero-desc">매출·원가·인건비·대출을 한 번에 시뮬레이션하고<br />AI 컨설턴트의 맞춤 전략을 받아보세요.</p>
               <div className="hero-actions">
-                <Link href="/signup" className="btn-primary">무료로 시작하기 →</Link>
-                <a href="#features" className="btn-secondary">서비스 알아보기</a>
+                <Link href="/signup" className="btn-primary">무료로 시작하기</Link>
+                <Link href="/tools" className="btn-secondary">도구 둘러보기</Link>
               </div>
               <div className="hero-stats">
                 <div><div className="stat-num">4<span>개</span></div><div className="stat-label">업종 지원</div></div>
@@ -383,7 +383,7 @@ export default function InfoPage() {
           <FadeIn>
             <h2 className="cta-title">지금 바로 내 매장을 분석해보세요</h2>
             <p className="cta-desc">회원가입 후 무료로 시작할 수 있습니다. 신용카드 불필요.</p>
-            <Link href="/signup" className="btn-white">무료로 시작하기 →</Link>
+            <Link href="/signup" className="btn-white">무료로 시작하기</Link>
           </FadeIn>
         </div>
       </section>
@@ -400,7 +400,7 @@ export default function InfoPage() {
                 ))}
                 <div style={{ paddingTop: 16, borderTop: "1px solid var(--gray-200)" }}>
                   <div className="contact-label" style={{ marginBottom: 12 }}>바로 시작하고 싶다면</div>
-                  <Link href="/simulator" className="btn-primary" style={{ display: "inline-flex" }}>시뮬레이터 →</Link>
+                  <Link href="/signup" className="btn-primary" style={{ display: "inline-flex" }}>무료로 시작하기</Link>
                 </div>
               </div>
             </FadeIn>
