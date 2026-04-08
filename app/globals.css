@@ -114,8 +114,15 @@ html.capacitor-app .text-2xl { font-size: 1.2rem !important; }
 html.capacitor-app .text-xl { font-size: 1.05rem !important; }
 html.capacitor-app .text-lg { font-size: 0.95rem !important; }
 html.capacitor-app .rounded-3xl { border-radius: 16px !important; }
-html.capacitor-app button, html.capacitor-app a { min-height: 44px; }
-html.capacitor-app input, html.capacitor-app textarea, html.capacitor-app select { min-height: 44px; font-size: 16px !important; }
+html.capacitor-app button, html.capacitor-app a { min-height: 40px; }
+html.capacitor-app input, html.capacitor-app textarea, html.capacitor-app select { min-height: 40px; font-size: 16px !important; }
+/* 앱에서 하단 여백 더 확보 */
+html.capacitor-app main { padding-bottom: 100px !important; }
+/* 앱에서 시뮬레이터 미리보기 숨기기 (모바일 플로팅 바만 표시) */
+html.capacitor-app .hidden.lg\:block { display: none !important; }
+/* 앱 토글 스위치 크기 조정 */
+html.capacitor-app button[class*="w-14"], html.capacitor-app button[class*="w-12"] { width: 48px !important; height: 26px !important; }
+html.capacitor-app button[class*="w-14"] span, html.capacitor-app button[class*="w-12"] span { width: 20px !important; height: 20px !important; }
 
 /* ── 모바일 최적화 (max-width: 768px) ─────────────── */
 @media (max-width: 768px) {

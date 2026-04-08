@@ -52,10 +52,11 @@ export default function HQPage() {
   const [taskForm, setTaskForm] = useState({ title: "", assignee: "", deadline: "", goal_id: "" });
   const [aarForm, setAarForm] = useState({ date: new Date().toISOString().slice(0, 10), goal: "", result: "", gap_reason: "", improvement: "" });
 
-  const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null;
+  const getSb = () => { try { return createSupabaseBrowserClient(); } catch { return null; } };
 
   useEffect(() => {
-    if (!sb) return;
+    const sb = getSb();
+    if (!sb) { setLoading(false); return; }
     (async () => {
       const { data: { user } } = await sb.auth.getUser();
       if (!user) { setLoading(false); return; }
@@ -103,14 +104,14 @@ export default function HQPage() {
   const btnCls = "rounded-xl bg-slate-900 text-white font-semibold px-5 py-2.5 text-sm hover:bg-slate-800 transition";
 
   const saveMett = async () => {
-    if (!sb || !userId || !mettForm.mission.trim()) return;
+    const sb = getSb(); if (!sb || !userId || !mettForm.mission.trim()) return;
     const { data } = await sb.from("hq_mett").insert({ user_id: userId, ...mettForm }).select().single();
     if (data) setMetts([data as Mett, ...metts]);
     setMettForm({ mission: "", enemy: "", terrain: "", troops: "", time_constraint: "", civil: "" });
   };
 
   const saveMetric = async () => {
-    if (!sb || !userId) return;
+    const sb = getSb(); if (!sb || !userId) return;
     const payload = { user_id: userId, date: metricForm.date, revenue: Number(metricForm.revenue) || 0, users_count: Number(metricForm.users_count) || 0, conversion_rate: Number(metricForm.conversion_rate) || 0, profit: Number(metricForm.profit) || 0 };
     const { data } = await sb.from("hq_metrics").upsert(payload, { onConflict: "user_id,date" }).select().single();
     if (data) { setMetrics([data as Metric, ...metrics.filter(m => m.date !== metricForm.date)]); }
@@ -118,7 +119,7 @@ export default function HQPage() {
   };
 
   const saveGoal = async () => {
-    if (!sb || !userId || !goalForm.title.trim()) return;
+    const sb = getSb(); if (!sb || !userId || !goalForm.title.trim()) return;
     if (goals.filter(g => g.status === "active").length >= 2) { alert("활성 목표는 최대 2개까지 가능합니다."); return; }
     const { data } = await sb.from("hq_goals").insert({ user_id: userId, ...goalForm, target_value: Number(goalForm.target_value) || 0 }).select().single();
     if (data) setGoals([data as Goal, ...goals]);
@@ -126,29 +127,61 @@ export default function HQPage() {
   };
 
   const saveTask = async () => {
-    if (!sb || !userId || !taskForm.title.trim()) return;
+    const sb = getSb(); if (!sb || !userId || !taskForm.title.trim()) return;
     const { data } = await sb.from("hq_tasks").insert({ user_id: userId, ...taskForm, goal_id: taskForm.goal_id || null }).select().single();
     if (data) setTasks([data as Task, ...tasks]);
     setTaskForm({ title: "", assignee: "", deadline: "", goal_id: "" });
   };
 
   const updateTaskStatus = async (id: string, status: string) => {
-    if (!sb) return;
+    const sb = getSb(); if (!sb) return;
     await sb.from("hq_tasks").update({ status }).eq("id", id);
     setTasks(tasks.map(t => t.id === id ? { ...t, status } : t));
   };
 
   const saveAAR = async () => {
-    if (!sb || !userId || !aarForm.goal.trim()) return;
+    const sb = getSb(); if (!sb || !userId || !aarForm.goal.trim()) return;
     const { data } = await sb.from("hq_aar").insert({ user_id: userId, ...aarForm }).select().single();
     if (data) setAars([data as AAR, ...aars]);
     setAarForm({ date: new Date().toISOString().slice(0, 10), goal: "", result: "", gap_reason: "", improvement: "" });
   };
 
   const updateGoalStatus = async (id: string, status: string) => {
-    if (!sb) return;
+    const sb = getSb(); if (!sb) return;
     await sb.from("hq_goals").update({ status }).eq("id", id);
     setGoals(goals.map(g => g.id === id ? { ...g, status } : g));
+  };
+
+  // 삭제 함수들
+  const deleteMett = async (id: string) => {
+    if (!confirm("삭제할까요?")) return;
+    const sb = getSb(); if (!sb) return;
+    await sb.from("hq_mett").delete().eq("id", id);
+    setMetts(metts.filter(m => m.id !== id));
+  };
+  const deleteMetric = async (id: string) => {
+    if (!confirm("삭제할까요?")) return;
+    const sb = getSb(); if (!sb) return;
+    await sb.from("hq_metrics").delete().eq("id", id);
+    setMetrics(metrics.filter(m => m.id !== id));
+  };
+  const deleteGoal = async (id: string) => {
+    if (!confirm("목표를 삭제할까요?")) return;
+    const sb = getSb(); if (!sb) return;
+    await sb.from("hq_goals").delete().eq("id", id);
+    setGoals(goals.filter(g => g.id !== id));
+  };
+  const deleteTask = async (id: string) => {
+    if (!confirm("삭제할까요?")) return;
+    const sb = getSb(); if (!sb) return;
+    await sb.from("hq_tasks").delete().eq("id", id);
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+  const deleteAAR = async (id: string) => {
+    if (!confirm("삭제할까요?")) return;
+    const sb = getSb(); if (!sb) return;
+    await sb.from("hq_aar").delete().eq("id", id);
+    setAars(aars.filter(a => a.id !== id));
   };
 
   return (
@@ -375,7 +408,10 @@ export default function HQPage() {
             </div>
             {metts.map(m => (
               <div key={m.id} className={cardCls}>
-                <p className="text-[11px] text-slate-400 mb-2">{new Date(m.created_at).toLocaleDateString("ko-KR")}</p>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[11px] text-slate-400">{new Date(m.created_at).toLocaleDateString("ko-KR")}</p>
+                  <button onClick={() => deleteMett(m.id)} className="text-[11px] text-red-400 hover:text-red-600">삭제</button>
+                </div>
                 <div className="space-y-1 text-xs">
                   {([["M", m.mission], ["E", m.enemy], ["T", m.terrain], ["T", m.troops], ["T", m.time_constraint], ["C", m.civil]] as const).map(([k, v], i) => v && (
                     <p key={i}><b className="text-slate-700">{k}:</b> <span className="text-slate-600">{v}</span></p>
@@ -405,7 +441,7 @@ export default function HQPage() {
                 <h3 className="text-sm font-bold text-slate-900 mb-3">📈 최근 KPI</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead><tr className="text-slate-400 border-b border-slate-100"><th className="py-2 text-left">날짜</th><th className="py-2 text-right">매출</th><th className="py-2 text-right">사용자</th><th className="py-2 text-right">전환율</th><th className="py-2 text-right">순이익</th></tr></thead>
+                    <thead><tr className="text-slate-400 border-b border-slate-100"><th className="py-2 text-left">날짜</th><th className="py-2 text-right">매출</th><th className="py-2 text-right">사용자</th><th className="py-2 text-right">전환율</th><th className="py-2 text-right">순이익</th><th className="py-2 w-8"></th></tr></thead>
                     <tbody>{metrics.slice(0, 10).map(m => (
                       <tr key={m.id} className="border-b border-slate-50">
                         <td className="py-1.5 text-slate-700">{m.date}</td>
@@ -413,6 +449,7 @@ export default function HQPage() {
                         <td className="py-1.5 text-right">{m.users_count}</td>
                         <td className="py-1.5 text-right">{m.conversion_rate}%</td>
                         <td className={`py-1.5 text-right font-semibold ${m.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(m.profit)}</td>
+                        <td className="py-1.5 text-right"><button onClick={() => deleteMetric(m.id)} className="text-[10px] text-red-400 hover:text-red-600">✕</button></td>
                       </tr>
                     ))}</tbody>
                   </table>
@@ -455,12 +492,13 @@ export default function HQPage() {
                 <div className="h-2 bg-slate-100 rounded-full mb-2">
                   <div className={`h-full rounded-full ${g.status === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${Math.min(g.target_value > 0 ? g.current_value / g.target_value * 100 : 0, 100)}%` }} />
                 </div>
-                {g.status === "active" && (
-                  <div className="flex gap-2">
+                <div className="flex gap-2">
+                  {g.status === "active" && <>
                     <button onClick={() => updateGoalStatus(g.id, "completed")} className="text-[11px] text-emerald-600 font-semibold">완료</button>
                     <button onClick={() => updateGoalStatus(g.id, "failed")} className="text-[11px] text-red-500 font-semibold">실패</button>
-                  </div>
-                )}
+                  </>}
+                  <button onClick={() => deleteGoal(g.id)} className="text-[11px] text-red-400 hover:text-red-600 ml-auto">삭제</button>
+                </div>
               </div>
             ))}
           </>
@@ -501,6 +539,7 @@ export default function HQPage() {
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md flex-shrink-0 ${STATUS_COLOR[t.status]}`}>{STATUS_LABEL[t.status]}</span>
+                  <button onClick={() => deleteTask(t.id)} className="text-[10px] text-red-400 hover:text-red-600 flex-shrink-0 ml-1">✕</button>
                 </div>
               ))}
             </div>
@@ -526,7 +565,10 @@ export default function HQPage() {
             </div>
             {aars.map(a => (
               <div key={a.id} className={cardCls}>
-                <p className="text-[11px] text-slate-400 mb-2">{a.date}</p>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[11px] text-slate-400">{a.date}</p>
+                  <button onClick={() => deleteAAR(a.id)} className="text-[11px] text-red-400 hover:text-red-600">삭제</button>
+                </div>
                 <div className="space-y-1.5 text-xs">
                   <p><b className="text-slate-700">목표:</b> {a.goal}</p>
                   <p><b className="text-slate-700">결과:</b> {a.result}</p>
