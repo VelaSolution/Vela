@@ -1974,7 +1974,7 @@ export default function Page() {
           <PreviewBar form={form} />
         </div>
 
-        <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-5 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-4 lg:items-start">
 
           <div className="space-y-6">
             {step === 1 && <Step1 form={form} update={update} errors={step1Errors} loadIndustryDefaults={loadIndustryDefaults} applyPosResult={applyPosResult} plan={plan} />}
@@ -2016,7 +2016,7 @@ export default function Page() {
           </div>
 
           <div className="hidden lg:block relative">
-            <div className="fixed top-20 w-[300px] space-y-3" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
+            <div className="fixed top-20 w-[244px] space-y-3" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
               <PreviewBar form={form} />
               <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">입력 단계</p>
