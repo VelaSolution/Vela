@@ -185,7 +185,7 @@ export default function ProfilePage() {
           </div>
 
           {/* 탭 */}
-          <div className="flex gap-1 rounded-2xl bg-white p-1 ring-1 ring-slate-200">
+          <div className="flex overflow-x-auto gap-1 rounded-2xl bg-white p-1 ring-1 ring-slate-200 scrollbar-hide">
             {([
               {k:"profile" as Tab, l:"⚙️ 프로필 설정"},
               {k:"history" as Tab, l:"📋 시뮬레이션 기록"},
@@ -193,7 +193,7 @@ export default function ProfilePage() {
               {k:"account" as Tab, l:"🛡️ 계정 관리"},
             ]).map(t=>(
               <button key={t.k} onClick={()=>setTab(t.k)}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${tab===t.k?"bg-slate-900 text-white":"text-slate-500 hover:text-slate-800"}`}>
+                className={`flex-shrink-0 rounded-xl px-3 py-2 text-[11px] font-semibold transition whitespace-nowrap ${tab===t.k?"bg-slate-900 text-white":"text-slate-500 hover:text-slate-800"}`}>
                 {t.l}
               </button>
             ))}

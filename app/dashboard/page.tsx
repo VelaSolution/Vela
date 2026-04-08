@@ -421,8 +421,9 @@ export default function DashboardHome() {
                 {snapshots.length === 0 ? (
                   <div className="text-center py-10">
                     <p className="text-3xl mb-2">📊</p>
-                    <p className="text-slate-400 text-sm mb-3">매출을 등록하면 여기에 차트가 표시됩니다</p>
-                    <Link href="/monthly-input" className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white">매출 입력 →</Link>
+                    <p className="text-slate-500 text-sm font-medium mb-1">아직 매출 데이터가 없어요</p>
+                    <p className="text-slate-400 text-xs mb-4">월별 매출을 입력하면 추이 차트를 확인할 수 있어요</p>
+                    <Link href="/monthly-input" className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 transition">매출 입력하기 →</Link>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -544,8 +545,10 @@ export default function DashboardHome() {
                 </div>
                 {sims.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-slate-400 text-sm mb-3">시뮬레이션 기록이 없어요</p>
-                    <Link href="/simulator" className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white">시뮬레이터 시작</Link>
+                    <p className="text-3xl mb-2">🔬</p>
+                    <p className="text-slate-500 text-sm font-medium mb-1">아직 시뮬레이션이 없어요</p>
+                    <p className="text-slate-400 text-xs mb-4">시뮬레이터에서 분석을 시작해보세요</p>
+                    <Link href="/simulator" className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 transition">시뮬레이터 시작 →</Link>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -597,9 +600,11 @@ export default function DashboardHome() {
                   <Link href="/tools/menu-cost" className="text-xs text-blue-500 font-semibold hover:text-blue-700">관리 →</Link>
                 </div>
                 {menus.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-slate-400 text-xs mb-2">등록된 메뉴가 없어요</p>
-                    <Link href="/tools/menu-cost" className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">등록하기</Link>
+                  <div className="text-center py-6">
+                    <p className="text-2xl mb-2">🍽️</p>
+                    <p className="text-slate-500 text-sm font-medium mb-1">등록된 메뉴가 없어요</p>
+                    <p className="text-slate-400 text-xs mb-3">메뉴 원가를 등록해보세요</p>
+                    <Link href="/tools/menu-cost" className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">원가 등록하기 →</Link>
                   </div>
                 ) : (
                   <div className="space-y-2.5">

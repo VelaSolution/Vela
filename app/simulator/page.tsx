@@ -6,6 +6,7 @@ import Script from "next/script";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { usePlan } from "@/lib/usePlan";
 import UpgradeModal from "@/components/UpgradeModal";
+import Toggle from "@/components/Toggle";
 import {
   INDUSTRY_CONFIG,
   VALID_INDUSTRIES,
@@ -579,7 +580,7 @@ function SliderCard({
   );
 }
 
-function Toggle({
+function ToggleCard({
   label,
   hint,
   value,
@@ -596,20 +597,7 @@ function Toggle({
         <p className="text-sm font-semibold text-slate-900">{label}</p>
         <p className="mt-1 text-xs text-slate-400">{hint}</p>
       </div>
-
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className={`relative h-7 w-12 rounded-full transition-colors ${
-          value ? "bg-slate-900" : "bg-slate-200"
-        }`}
-      >
-        <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${
-            value ? "translate-x-6" : "translate-x-1"
-          }`}
-        />
-      </button>
+      <Toggle checked={value} onChange={onChange} label={label} />
     </div>
   );
 }
@@ -679,13 +667,13 @@ function PreviewBar({ form }: { form: FullForm }) {
       <div className="lg:hidden">
         <div className="flex items-center gap-3">
           {/* 프로그레스 링 */}
-          <div className="relative w-12 h-12 shrink-0">
-            <svg viewBox="0 0 36 36" className="w-12 h-12 -rotate-90">
+          <div className="relative w-14 h-14 shrink-0">
+            <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
               <circle cx="18" cy="18" r="14" fill="none" stroke="#E5E8EB" strokeWidth="3" />
               <circle cx="18" cy="18" r="14" fill="none" stroke={isProfit ? "#3182F6" : "#EF4444"} strokeWidth="3" strokeLinecap="round"
-                strokeDasharray={`${Math.min(Math.abs(result.netMargin) * 2.5, 88)} 88`} />
+                strokeDasharray={`${Math.min(Math.abs(result.netMargin) / 100 * 88, 88)} 88`} />
             </svg>
-            <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold ${isProfit ? "text-blue-600" : "text-red-500"}`}>
+            <span className={`absolute inset-0 flex items-center justify-center text-[8px] font-bold ${isProfit ? "text-blue-600" : "text-red-500"}`}>
               {pct(result.netMargin)}
             </span>
           </div>
@@ -943,37 +931,19 @@ function Step1({
           <p className="mt-1 text-sm text-slate-500">배달 채널이 있는 경우 입력하세요.</p>
         </div>
 
-        <Toggle
+        <ToggleCard
           label="배달 운영 여부"
           hint="배달앱 또는 직접 배달 운영 중인 경우 ON"
           value={form.deliveryEnabled}
           onChange={(v) => update("deliveryEnabled", v)}
         />
 
-        <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">배달 운영 의향</p>
-            <p className="mt-1 text-xs text-slate-400">AI가 배달 전략을 추천할지 여부</p>
-          </div>
-          <div className="flex gap-2">
-            {(["possible", "impossible"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => update("deliveryPreference", v)}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                  form.deliveryPreference === v
-                    ? v === "possible"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-red-500 text-white"
-                    : "bg-slate-100 text-slate-500"
-                }`}
-              >
-                {v === "possible" ? "추천 허용" : "추천 금지"}
-              </button>
-            ))}
-          </div>
-        </div>
+        <ToggleCard
+          label="배달 운영 의향"
+          hint="AI가 배달 전략을 추천할지 여부"
+          value={form.deliveryPreference === "possible"}
+          onChange={(v) => update("deliveryPreference", v ? "possible" : "impossible")}
+        />
 
         {form.deliveryEnabled && (
           <>
@@ -1354,7 +1324,7 @@ function Step2({
           </div>
         </div>
 
-        <Toggle
+        <ToggleCard
           label="부가세 과세 사업자"
           hint="일반 과세자인 경우 ON"
           value={form.vatEnabled}
@@ -1368,7 +1338,7 @@ function Step2({
           <h2 className="text-xl font-bold text-slate-900">프랜차이즈</h2>
           <p className="mt-1 text-sm text-slate-500">프랜차이즈 가맹점인 경우 입력하세요.</p>
         </div>
-        <Toggle
+        <ToggleCard
           label="프랜차이즈 가맹점"
           hint="프랜차이즈 로열티가 발생하는 경우"
           value={form.franchiseEnabled ?? false}
@@ -1536,7 +1506,7 @@ function Step3({
           <p className="mt-1 text-sm text-slate-500">사업 관련 대출이 있는 경우 입력하세요.</p>
         </div>
 
-        <Toggle
+        <ToggleCard
           label="대출 여부"
           hint="창업자금 대출·운영자금 대출 등"
           value={form.loanEnabled}

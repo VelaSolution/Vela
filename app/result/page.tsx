@@ -699,28 +699,32 @@ function ResultContent() {
               {isProfit ? "현재 흑자 구조입니다" : "현재 적자 구조입니다"}
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3 print:hidden">
-            <button onClick={() => router.push("/simulator")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
-            <button onClick={() => window.print()} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
-            <button onClick={() => navigator.clipboard.writeText(window.location.href).then(() => setSaveMsg("링크 복사됨!")).catch(console.error)} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 복사</button>
-            <KakaoShare title={`[VELA] ${config.label} 수익 분석`} description={`월매출 ${fmt(result.totalSales)}원 / 순이익 ${fmt(result.netProfit)}원 (순이익률 ${pct(result.netMargin)})`} buttonText="카카오톡 공유" />
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
+          <div className="mt-5 grid grid-cols-2 gap-2 print:hidden">
+            <button onClick={() => router.push("/simulator")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
+            <button onClick={() => window.print()} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
+            <button onClick={() => navigator.clipboard.writeText(window.location.href).then(() => setSaveMsg("링크 복사됨!")).catch(console.error)} className="w-full rounded-2xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 복사</button>
+            <KakaoShare title={`[VELA] ${config.label} 수익 분석`} description={`월매출 ${fmt(result.totalSales)}원 / 순이익 ${fmt(result.netProfit)}원 (순이익률 ${pct(result.netMargin)})`} buttonText="카카오톡 공유" className="w-full rounded-2xl bg-yellow-400 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-300" />
+            <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
               👥 커뮤니티에 공유
             </button>
-            <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-500">
+            <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white hover:bg-violet-500">
               🏆 성적표 공유
             </button>
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+            <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700">
               {userId ? "☁️ 클라우드 저장" : "🔒 로그인 후 저장"}
             </button>
-            {saveMsg && <span className="self-center text-sm font-medium text-emerald-600">{saveMsg}</span>}
-            {shareMsg && <span className="self-center text-sm font-medium text-emerald-600">{shareMsg}</span>}
             {userId && (
-              <button onClick={() => router.push("/profile")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button onClick={() => router.push("/profile")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 대시보드 →
               </button>
             )}
           </div>
+          {(saveMsg || shareMsg) && (
+            <div className="mt-2 print:hidden">
+              {saveMsg && <span className="text-sm font-medium text-emerald-600">{saveMsg}</span>}
+              {shareMsg && <span className="ml-2 text-sm font-medium text-emerald-600">{shareMsg}</span>}
+            </div>
+          )}
 
           {/* 이벤트 배너 */}
           <div className="mt-6 print:hidden">

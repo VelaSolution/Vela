@@ -280,6 +280,13 @@ input[type="range"].vela-slider::-moz-range-thumb {
         .vela-dropdown-label{font-size:13px;font-weight:600;color:#191F28;margin:0 0 2px;font-family:inherit}
         .vela-dropdown-desc{font-size:11px;color:#9EA6B3;margin:0;font-family:inherit}
         @media(max-width:768px){.vela-nav-links,.vela-nav-actions{display:none}.vela-hamburger{display:flex}}
+        @media(min-width:769px) and (max-width:1024px){
+          .vela-nav-links{gap:16px !important}
+          .vela-nav-links a{font-size:13px !important}
+          .vela-nav-actions{gap:6px !important}
+          .vela-user-name{font-size:14px !important;font-weight:700 !important;color:#191F28 !important}
+          .vela-btn-dashboard,.vela-btn-logout,.vela-btn-start{font-size:12px !important;padding:6px 10px !important}
+        }
 
 /* ── ToolNav slide-up animation ────────────────────── */
 @keyframes slideUp {

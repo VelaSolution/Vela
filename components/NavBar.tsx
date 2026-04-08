@@ -131,8 +131,15 @@ export default function NavBar() {
         <Link href="/pricing" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>요금제</Link>
         {user ? (
           <>
-            <Link href="/dashboard" className="vela-mobile-link" onClick={() => setMenuOpen(false)}>대시보드</Link>
-            <button className="vela-mobile-link" style={{ background:"none", border:"none", textAlign:"left", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:"500", color:"#333D4B", padding:"12px 0" }} onClick={() => { handleLogout(); setMenuOpen(false); }}>로그아웃</button>
+            <Link href="/profile" className="vela-mobile-link" onClick={() => setMenuOpen(false)}
+              style={{ fontSize:"16px", fontWeight:700, color:"#191F28", paddingTop:16, paddingBottom:8 }}>
+              {user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}
+            </Link>
+            <Link href="/dashboard" className="vela-mobile-link" onClick={() => setMenuOpen(false)}
+              style={{ fontSize:"13px", color:"#6B7684" }}>대시보드</Link>
+            <Link href="/simulator" className="vela-mobile-link" onClick={() => setMenuOpen(false)}
+              style={{ fontSize:"13px", color:"#6B7684" }}>시뮬레이터</Link>
+            <button className="vela-mobile-link" style={{ background:"none", border:"none", textAlign:"left", cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:"500", color:"#9EA6B3", padding:"12px 0" }} onClick={() => { handleLogout(); setMenuOpen(false); }}>로그아웃</button>
           </>
         ) : (
           <>
