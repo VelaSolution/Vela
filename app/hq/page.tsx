@@ -5,7 +5,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
-type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar";
+type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar" | "notice" | "report" | "feedback" | "calendar" | "memo";
+type Notice = { id: string; title: string; content: string; date: string; pinned: boolean };
+type Feedback = { id: string; type: string; title: string; description: string; priority: string; status: string; date: string };
+type MemoItem = { id: string; content: string; time: string };
 type Mett = { id: string; mission: string; enemy: string; terrain: string; troops: string; time_constraint: string; civil: string; created_at: string };
 type Metric = { id: string; date: string; revenue: number; users_count: number; conversion_rate: number; profit: number };
 type Goal = { id: string; title: string; target_value: number; current_value: number; metric_type: string; start_date: string; end_date: string; status: string };
@@ -19,6 +22,11 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "goal", label: "목표", icon: "🏆" },
   { key: "task", label: "태스크", icon: "✅" },
   { key: "aar", label: "AAR", icon: "📝" },
+  { key: "notice", label: "공지", icon: "📢" },
+  { key: "report", label: "보고서", icon: "📄" },
+  { key: "feedback", label: "피드백", icon: "🐛" },
+  { key: "calendar", label: "일정", icon: "📅" },
+  { key: "memo", label: "메모", icon: "💬" },
 ];
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
@@ -49,6 +57,15 @@ export default function HQPage() {
   const [taskForm, setTaskForm] = useState({ title: "", assignee: "", deadline: "", goal_id: "" });
   const [aarForm, setAarForm] = useState({ date: new Date().toISOString().slice(0, 10), goal: "", result: "", gap_reason: "", improvement: "" });
 
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [noticeForm, setNoticeForm] = useState({ title: "", content: "", pinned: false });
+  const [expandedNotice, setExpandedNotice] = useState<string | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [fbForm, setFbForm] = useState({ type: "버그", title: "", description: "", priority: "중간", status: "신규" });
+  const [memos, setMemos] = useState<MemoItem[]>([]);
+  const [memoText, setMemoText] = useState("");
+  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
 
   useEffect(() => {
@@ -75,6 +92,9 @@ export default function HQPage() {
         setTasks((t.data ?? []) as Task[]);
         setAars((a.data ?? []) as AAR[]);
       } catch (e) { console.error("HQ load error:", e); }
+      try { const n = localStorage.getItem("vela-hq-notices"); if (n) setNotices(JSON.parse(n)); } catch {}
+      try { const f = localStorage.getItem("vela-hq-feedback"); if (f) setFeedbacks(JSON.parse(f)); } catch {}
+      try { const m = localStorage.getItem("vela-hq-memo"); if (m) setMemos(JSON.parse(m)); } catch {}
       setLoading(false);
     })();
   }, []);
@@ -127,6 +147,47 @@ export default function HQPage() {
   const delGoal = async (id: string) => { await del("hq_goals", id); setGoals(goals.filter(g => g.id !== id)); };
   const delTask = async (id: string) => { await del("hq_tasks", id); setTasks(tasks.filter(t => t.id !== id)); };
   const delAAR = async (id: string) => { await del("hq_aar", id); setAars(aars.filter(a => a.id !== id)); };
+
+  // Notice helpers
+  const saveNotice = () => {
+    if (!noticeForm.title.trim()) return;
+    const n: Notice = { id: Date.now().toString(), title: noticeForm.title, content: noticeForm.content, date: new Date().toISOString().slice(0, 10), pinned: noticeForm.pinned };
+    const next = [n, ...notices]; setNotices(next); localStorage.setItem("vela-hq-notices", JSON.stringify(next));
+    setNoticeForm({ title: "", content: "", pinned: false }); flash("✓ 공지 저장됨");
+  };
+  const togglePin = (id: string) => { const next = notices.map(n => n.id === id ? { ...n, pinned: !n.pinned } : n); setNotices(next); localStorage.setItem("vela-hq-notices", JSON.stringify(next)); };
+  const delNotice = (id: string) => { const next = notices.filter(n => n.id !== id); setNotices(next); localStorage.setItem("vela-hq-notices", JSON.stringify(next)); };
+  const sortedNotices = [...notices].sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
+
+  // Feedback helpers
+  const saveFb = () => {
+    if (!fbForm.title.trim()) return;
+    const f: Feedback = { id: Date.now().toString(), ...fbForm, date: new Date().toISOString().slice(0, 10) };
+    const next = [f, ...feedbacks]; setFeedbacks(next); localStorage.setItem("vela-hq-feedback", JSON.stringify(next));
+    setFbForm({ type: "버그", title: "", description: "", priority: "중간", status: "신규" }); flash("✓ 피드백 저장됨");
+  };
+  const updateFbStatus = (id: string, status: string) => { const next = feedbacks.map(f => f.id === id ? { ...f, status } : f); setFeedbacks(next); localStorage.setItem("vela-hq-feedback", JSON.stringify(next)); };
+  const delFb = (id: string) => { const next = feedbacks.filter(f => f.id !== id); setFeedbacks(next); localStorage.setItem("vela-hq-feedback", JSON.stringify(next)); };
+
+  // Memo helpers
+  const saveMemo = () => {
+    if (!memoText.trim()) return;
+    const m: MemoItem = { id: Date.now().toString(), content: memoText, time: new Date().toLocaleString("ko-KR") };
+    const next = [m, ...memos]; setMemos(next); localStorage.setItem("vela-hq-memo", JSON.stringify(next));
+    setMemoText(""); flash("✓ 메모 저장됨");
+  };
+  const delMemo = (id: string) => { const next = memos.filter(m => m.id !== id); setMemos(next); localStorage.setItem("vela-hq-memo", JSON.stringify(next)); };
+
+  // Report helper
+  const genReport = () => {
+    const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
+    const weekStr = `${weekAgo.toISOString().slice(0, 10)} ~ ${now.toISOString().slice(0, 10)}`;
+    const kpi = latestKpi ? `매출: ${fmt(latestKpi.revenue)}원 | 사용자: ${fmt(latestKpi.users_count)} | 전환율: ${latestKpi.conversion_rate}% | 순이익: ${fmt(latestKpi.profit)}원` : "데이터 없음";
+    const goalLines = activeGoals.map(g => `- ${g.title}: ${g.target_value > 0 ? Math.round(g.current_value / g.target_value * 100) : 0}%`).join("\n") || "- 없음";
+    const weekTasks = tasks.filter(t => t.status === "completed"); const pendT = tasks.filter(t => t.status !== "completed" && t.status !== "failed");
+    const aarLine = aars[0] ? `목표: ${aars[0].goal} / 결과: ${aars[0].result}` : "없음";
+    return `[VELA 주간 보고서] ${weekStr}\n\n■ KPI\n${kpi}\n\n■ 목표 진행\n${goalLines}\n\n■ 태스크\n완료: ${weekTasks.length}건 / 미완료: ${pendT.length}건\n\n■ 최근 AAR\n${aarLine}`;
+  };
 
   if (loading) return <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center"><div className="w-8 h-8 border-3 border-slate-300 border-t-slate-700 rounded-full animate-spin" /></div>;
   if (!authorized) return (
@@ -359,6 +420,142 @@ export default function HQPage() {
               <div key={a.id} className={C}>
                 <div className="flex justify-between text-[11px] text-slate-400 mb-1"><span>{a.date}</span><button onClick={() => delAAR(a.id)} className="text-red-400">삭제</button></div>
                 <div className="text-xs space-y-0.5"><p><b>목표:</b> {a.goal}</p><p><b>결과:</b> {a.result}</p>{a.gap_reason && <p className="text-amber-600"><b>차이:</b> {a.gap_reason}</p>}{a.improvement && <p className="text-blue-600"><b>개선:</b> {a.improvement}</p>}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Notice */}
+        {tab === "notice" && (
+          <div className="space-y-3">
+            <div className={C}>
+              <h3 className="text-sm font-bold mb-3">📢 공지사항 작성</h3>
+              <div className="space-y-2">
+                <div><label className={L}>제목</label><input className={I} value={noticeForm.title} onChange={e => setNoticeForm({ ...noticeForm, title: e.target.value })} /></div>
+                <div><label className={L}>내용</label><textarea className={`${I} h-20`} value={noticeForm.content} onChange={e => setNoticeForm({ ...noticeForm, content: e.target.value })} /></div>
+                <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={noticeForm.pinned} onChange={e => setNoticeForm({ ...noticeForm, pinned: e.target.checked })} />📌 상단 고정</label>
+                <button onClick={saveNotice} className={B}>등록</button>
+              </div>
+            </div>
+            {sortedNotices.map(n => (
+              <div key={n.id} className={C}>
+                <div className="flex items-center justify-between mb-1">
+                  <button onClick={() => setExpandedNotice(expandedNotice === n.id ? null : n.id)} className="text-sm font-bold text-left flex-1">{n.pinned && "📌 "}{n.title}</button>
+                  <span className="text-[11px] text-slate-400 flex-shrink-0 ml-2">{n.date}</span>
+                </div>
+                {expandedNotice === n.id && <p className="text-xs text-slate-600 whitespace-pre-wrap mt-1 mb-2">{n.content}</p>}
+                <div className="flex gap-2 text-[11px]">
+                  <button onClick={() => togglePin(n.id)} className="text-amber-600">{n.pinned ? "고정 해제" : "📌 고정"}</button>
+                  <button onClick={() => delNotice(n.id)} className="text-red-400 ml-auto">삭제</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Report */}
+        {tab === "report" && (
+          <div className="space-y-3">
+            <div className={C}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold">📄 주간 보고서</h3>
+                <button onClick={() => { navigator.clipboard.writeText(genReport()); flash("📋 복사됨"); }} className={B}>📋 복사</button>
+              </div>
+              <pre className="text-xs text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 leading-relaxed">{genReport()}</pre>
+            </div>
+          </div>
+        )}
+
+        {/* Feedback */}
+        {tab === "feedback" && (
+          <div className="space-y-3">
+            <div className={C}>
+              <h3 className="text-sm font-bold mb-3">🐛 피드백/버그 등록</h3>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div><label className={L}>유형</label><select className={I} value={fbForm.type} onChange={e => setFbForm({ ...fbForm, type: e.target.value })}><option>버그</option><option>기능요청</option><option>피드백</option></select></div>
+                  <div><label className={L}>우선순위</label><select className={I} value={fbForm.priority} onChange={e => setFbForm({ ...fbForm, priority: e.target.value })}><option>높음</option><option>중간</option><option>낮음</option></select></div>
+                </div>
+                <div><label className={L}>제목</label><input className={I} value={fbForm.title} onChange={e => setFbForm({ ...fbForm, title: e.target.value })} /></div>
+                <div><label className={L}>설명</label><textarea className={`${I} h-16`} value={fbForm.description} onChange={e => setFbForm({ ...fbForm, description: e.target.value })} /></div>
+                <button onClick={saveFb} className={B}>등록</button>
+              </div>
+            </div>
+            {feedbacks.map(f => {
+              const pBg: Record<string, string> = { "높음": "bg-red-100 text-red-700", "중간": "bg-amber-100 text-amber-700", "낮음": "bg-slate-100 text-slate-600" };
+              const sBg: Record<string, string> = { "신규": "bg-blue-100 text-blue-700", "진행": "bg-amber-100 text-amber-700", "완료": "bg-emerald-100 text-emerald-700" };
+              return (
+                <div key={f.id} className={C}>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${sBg[f.status] ?? ""}`}>{f.status}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${pBg[f.priority] ?? ""}`}>{f.priority}</span>
+                    <span className="text-[10px] text-slate-400">{f.type}</span>
+                    <span className="text-[10px] text-slate-400 ml-auto">{f.date}</span>
+                  </div>
+                  <p className="text-sm font-semibold mb-1">{f.title}</p>
+                  {f.description && <p className="text-xs text-slate-500 mb-2">{f.description}</p>}
+                  <div className="flex gap-2 text-[11px]">
+                    {f.status !== "완료" && <button onClick={() => updateFbStatus(f.id, f.status === "신규" ? "진행" : "완료")} className="text-blue-600 font-semibold">{f.status === "신규" ? "진행으로" : "완료로"}</button>}
+                    <button onClick={() => delFb(f.id)} className="text-red-400 ml-auto">삭제</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Calendar */}
+        {tab === "calendar" && (() => {
+          const { y, m } = calMonth;
+          const first = new Date(y, m, 1); const startDay = first.getDay();
+          const daysInMonth = new Date(y, m + 1, 0).getDate();
+          const today = new Date(); const todayStr = today.toISOString().slice(0, 10);
+          const cells: (number | null)[] = Array(startDay).fill(null);
+          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+          while (cells.length % 7 !== 0) cells.push(null);
+          const dateStr = (d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const taskDates = new Set(tasks.filter(t => t.deadline).map(t => t.deadline));
+          const goalDates = new Set(goals.flatMap(g => [g.end_date]));
+          return (
+            <div className="space-y-3">
+              <div className={C}>
+                <div className="flex items-center justify-between mb-3">
+                  <button onClick={() => setCalMonth(m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })} className="text-sm text-slate-500 hover:text-slate-800 px-2">◀</button>
+                  <h3 className="text-sm font-bold">{y}년 {m + 1}월</h3>
+                  <button onClick={() => setCalMonth(m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })} className="text-sm text-slate-500 hover:text-slate-800 px-2">▶</button>
+                </div>
+                <div className="grid grid-cols-7 text-center text-[11px]">
+                  {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className="py-1 font-bold text-slate-400">{d}</div>)}
+                  {cells.map((d, i) => {
+                    if (!d) return <div key={i} className="py-2" />;
+                    const ds = dateStr(d); const isToday = ds === todayStr;
+                    const hasTask = taskDates.has(ds); const hasGoal = goalDates.has(ds);
+                    return (
+                      <div key={i} className={`py-2 rounded-lg text-xs relative ${isToday ? "bg-blue-600 text-white font-bold" : "text-slate-700"}`}>
+                        {d}
+                        {(hasTask || hasGoal) && <div className="flex justify-center gap-0.5 mt-0.5">{hasTask && <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />}{hasGoal && <span className="w-1 h-1 rounded-full bg-emerald-400 inline-block" />}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-3 mt-2 text-[10px] text-slate-400"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />태스크 마감</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />목표 마감</span></div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Memo */}
+        {tab === "memo" && (
+          <div className="space-y-3">
+            <div className={C}>
+              <h3 className="text-sm font-bold mb-2">💬 빠른 메모</h3>
+              <textarea className={`${I} h-16`} value={memoText} onChange={e => setMemoText(e.target.value)} placeholder="메모를 입력하세요..." />
+              <button onClick={saveMemo} className={`${B} mt-2`}>저장</button>
+            </div>
+            {memos.map(m => (
+              <div key={m.id} className={C}>
+                <div className="flex justify-between text-[11px] text-slate-400 mb-1"><span>{m.time}</span><button onClick={() => delMemo(m.id)} className="text-red-400">삭제</button></div>
+                <p className="text-xs text-slate-700 whitespace-pre-wrap">{m.content}</p>
               </div>
             ))}
           </div>
