@@ -9,7 +9,16 @@ type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar" | "notice" | "
 type Approval = { id: string; title: string; content: string; author: string; approver: string; status: "대기" | "승인" | "반려"; comment: string; fileUrl?: string; fileName?: string; date: string };
 type FileItem = { id: string; name: string; size: string; type: string; url: string; uploadedAt: string; uploadedBy: string };
 type ChatMsg = { id: string; sender: string; text: string; time: string };
-type TeamMember = { id: string; name: string; role: string; email: string; status: "active" | "away" | "offline" };
+type HQRole = "대표" | "이사" | "팀장" | "팀원";
+type TeamMember = { id: string; name: string; role: string; email: string; status: "active" | "away" | "offline"; hqRole: HQRole };
+
+// 권한별 접근 가능 탭
+const ROLE_PERMISSIONS: Record<HQRole, Tab[]> = {
+  "대표": ["dashboard", "mett", "kpi", "goal", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "team", "timeline", "files", "chat", "approval"],
+  "이사": ["dashboard", "mett", "kpi", "goal", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "timeline", "files", "chat", "approval"],
+  "팀장": ["dashboard", "kpi", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "files", "chat"],
+  "팀원": ["dashboard", "task", "notice", "calendar", "memo", "chat"],
+};
 type Notice = { id: string; title: string; content: string; date: string; pinned: boolean; author: string };
 type Feedback = { id: string; type: string; title: string; description: string; priority: string; status: string; date: string; author: string };
 type MemoItem = { id: string; content: string; time: string };
@@ -76,7 +85,7 @@ export default function HQPage() {
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [teamForm, setTeamForm] = useState({ name: "", role: "", email: "" });
+  const [teamForm, setTeamForm] = useState({ name: "", role: "", email: "", hqRole: "팀원" as HQRole });
   const [directive, setDirective] = useState("");
   const [directiveSaved, setDirectiveSaved] = useState("");
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -84,8 +93,10 @@ export default function HQPage() {
   const [chatInput, setChatInput] = useState("");
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [approvalForm, setApprovalForm] = useState({ title: "", content: "", approver: "" });
+  const [approvalFile, setApprovalFile] = useState<File | null>(null);
   const [platformStats, setPlatformStats] = useState({ totalUsers: 0, todayUsers: 0, totalRevenue: 0, activeSubscribers: 0 });
   const [userName, setUserName] = useState("관리자");
+  const [myRole, setMyRole] = useState<HQRole>("팀원");
   const directiveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
@@ -109,10 +120,21 @@ export default function HQPage() {
         const uName = user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "관리자";
         setUserName(uName);
         const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
-        // 팀 멤버 이메일도 접근 허용
-        let teamEmails: string[] = [];
-        try { const tm = localStorage.getItem("vela-hq-team"); if (tm) teamEmails = JSON.parse(tm).map((m: { email: string }) => m.email).filter(Boolean); } catch {}
-        if (adminEmails.includes(user.email ?? "") || teamEmails.includes(user.email ?? "")) setAuthorized(true);
+        // 팀 멤버 이메일 + 권한 확인
+        let teamData: TeamMember[] = [];
+        try { const tm = localStorage.getItem("vela-hq-team"); if (tm) teamData = JSON.parse(tm); } catch {}
+        const teamEmails = teamData.map(m => m.email).filter(Boolean);
+
+        if (adminEmails.includes(user.email ?? "")) {
+          setAuthorized(true);
+          setMyRole("대표");
+        } else {
+          const member = teamData.find(m => m.email === user.email);
+          if (member) {
+            setAuthorized(true);
+            setMyRole(member.hqRole ?? "팀원");
+          }
+        }
 
         // 플랫폼 실시간 통계
         try {
@@ -152,8 +174,8 @@ export default function HQPage() {
         if (tm) setTeamMembers(JSON.parse(tm));
         else {
           const defaults: TeamMember[] = [
-            { id: "1", name: "민혁", role: "대표", email: "mnhyuk@velaanalytics.com", status: "active" },
-            { id: "2", name: "운영팀", role: "운영", email: "ops@velaanalytics.com", status: "active" },
+            { id: "1", name: "민혁", role: "대표", email: "mnhyuk@velaanalytics.com", status: "active", hqRole: "대표" },
+            { id: "2", name: "운영팀", role: "운영", email: "ops@velaanalytics.com", status: "active", hqRole: "팀원" },
           ];
           setTeamMembers(defaults); localStorage.setItem("vela-hq-team", JSON.stringify(defaults));
         }
@@ -248,9 +270,9 @@ export default function HQPage() {
   // Team helpers
   const saveTeamMember = () => {
     if (!teamForm.name.trim()) return;
-    const m: TeamMember = { id: Date.now().toString(), name: teamForm.name, role: teamForm.role, email: teamForm.email, status: "active" };
+    const m: TeamMember = { id: Date.now().toString(), name: teamForm.name, role: teamForm.role, email: teamForm.email, status: "active", hqRole: teamForm.hqRole };
     const next = [...teamMembers, m]; setTeamMembers(next); localStorage.setItem("vela-hq-team", JSON.stringify(next));
-    setTeamForm({ name: "", role: "", email: "" }); flash("✓ 멤버 추가됨");
+    setTeamForm({ name: "", role: "", email: "", hqRole: "팀원" }); flash("✓ 멤버 추가됨");
   };
   const delTeamMember = (id: string) => { const next = teamMembers.filter(m => m.id !== id); setTeamMembers(next); localStorage.setItem("vela-hq-team", JSON.stringify(next)); };
   const toggleTeamStatus = (id: string) => {
@@ -290,9 +312,17 @@ export default function HQPage() {
   // Approval helpers
   const saveApproval = async () => {
     if (!approvalForm.title.trim()) return;
-    const a: Approval = { id: Date.now().toString(), title: approvalForm.title, content: approvalForm.content, author: userName, approver: approvalForm.approver || userName, status: "대기", comment: "", date: new Date().toISOString().slice(0, 10) };
+    let fileUrl: string | undefined; let fileName: string | undefined;
+    if (approvalFile && userId) {
+      const s = sb(); if (s) {
+        const path = `${userId}/approval_${Date.now()}_${approvalFile.name}`;
+        const { error } = await s.storage.from("hq-files").upload(path, approvalFile);
+        if (!error) { const { data } = s.storage.from("hq-files").getPublicUrl(path); fileUrl = data.publicUrl; fileName = approvalFile.name; }
+      }
+    }
+    const a: Approval = { id: Date.now().toString(), title: approvalForm.title, content: approvalForm.content, author: userName, approver: approvalForm.approver || userName, status: "대기", comment: "", date: new Date().toISOString().slice(0, 10), fileUrl, fileName };
     const next = [a, ...approvals]; setApprovals(next); localStorage.setItem("vela-hq-approvals", JSON.stringify(next));
-    setApprovalForm({ title: "", content: "", approver: "" }); flash("✓ 결재 요청됨");
+    setApprovalForm({ title: "", content: "", approver: "" }); setApprovalFile(null); flash("✓ 결재 요청됨");
   };
   const updateApproval = (id: string, status: "승인" | "반려", comment?: string) => {
     const next = approvals.map(a => a.id === id ? { ...a, status, comment: comment ?? a.comment } : a);
@@ -338,6 +368,7 @@ export default function HQPage() {
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold">🏛️ VELA HQ</span>
             <span className="text-xs text-slate-400 hidden sm:inline">Internal Operations</span>
+            <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2">{myRole}</span>
           </div>
           <div className="flex items-center gap-3">
             {msg && <span className="text-xs bg-emerald-600 px-2 py-1 rounded">{msg}</span>}
@@ -349,7 +380,7 @@ export default function HQPage() {
       {/* 탭 네비 */}
       <nav className="bg-white border-b border-slate-200 sticky top-[48px] z-40">
         <div className="max-w-5xl mx-auto flex overflow-x-auto">
-          {TABS.map(t => (
+          {TABS.filter(t => ROLE_PERMISSIONS[myRole]?.includes(t.key)).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex-shrink-0 px-4 py-3 text-xs font-semibold border-b-2 transition ${tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
               {t.icon} {t.label}
@@ -750,6 +781,7 @@ export default function HQPage() {
                 <div><label className={L}>이름</label><input className={I} value={teamForm.name} onChange={e => setTeamForm({ ...teamForm, name: e.target.value })} placeholder="홍길동" /></div>
                 <div><label className={L}>역할</label><input className={I} value={teamForm.role} onChange={e => setTeamForm({ ...teamForm, role: e.target.value })} placeholder="개발자" /></div>
                 <div><label className={L}>이메일</label><input className={I} value={teamForm.email} onChange={e => setTeamForm({ ...teamForm, email: e.target.value })} placeholder="email@company.com" /></div>
+                <div><label className={L}>HQ 권한</label><select className={I} value={teamForm.hqRole} onChange={e => setTeamForm({ ...teamForm, hqRole: e.target.value as HQRole })}><option value="팀원">팀원</option><option value="팀장">팀장</option><option value="이사">이사</option><option value="대표">대표</option></select></div>
               </div>
               <button onClick={saveTeamMember} className={B}>추가</button>
             </div>
@@ -863,6 +895,13 @@ export default function HQPage() {
                 <div><label className={L}>제목</label><input className={I} value={approvalForm.title} onChange={e => setApprovalForm({ ...approvalForm, title: e.target.value })} placeholder="결재 제목" /></div>
                 <div><label className={L}>내용</label><textarea className={`${I} h-20`} value={approvalForm.content} onChange={e => setApprovalForm({ ...approvalForm, content: e.target.value })} placeholder="결재 내용을 상세히 작성하세요" /></div>
                 <div><label className={L}>결재자</label><input className={I} value={approvalForm.approver} onChange={e => setApprovalForm({ ...approvalForm, approver: e.target.value })} placeholder="결재자 이름" /></div>
+                <div>
+                  <label className={L}>첨부파일</label>
+                  <label className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg cursor-pointer text-xs text-slate-600 hover:bg-slate-100">
+                    📎 {approvalFile ? approvalFile.name : "파일 선택"}
+                    <input type="file" className="hidden" onChange={e => setApprovalFile(e.target.files?.[0] ?? null)} />
+                  </label>
+                </div>
                 <button onClick={saveApproval} className={B}>결재 요청</button>
               </div>
             </div>
@@ -881,6 +920,7 @@ export default function HQPage() {
                   <span>결재자: {a.approver}</span>
                   <span>{a.date}</span>
                 </div>
+                {a.fileName && <a href={a.fileUrl} target="_blank" className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg mb-2">📎 {a.fileName}</a>}
                 {a.comment && <p className="text-xs bg-slate-50 rounded-lg px-3 py-2 mb-2"><b>{a.status === "승인" ? "승인 의견:" : "반려 사유:"}</b> {a.comment}</p>}
                 {a.status === "대기" && (
                   <div className="flex gap-2">
