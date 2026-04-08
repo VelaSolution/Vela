@@ -20,8 +20,8 @@ export default function MobileTabBar() {
   if (pathname.startsWith("/game")) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center justify-around h-14">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div className="flex items-center justify-around h-12">
         {TABS.map(tab => {
           const isActive = tab.href === "/"
             ? pathname === "/"
@@ -40,7 +40,6 @@ export default function MobileTabBar() {
           );
         })}
       </div>
-      <div className="pb-[env(safe-area-inset-bottom)]" />
     </nav>
   );
 }
