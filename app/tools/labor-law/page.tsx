@@ -7,8 +7,8 @@ import ToolNav from "@/components/ToolNav";
 import SimDataPicker from "@/components/SimDataPicker";
 import type { SimulatorSnapshot } from "@/lib/useSimulatorData";
 
-// 2026년 기준 (예상)
-const MIN_WAGE = 10620; // 최저시급
+// 2026년 기준 (확정)
+const MIN_WAGE = 10320; // 2026 최저시급
 const INSURANCE_RATES = {
   national_pension: 0.045,    // 국민연금 (사업주 4.5%)
   health: 0.03545,            // 건강보험 (사업주 3.545%)

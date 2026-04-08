@@ -11,7 +11,7 @@ const TABS = ["급여 계산기", "근로계약서", "채용공고", "노동법 
 type Tab = (typeof TABS)[number];
 const KEY = "vela-hiring";
 const fmt = (n: number) => n.toLocaleString("ko-KR");
-const MIN_WAGE = 9860; // 2024 최저시급
+const MIN_WAGE = 10320; // 2026 최저시급
 
 type Employee = { id: number; name: string; type: "정규직" | "시급제" | "일급제"; hourlyWage: number; weeklyHours: number; weeklyDays: number; nightHours: number };
 const defaultEmp: Employee = { id: 1, name: "직원 1", type: "시급제", hourlyWage: MIN_WAGE, weeklyHours: 40, weeklyDays: 5, nightHours: 0 };
@@ -43,7 +43,7 @@ const POSITIONS: Record<string, string[]> = {
 };
 
 const LABOR_LAWS = [
-  { title: "최저임금 (2024)", content: "시급 9,860원, 월 환산 2,060,740원 (주 40시간 기준, 주휴수당 포함). 수습 3개월간 10% 감액 가능 (1년 이상 계약 시).", penalty: "3년 이하 징역 또는 2천만원 이하 벌금", tip: "시급을 표시할 때 주휴수당이 포함된 금액인지 반드시 명시하세요." },
+  { title: "최저임금 (2026)", content: "시급 10,320원, 월 환산 2,156,880원 (주 40시간 기준, 주휴수당 포함). 수습 3개월간 10% 감액 가능 (1년 이상 계약 시).", penalty: "3년 이하 징역 또는 2천만원 이하 벌금", tip: "시급을 표시할 때 주휴수당이 포함된 금액인지 반드시 명시하세요." },
   { title: "근로시간", content: "법정 주 40시간, 1일 8시간. 연장근로 주 12시간 한도 (합의 시). 연장·야간·휴일근로는 통상임금의 50% 가산.", penalty: "2년 이하 징역 또는 2천만원 이하 벌금", tip: "5인 미만 사업장은 연장·야간·휴일수당 가산 의무 없음." },
   { title: "휴게시간", content: "근로시간 4시간당 30분, 8시간당 1시간 이상. 근로자가 자유롭게 이용 가능해야 함.", penalty: "2년 이하 징역 또는 1천만원 이하 벌금", tip: "휴게시간은 근로시간에 포함되지 않으므로 급여 계산 시 제외." },
   { title: "주휴일·주휴수당", content: "주 15시간 이상 근무 시 유급 주휴일 1일 부여. 주휴수당 = 1일 통상임금. 결근 없이 소정근로일 개근 필요.", penalty: "미지급 시 임금체불 (3년 이하 징역 또는 3천만원 이하 벌금)", tip: "시급제 아르바이트도 주 15시간 이상이면 주휴수당 필수!" },
@@ -185,7 +185,7 @@ export default function HiringPage() {
           {tab === "급여 계산기" && (
             <>
               <div className="bg-teal-50 rounded-2xl px-4 py-3 mb-4 text-xs text-teal-700">
-                💡 2024년 최저시급: <b>{fmt(MIN_WAGE)}원</b> | 월 환산(209h): <b>{fmt(MIN_WAGE * 209)}원</b>
+                💡 2026년 최저시급: <b>{fmt(MIN_WAGE)}원</b> | 월 환산(209h): <b>{fmt(MIN_WAGE * 209)}원</b>
               </div>
               {employees.map((emp, idx) => {
                 const calc = calcEmployee(emp);

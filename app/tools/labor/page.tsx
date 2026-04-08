@@ -69,7 +69,7 @@ function makeEmployee(name = "", role = "홀 서빙"): Employee {
     acc[d] = { ...DEFAULT_SHIFT };
     return acc;
   }, {} as Record<DayKey, Shift>);
-  return { id: uid(), name, role, hourlyWage: "10030", schedule, isFullTime: false };
+  return { id: uid(), name, role, hourlyWage: "10320", schedule, isFullTime: false };
 }
 
 const ROLES = ["홀 서빙", "주방", "바리스타", "매니저", "카운터", "배달", "기타"];
@@ -178,7 +178,7 @@ function EmployeeCard({
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">원</span>
             </div>
-            <span className="text-xs text-slate-400">2025 최저시급: 10,030원</span>
+            <span className="text-xs text-slate-400">2026 최저시급: 10,320원</span>
           </div>
 
           {/* 스케줄 */}

@@ -1,85 +1,64 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import {
+  Tab, HQRole, TABS, SIDEBAR_GROUPS, ROLE_PERMISSIONS, TAB_MAP,
+} from "./types";
 
-type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar" | "notice" | "report" | "feedback" | "calendar" | "memo" | "team" | "timeline" | "files" | "chat" | "approval" | "decision";
-type Decision = { id: string; title: string; decision: string; reason: string; owner: string; date: string; followUp: string };
-type TaskComment = { id: string; author: string; text: string; time: string };
-type ReportType = "daily" | "weekly" | "issue" | "project";
-type ReportStatus = "draft" | "submitted" | "approved" | "rejected";
-type DailyReport = { id: string; date: string; content: string; problems: string; nextSteps: string; status?: ReportStatus; approver?: string };
-type IssueReport = { id: string; title: string; description: string; priority: string; status: string; reportStatus?: ReportStatus; approver?: string };
-type ProjectReport = { id: string; title: string; progress: number; description: string; deadline: string; reportStatus?: ReportStatus; approver?: string };
-type Approval = { id: string; title: string; content: string; author: string; approver: string; status: "대기" | "승인" | "반려"; comment: string; fileUrl?: string; fileName?: string; date: string };
-type Folder = { id: string; name: string; parentId?: string };
-type FileItem = { id: string; name: string; size: string; type: string; url: string; uploadedAt: string; uploadedBy: string; folderId?: string };
-type ChatMsg = { id: string; sender: string; text: string; time: string };
-type HQRole = "대표" | "이사" | "팀장" | "팀원";
-type TeamMember = { id: string; name: string; role: string; email: string; status: "active" | "away" | "offline"; hqRole: HQRole };
+// ── 탭 컴포넌트 ────────────────────────────────────────
+import Dashboard from "./components/Dashboard";
+import MettTab from "./components/MettTab";
+import KpiTab from "./components/KpiTab";
+import GoalTab from "./components/GoalTab";
+import TaskTab from "./components/TaskTab";
+import AarTab from "./components/AarTab";
+import NoticeTab from "./components/NoticeTab";
+import ReportTab from "./components/ReportTab";
+import FeedbackTab from "./components/FeedbackTab";
+import CalendarTab from "./components/CalendarTab";
+import MemoTab from "./components/MemoTab";
+import TeamTab from "./components/TeamTab";
+import TimelineTab from "./components/TimelineTab";
+import FilesTab from "./components/FilesTab";
+import ChatTab from "./components/ChatTab";
+import ApprovalTab from "./components/ApprovalTab";
+import DecisionTab from "./components/DecisionTab";
+import AttendanceTab from "./components/AttendanceTab";
+import LeaveTab from "./components/LeaveTab";
+import ContactsTab from "./components/ContactsTab";
+import BoardTab from "./components/BoardTab";
+import SurveyTab from "./components/SurveyTab";
+import WikiTab from "./components/WikiTab";
 
-// 권한별 접근 가능 탭
-const ROLE_PERMISSIONS: Record<HQRole, Tab[]> = {
-  "대표": ["dashboard", "mett", "kpi", "goal", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "team", "timeline", "files", "chat", "approval", "decision"],
-  "이사": ["dashboard", "mett", "kpi", "goal", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "timeline", "files", "chat", "approval", "decision"],
-  "팀장": ["dashboard", "kpi", "task", "aar", "notice", "report", "feedback", "calendar", "memo", "files", "chat", "decision"],
-  "팀원": ["dashboard", "task", "notice", "calendar", "memo", "chat"],
+// ── 탭 → 컴포넌트 매핑 ────────────────────────────────
+const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }>> = {
+  dashboard: Dashboard,
+  mett: MettTab,
+  kpi: KpiTab,
+  goal: GoalTab,
+  task: TaskTab,
+  aar: AarTab,
+  notice: NoticeTab,
+  report: ReportTab,
+  feedback: FeedbackTab,
+  calendar: CalendarTab,
+  memo: MemoTab,
+  team: TeamTab,
+  timeline: TimelineTab,
+  files: FilesTab,
+  chat: ChatTab,
+  approval: ApprovalTab,
+  decision: DecisionTab,
+  attendance: AttendanceTab,
+  leave: LeaveTab,
+  contacts: ContactsTab,
+  board: BoardTab,
+  survey: SurveyTab,
+  wiki: WikiTab,
 };
-type Notice = { id: string; title: string; content: string; date: string; pinned: boolean; author: string; readBy?: string[] };
-type Feedback = { id: string; type: string; title: string; description: string; priority: string; status: string; date: string; author: string };
-type MemoItem = { id: string; content: string; time: string };
-type Mett = { id: string; mission: string; enemy: string; terrain: string; troops: string; time_constraint: string; civil: string; created_at: string };
-type Metric = { id: string; date: string; revenue: number; users_count: number; conversion_rate: number; profit: number };
-type Goal = { id: string; title: string; target_value: number; current_value: number; metric_type: string; start_date: string; end_date: string; status: string };
-type Task = { id: string; goal_id: string | null; title: string; assignee: string; deadline: string; status: string; result: string };
-type AAR = { id: string; date: string; goal: string; result: string; gap_reason: string; improvement: string };
-
-const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "dashboard", label: "현황", icon: "📋" },
-  { key: "mett", label: "상황판단", icon: "🎯" },
-  { key: "kpi", label: "KPI", icon: "📊" },
-  { key: "goal", label: "목표", icon: "🏆" },
-  { key: "task", label: "태스크", icon: "✅" },
-  { key: "aar", label: "AAR", icon: "📝" },
-  { key: "notice", label: "공지", icon: "📢" },
-  { key: "report", label: "보고서", icon: "📄" },
-  { key: "feedback", label: "피드백", icon: "🐛" },
-  { key: "calendar", label: "일정", icon: "📅" },
-  { key: "memo", label: "메모", icon: "💬" },
-  { key: "team", label: "팀", icon: "👥" },
-  { key: "timeline", label: "타임라인", icon: "🕐" },
-  { key: "files", label: "파일", icon: "📁" },
-  { key: "chat", label: "채팅", icon: "💬" },
-  { key: "approval", label: "결재", icon: "📋" },
-  { key: "decision", label: "의사결정", icon: "⚖️" },
-];
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
-const ST: Record<string, { bg: string; label: string }> = {
-  active: { bg: "bg-blue-100 text-blue-700", label: "진행" },
-  completed: { bg: "bg-emerald-100 text-emerald-700", label: "완료" },
-  failed: { bg: "bg-red-100 text-red-700", label: "실패" },
-  pending: { bg: "bg-slate-100 text-slate-600", label: "대기" },
-  planned: { bg: "bg-slate-100 text-slate-600", label: "대기" },
-  in_progress: { bg: "bg-amber-100 text-amber-700", label: "진행중" },
-  review: { bg: "bg-purple-100 text-purple-700", label: "검토" },
-};
-const REPORT_ST: Record<string, { bg: string; label: string }> = {
-  draft: { bg: "bg-slate-100 text-slate-600", label: "작성중" },
-  submitted: { bg: "bg-blue-100 text-blue-700", label: "제출됨" },
-  approved: { bg: "bg-emerald-100 text-emerald-700", label: "승인" },
-  rejected: { bg: "bg-red-100 text-red-700", label: "반려" },
-};
-const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
-  { label: "운영", items: ["dashboard", "task", "calendar"] },
-  { label: "보고", items: ["report", "aar", "decision"] },
-  { label: "소통", items: ["notice", "chat", "memo"] },
-  { label: "관리", items: ["kpi", "goal", "mett", "team", "timeline"] },
-  { label: "문서", items: ["files", "approval"] },
-];
-const TAB_MAP = Object.fromEntries(TABS.map(t => [t.key, t]));
 
 export default function HQPage() {
   const [tab, setTab] = useState<Tab>("dashboard");
@@ -87,69 +66,13 @@ export default function HQPage() {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [msg, setMsg] = useState("");
-
-  const [metts, setMetts] = useState<Mett[]>([]);
-  const [metrics, setMetrics] = useState<Metric[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [aars, setAars] = useState<AAR[]>([]);
-
-  const [mettForm, setMettForm] = useState({ mission: "", enemy: "", terrain: "", troops: "", time_constraint: "", civil: "" });
-  const [metricForm, setMetricForm] = useState({ date: new Date().toISOString().slice(0, 10), revenue: "", users_count: "", conversion_rate: "", profit: "" });
-  const [goalForm, setGoalForm] = useState({ title: "", target_value: "", metric_type: "revenue", start_date: new Date().toISOString().slice(0, 10), end_date: "" });
-  const [taskForm, setTaskForm] = useState({ title: "", assignee: "", deadline: "", goal_id: "" });
-  const [aarForm, setAarForm] = useState({ date: new Date().toISOString().slice(0, 10), goal: "", result: "", gap_reason: "", improvement: "" });
-
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [noticeForm, setNoticeForm] = useState({ title: "", content: "", pinned: false });
-  const [expandedNotice, setExpandedNotice] = useState<string | null>(null);
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
-  const [fbForm, setFbForm] = useState({ type: "버그", title: "", description: "", priority: "중간", status: "신규" });
-  const [memos, setMemos] = useState<MemoItem[]>([]);
-  const [memoText, setMemoText] = useState("");
-  const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
-
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [teamForm, setTeamForm] = useState({ name: "", role: "", email: "", hqRole: "팀원" as HQRole });
-  const [directive, setDirective] = useState("");
-  const [directiveSaved, setDirectiveSaved] = useState("");
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [approvals, setApprovals] = useState<Approval[]>([]);
-  const [approvalForm, setApprovalForm] = useState({ title: "", content: "", approver: "" });
-  const [approvalFile, setApprovalFile] = useState<File | null>(null);
-  const [decisions, setDecisions] = useState<Decision[]>([]);
-  const [decisionForm, setDecisionForm] = useState({ title: "", decision: "", reason: "", owner: "", followUp: "" });
-  const [taskComments, setTaskComments] = useState<Record<string, TaskComment[]>>({});
-  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState("");
-  const [reportType, setReportType] = useState<ReportType>("weekly");
-  const [dailyReports, setDailyReports] = useState<DailyReport[]>([]);
-  const [dailyForm, setDailyForm] = useState({ date: new Date().toISOString().slice(0, 10), content: "", problems: "", nextSteps: "" });
-  const [issueReports, setIssueReports] = useState<IssueReport[]>([]);
-  const [issueForm, setIssueForm] = useState({ title: "", description: "", priority: "중간", status: "신규" });
-  const [projectReports, setProjectReports] = useState<ProjectReport[]>([]);
-  const [projectForm, setProjectForm] = useState({ title: "", progress: "", description: "", deadline: "" });
-  const [platformStats, setPlatformStats] = useState({ totalUsers: 0, todayUsers: 0, totalRevenue: 0, activeSubscribers: 0 });
   const [userName, setUserName] = useState("관리자");
   const [myRole, setMyRole] = useState<HQRole>("팀원");
-  const [taskView, setTaskView] = useState<"list" | "kanban">("list");
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined);
-  const [newFolderName, setNewFolderName] = useState("");
-  const directiveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2500); };
 
-  const saveDirective = useCallback((val: string) => {
-    if (directiveTimer.current) clearTimeout(directiveTimer.current);
-    directiveTimer.current = setTimeout(() => {
-      localStorage.setItem("vela-hq-directive", val);
-      setDirectiveSaved(new Date().toLocaleString("ko-KR"));
-    }, 500);
-  }, []);
-
+  // ── 인증 & 권한 ──────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -160,25 +83,23 @@ export default function HQPage() {
         setUserId(user.id);
         const uName = user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "관리자";
         setUserName(uName);
+
         const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
-        // 팀 멤버를 Supabase에서 먼저 로드하여 권한 확인
-        let teamData: TeamMember[] = [];
+
+        // 팀 멤버 로드
+        let teamData: { email: string; hq_role: string }[] = [];
         try {
-          const { data: td } = await sb.from("hq_team").select("*").order("created_at", { ascending: true });
+          const { data: td } = await sb.from("hq_team").select("email, hq_role").order("created_at", { ascending: true });
           if (td && td.length > 0) {
-            teamData = td.map((r: Record<string, unknown>) => ({ id: r.id as string, name: r.name as string, role: r.role as string, email: r.email as string, status: (r.status as "active" | "away" | "offline") ?? "active", hqRole: (r.hq_role as HQRole) ?? "팀원" }));
+            teamData = td as { email: string; hq_role: string }[];
           } else {
-            // 기본 멤버 삽입
             const defaults = [
               { name: "민혁", role: "대표", email: "mnhyuk@velaanalytics.com", status: "active", hq_role: "대표" },
               { name: "운영팀", role: "운영", email: "ops@velaanalytics.com", status: "active", hq_role: "팀원" },
             ];
-            const { data: inserted } = await sb.from("hq_team").insert(defaults).select();
-            if (inserted) {
-              teamData = inserted.map((r: Record<string, unknown>) => ({ id: r.id as string, name: r.name as string, role: r.role as string, email: r.email as string, status: (r.status as "active" | "away" | "offline") ?? "active", hqRole: (r.hq_role as HQRole) ?? "팀원" }));
-            }
+            const { data: inserted } = await sb.from("hq_team").insert(defaults).select("email, hq_role");
+            if (inserted) teamData = inserted as { email: string; hq_role: string }[];
           }
-          setTeamMembers(teamData);
         } catch {}
 
         if (adminEmails.includes(user.email ?? "")) {
@@ -188,1347 +109,185 @@ export default function HQPage() {
           const member = teamData.find(m => m.email === user.email);
           if (member) {
             setAuthorized(true);
-            setMyRole(member.hqRole ?? "팀원");
+            setMyRole((member.hq_role as HQRole) ?? "팀원");
           }
         }
-
-        // 플랫폼 실시간 통계
-        try {
-          const today = new Date().toISOString().slice(0, 10);
-          const [usersRes, todayRes, revenueRes, subsRes] = await Promise.all([
-            sb.from("profiles").select("id", { count: "exact", head: true }),
-            sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", today),
-            sb.from("payments").select("amount").eq("status", "done"),
-            sb.from("payments").select("id", { count: "exact", head: true }).eq("status", "done"),
-          ]);
-          setPlatformStats({
-            totalUsers: usersRes.count ?? 0,
-            todayUsers: todayRes.count ?? 0,
-            totalRevenue: (revenueRes.data ?? []).reduce((s: number, r: { amount?: number }) => s + (r.amount ?? 0), 0),
-            activeSubscribers: subsRes.count ?? 0,
-          });
-        } catch { /* noop */ }
-
-        const [m, met, g, t, a] = await Promise.all([
-          sb.from("hq_mett").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-          sb.from("hq_metrics").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(30),
-          sb.from("hq_goals").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
-          sb.from("hq_tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
-          sb.from("hq_aar").select("*").eq("user_id", user.id).order("date", { ascending: false }).limit(10),
-        ]);
-        setMetts((m.data ?? []) as Mett[]);
-        setMetrics((met.data ?? []) as Metric[]);
-        setGoals((g.data ?? []) as Goal[]);
-        setTasks((t.data ?? []) as Task[]);
-        setAars((a.data ?? []) as AAR[]);
-      } catch (e) { console.error("HQ load error:", e); }
-
-      // Supabase에서 나머지 데이터 로드
-      try {
-        const s = createSupabaseBrowserClient();
-        if (s) {
-          const [noticesRes, feedbackRes, memosRes, chatRes, approvalsRes, decisionsRes, reportsRes, foldersRes, filesRes] = await Promise.all([
-            s.from("hq_notices").select("*").order("created_at", { ascending: false }),
-            s.from("hq_feedback").select("*").order("created_at", { ascending: false }),
-            s.from("hq_memos").select("*").order("created_at", { ascending: false }),
-            s.from("hq_chat").select("*").order("created_at", { ascending: true }),
-            s.from("hq_approvals").select("*").order("created_at", { ascending: false }),
-            s.from("hq_decisions").select("*").order("created_at", { ascending: false }),
-            s.from("hq_reports").select("*").order("created_at", { ascending: false }),
-            s.from("hq_folders").select("*").order("created_at", { ascending: true }),
-            s.from("hq_files").select("*").order("created_at", { ascending: false }),
-          ]);
-          if (noticesRes.data) setNotices(noticesRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, title: r.title as string, content: (r.content as string) ?? "", date: (r.created_at as string)?.slice(0, 10) ?? "", pinned: (r.pinned as boolean) ?? false, author: (r.author as string) ?? "", readBy: (r.read_by as string[]) ?? [] })));
-          if (feedbackRes.data) setFeedbacks(feedbackRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, type: (r.type as string) ?? "", title: (r.title as string) ?? "", description: (r.description as string) ?? "", priority: (r.priority as string) ?? "중간", status: (r.status as string) ?? "신규", date: (r.created_at as string)?.slice(0, 10) ?? "", author: (r.author as string) ?? "" })));
-          if (memosRes.data) setMemos(memosRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, content: (r.content as string) ?? "", time: r.created_at ? new Date(r.created_at as string).toLocaleString("ko-KR") : "" })));
-          if (chatRes.data) setChatMsgs(chatRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, sender: (r.sender as string) ?? "", text: (r.text as string) ?? "", time: (r.created_at as string) ?? "" })));
-          if (approvalsRes.data) setApprovals(approvalsRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, title: (r.title as string) ?? "", content: (r.content as string) ?? "", author: (r.author as string) ?? "", approver: (r.approver as string) ?? "", status: (r.status as "대기" | "승인" | "반려") ?? "대기", comment: (r.comment as string) ?? "", fileUrl: r.file_url as string | undefined, fileName: r.file_name as string | undefined, date: (r.created_at as string)?.slice(0, 10) ?? "" })));
-          if (decisionsRes.data) setDecisions(decisionsRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, title: (r.title as string) ?? "", decision: (r.decision as string) ?? "", reason: (r.reason as string) ?? "", owner: (r.owner as string) ?? "", date: (r.created_at as string)?.slice(0, 10) ?? "", followUp: (r.follow_up as string) ?? "" })));
-          if (reportsRes.data) {
-            const daily: DailyReport[] = []; const issue: IssueReport[] = []; const project: ProjectReport[] = [];
-            for (const r of reportsRes.data as Record<string, unknown>[]) {
-              const rt = r.report_type as string;
-              if (rt === "daily") daily.push({ id: r.id as string, date: (r.created_at as string)?.slice(0, 10) ?? "", content: (r.content as string) ?? "", problems: (r.problems as string) ?? "", nextSteps: (r.next_steps as string) ?? "", status: (r.status as ReportStatus) ?? "draft", approver: r.approver as string | undefined });
-              else if (rt === "issue") issue.push({ id: r.id as string, title: (r.title as string) ?? "", description: (r.description as string) ?? "", priority: (r.priority as string) ?? "중간", status: (r.status as string) ?? "신규", reportStatus: (r.status as ReportStatus) ?? "draft", approver: r.approver as string | undefined });
-              else if (rt === "project") project.push({ id: r.id as string, title: (r.title as string) ?? "", progress: (r.progress as number) ?? 0, description: (r.description as string) ?? "", deadline: (r.deadline as string) ?? "", reportStatus: (r.status as ReportStatus) ?? "draft", approver: r.approver as string | undefined });
-            }
-            setDailyReports(daily); setIssueReports(issue); setProjectReports(project);
-          }
-          if (foldersRes.data) setFolders(foldersRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, name: (r.name as string) ?? "", parentId: r.parent_id as string | undefined })));
-          if (filesRes.data) setFiles(filesRes.data.map((r: Record<string, unknown>) => ({ id: r.id as string, name: (r.name as string) ?? "", size: (r.size as string) ?? "", type: (r.type as string) ?? "", url: (r.url as string) ?? "", uploadedAt: (r.created_at as string) ?? "", uploadedBy: (r.uploaded_by as string) ?? "", folderId: r.folder_id as string | undefined })));
-        }
-      } catch (e) { console.error("HQ Supabase load error:", e); }
-
-      // localStorage에 유지하는 항목
-      try { const d = localStorage.getItem("vela-hq-directive"); if (d) setDirective(d); } catch {}
-      try { const tc = localStorage.getItem("vela-hq-task-comments"); if (tc) setTaskComments(JSON.parse(tc)); } catch {}
+      } catch (e) { console.error("HQ auth error:", e); }
       setLoading(false);
     })();
   }, []);
 
-  const sb = () => { try { return createSupabaseBrowserClient(); } catch { return null; } };
+  // ── 로딩 ──────────────────────────────────────────────
+  if (loading) return (
+    <div className="min-h-screen bg-[#F7F8FA] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-[3px] border-slate-200 border-t-[#3182F6] rounded-full animate-spin" />
+        <span className="text-sm text-slate-400 font-medium">VELA HQ 로딩 중...</span>
+      </div>
+    </div>
+  );
 
-  // CRUD
-  const saveMett = async () => {
-    const s = sb(); if (!s || !userId || !mettForm.mission.trim()) return;
-    const { data, error } = await s.from("hq_mett").insert({ user_id: userId, ...mettForm }).select().single();
-    if (error) { flash("저장 실패: " + error.message); return; }
-    if (data) { setMetts([data as Mett, ...metts]); flash("✓ 저장됨"); }
-    setMettForm({ mission: "", enemy: "", terrain: "", troops: "", time_constraint: "", civil: "" });
-  };
-  const saveMetric = async () => {
-    const s = sb(); if (!s || !userId) return;
-    const payload = { user_id: userId, date: metricForm.date, revenue: Number(metricForm.revenue) || 0, users_count: Number(metricForm.users_count) || 0, conversion_rate: Number(metricForm.conversion_rate) || 0, profit: Number(metricForm.profit) || 0 };
-    const { data, error } = await s.from("hq_metrics").upsert(payload, { onConflict: "user_id,date" }).select().single();
-    if (error) { flash("저장 실패: " + error.message); return; }
-    if (data) { setMetrics([data as Metric, ...metrics.filter(m => m.date !== metricForm.date)]); flash("✓ 저장됨"); }
-    setMetricForm({ date: new Date().toISOString().slice(0, 10), revenue: "", users_count: "", conversion_rate: "", profit: "" });
-  };
-  const saveGoal = async () => {
-    const s = sb(); if (!s || !userId || !goalForm.title.trim()) return;
-    if (goals.filter(g => g.status === "active").length >= 2) { flash("활성 목표는 최대 2개"); return; }
-    const { data, error } = await s.from("hq_goals").insert({ user_id: userId, title: goalForm.title, target_value: Number(goalForm.target_value) || 0, current_value: 0, metric_type: goalForm.metric_type, start_date: goalForm.start_date, end_date: goalForm.end_date || goalForm.start_date, status: "active" }).select().single();
-    if (error) { flash("저장 실패: " + error.message); return; }
-    if (data) { setGoals([data as Goal, ...goals]); flash("✓ 목표 추가됨"); }
-    setGoalForm({ title: "", target_value: "", metric_type: "revenue", start_date: new Date().toISOString().slice(0, 10), end_date: "" });
-  };
-  const saveTask = async () => {
-    const s = sb(); if (!s || !userId || !taskForm.title.trim()) return;
-    const { data, error } = await s.from("hq_tasks").insert({ user_id: userId, title: taskForm.title, assignee: taskForm.assignee || null, deadline: taskForm.deadline || null, goal_id: taskForm.goal_id || null, status: "planned", result: null }).select().single();
-    if (error) { flash("저장 실패: " + error.message); return; }
-    if (data) { setTasks([data as Task, ...tasks]); flash("✓ 태스크 추가됨"); }
-    setTaskForm({ title: "", assignee: "", deadline: "", goal_id: "" });
-  };
-  const saveAAR = async () => {
-    const s = sb(); if (!s || !userId || !aarForm.goal.trim()) return;
-    const { data, error } = await s.from("hq_aar").insert({ user_id: userId, ...aarForm }).select().single();
-    if (error) { flash("저장 실패: " + error.message); return; }
-    if (data) { setAars([data as AAR, ...aars]); flash("✓ AAR 저장됨"); }
-    setAarForm({ date: new Date().toISOString().slice(0, 10), goal: "", result: "", gap_reason: "", improvement: "" });
-  };
-  const updateGoal = async (id: string, status: string) => { const s = sb(); if (!s) return; await s.from("hq_goals").update({ status }).eq("id", id); setGoals(goals.map(g => g.id === id ? { ...g, status } : g)); };
-  const updateTask = async (id: string, status: string) => { const s = sb(); if (!s) return; await s.from("hq_tasks").update({ status }).eq("id", id); setTasks(tasks.map(t => t.id === id ? { ...t, status } : t)); };
-  const del = async (table: string, id: string) => { if (!confirm("삭제?")) return; const s = sb(); if (!s) return; await s.from(table).delete().eq("id", id); };
-  const delMett = async (id: string) => { await del("hq_mett", id); setMetts(metts.filter(m => m.id !== id)); };
-  const delMetric = async (id: string) => { await del("hq_metrics", id); setMetrics(metrics.filter(m => m.id !== id)); };
-  const delGoal = async (id: string) => { await del("hq_goals", id); setGoals(goals.filter(g => g.id !== id)); };
-  const delTask = async (id: string) => { await del("hq_tasks", id); setTasks(tasks.filter(t => t.id !== id)); };
-  const delAAR = async (id: string) => { await del("hq_aar", id); setAars(aars.filter(a => a.id !== id)); };
-
-  // Notice helpers
-  const saveNotice = async () => {
-    if (!noticeForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_notices").insert({ title: noticeForm.title, content: noticeForm.content, pinned: noticeForm.pinned, author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const n: Notice = { id: data.id, title: data.title, content: data.content ?? "", date: data.created_at?.slice(0, 10) ?? "", pinned: data.pinned ?? false, author: data.author ?? "", readBy: data.read_by ?? [] };
-        setNotices([n, ...notices]);
-      }
-      setNoticeForm({ title: "", content: "", pinned: false }); flash("✓ 공지 저장됨");
-    } catch (e) { flash("저장 실패"); }
-  };
-  const togglePin = async (id: string) => {
-    const current = notices.find(n => n.id === id); if (!current) return;
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_notices").update({ pinned: !current.pinned }).eq("id", id);
-      setNotices(notices.map(n => n.id === id ? { ...n, pinned: !n.pinned } : n));
-    } catch {}
-  };
-  const delNotice = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_notices").delete().eq("id", id);
-      setNotices(notices.filter(n => n.id !== id));
-    } catch {}
-  };
-  const sortedNotices = [...notices].sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
-
-  // Feedback helpers
-  const saveFb = async () => {
-    if (!fbForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_feedback").insert({ type: fbForm.type, title: fbForm.title, description: fbForm.description, priority: fbForm.priority, status: fbForm.status, author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const f: Feedback = { id: data.id, type: data.type ?? "", title: data.title ?? "", description: data.description ?? "", priority: data.priority ?? "중간", status: data.status ?? "신규", date: data.created_at?.slice(0, 10) ?? "", author: data.author ?? "" };
-        setFeedbacks([f, ...feedbacks]);
-      }
-      setFbForm({ type: "버그", title: "", description: "", priority: "중간", status: "신규" }); flash("✓ 피드백 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const updateFbStatus = async (id: string, status: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_feedback").update({ status }).eq("id", id);
-      setFeedbacks(feedbacks.map(f => f.id === id ? { ...f, status } : f));
-    } catch {}
-  };
-  const delFb = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_feedback").delete().eq("id", id);
-      setFeedbacks(feedbacks.filter(f => f.id !== id));
-    } catch {}
-  };
-
-  // Memo helpers
-  const saveMemo = async () => {
-    if (!memoText.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_memos").insert({ content: memoText, author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const m: MemoItem = { id: data.id, content: data.content ?? "", time: data.created_at ? new Date(data.created_at).toLocaleString("ko-KR") : "" };
-        setMemos([m, ...memos]);
-      }
-      setMemoText(""); flash("✓ 메모 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const delMemo = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_memos").delete().eq("id", id);
-      setMemos(memos.filter(m => m.id !== id));
-    } catch {}
-  };
-
-  // Team helpers
-  const saveTeamMember = async () => {
-    if (!teamForm.name.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_team").insert({ name: teamForm.name, role: teamForm.role, email: teamForm.email, status: "active", hq_role: teamForm.hqRole }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const m: TeamMember = { id: data.id, name: data.name, role: data.role ?? "", email: data.email ?? "", status: data.status ?? "active", hqRole: data.hq_role ?? "팀원" };
-        setTeamMembers([...teamMembers, m]);
-      }
-      setTeamForm({ name: "", role: "", email: "", hqRole: "팀원" }); flash("✓ 멤버 추가됨");
-    } catch { flash("저장 실패"); }
-  };
-  const delTeamMember = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_team").delete().eq("id", id);
-      setTeamMembers(teamMembers.filter(m => m.id !== id));
-    } catch {}
-  };
-  const toggleTeamStatus = async (id: string) => {
-    const cycle: Record<string, "active" | "away" | "offline"> = { active: "away", away: "offline", offline: "active" };
-    const current = teamMembers.find(m => m.id === id); if (!current) return;
-    const newStatus = cycle[current.status];
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_team").update({ status: newStatus }).eq("id", id);
-      setTeamMembers(teamMembers.map(m => m.id === id ? { ...m, status: newStatus } : m));
-    } catch {}
-  };
-
-  // Files — Supabase Storage + hq_files table
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]; if (!f || !userId) return;
-    const s = sb(); if (!s) return;
-    const path = `${userId}/${Date.now()}_${f.name}`;
-    const { error } = await s.storage.from("hq-files").upload(path, f);
-    if (error) { flash("업로드 실패: " + error.message); e.target.value = ""; return; }
-    const { data: urlData } = s.storage.from("hq-files").getPublicUrl(path);
-    const sizeStr = f.size / 1024 < 1024 ? (f.size / 1024).toFixed(1) + "KB" : (f.size / 1024 / 1024).toFixed(1) + "MB";
-    const typeStr = f.type.split("/")[1] || "file";
-    try {
-      const { data, error: dbErr } = await s.from("hq_files").insert({ name: f.name, size: sizeStr, type: typeStr, url: urlData.publicUrl, folder_id: currentFolderId ?? null, uploaded_by: userName }).select().single();
-      if (dbErr) { flash("파일 정보 저장 실패"); e.target.value = ""; return; }
-      if (data) {
-        const item: FileItem = { id: data.id, name: data.name, size: data.size, type: data.type, url: data.url, uploadedAt: data.created_at ?? "", uploadedBy: data.uploaded_by ?? "", folderId: data.folder_id ?? undefined };
-        setFiles([item, ...files]);
-      }
-    } catch { flash("파일 정보 저장 실패"); e.target.value = ""; return; }
-    flash("✓ 업로드 완료");
-    e.target.value = "";
-  };
-  const delFile = async (id: string) => {
-    const s = sb(); if (!s) return;
-    const fileItem = files.find(f => f.id === id);
-    // Storage에서 삭제 (URL에서 path 추출 시도)
-    if (fileItem?.url) {
-      try { const storagePath = fileItem.url.split("/hq-files/")[1]; if (storagePath) await s.storage.from("hq-files").remove([decodeURIComponent(storagePath)]); } catch {}
-    }
-    try { await s.from("hq_files").delete().eq("id", id); } catch {}
-    setFiles(files.filter(f => f.id !== id));
-  };
-  const downloadFile = (f: FileItem) => { window.open(f.url, "_blank"); };
-
-  // Chat
-  const sendChat = async () => {
-    if (!chatInput.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_chat").insert({ sender: userName, text: chatInput.trim() }).select().single();
-      if (error) { flash("전송 실패: " + error.message); return; }
-      if (data) {
-        const msg: ChatMsg = { id: data.id, sender: data.sender ?? "", text: data.text ?? "", time: data.created_at ?? "" };
-        setChatMsgs([...chatMsgs, msg]);
-      }
-      setChatInput("");
-    } catch { flash("전송 실패"); }
-  };
-  const delChat = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_chat").delete().eq("id", id);
-      setChatMsgs(chatMsgs.filter(m => m.id !== id));
-    } catch {}
-  };
-
-  // Approval helpers
-  const saveApproval = async () => {
-    if (!approvalForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    let fileUrl: string | undefined; let fileName: string | undefined;
-    if (approvalFile && userId) {
-      const path = `${userId}/approval_${Date.now()}_${approvalFile.name}`;
-      const { error } = await s.storage.from("hq-files").upload(path, approvalFile);
-      if (!error) { const { data } = s.storage.from("hq-files").getPublicUrl(path); fileUrl = data.publicUrl; fileName = approvalFile.name; }
-    }
-    try {
-      const { data, error } = await s.from("hq_approvals").insert({ title: approvalForm.title, content: approvalForm.content, author: userName, approver: approvalForm.approver || userName, status: "대기", comment: "", file_url: fileUrl, file_name: fileName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const a: Approval = { id: data.id, title: data.title ?? "", content: data.content ?? "", author: data.author ?? "", approver: data.approver ?? "", status: data.status ?? "대기", comment: data.comment ?? "", fileUrl: data.file_url, fileName: data.file_name, date: data.created_at?.slice(0, 10) ?? "" };
-        setApprovals([a, ...approvals]);
-      }
-      setApprovalForm({ title: "", content: "", approver: "" }); setApprovalFile(null); flash("✓ 결재 요청됨");
-    } catch { flash("저장 실패"); }
-  };
-  const updateApproval = async (id: string, status: "승인" | "반려", comment?: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_approvals").update({ status, comment: comment ?? "" }).eq("id", id);
-      setApprovals(approvals.map(a => a.id === id ? { ...a, status, comment: comment ?? a.comment } : a));
-      flash(`✓ ${status}됨`);
-    } catch {}
-  };
-  const delApproval = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_approvals").delete().eq("id", id);
-      setApprovals(approvals.filter(a => a.id !== id));
-    } catch {}
-  };
-
-  // Decision helpers
-  const saveDecision = async () => {
-    if (!decisionForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_decisions").insert({ title: decisionForm.title, decision: decisionForm.decision, reason: decisionForm.reason, owner: decisionForm.owner, follow_up: decisionForm.followUp }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const d: Decision = { id: data.id, title: data.title ?? "", decision: data.decision ?? "", reason: data.reason ?? "", owner: data.owner ?? "", date: data.created_at?.slice(0, 10) ?? "", followUp: data.follow_up ?? "" };
-        setDecisions([d, ...decisions]);
-      }
-      setDecisionForm({ title: "", decision: "", reason: "", owner: "", followUp: "" }); flash("✓ 의사결정 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const delDecision = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_decisions").delete().eq("id", id);
-      setDecisions(decisions.filter(d => d.id !== id));
-    } catch {}
-  };
-
-  // Task comment helpers
-  const addTaskComment = (taskId: string) => {
-    if (!commentText.trim()) return;
-    const c: TaskComment = { id: Date.now().toString(), author: userName, text: commentText.trim(), time: new Date().toLocaleString("ko-KR") };
-    const next = { ...taskComments, [taskId]: [...(taskComments[taskId] ?? []), c] };
-    setTaskComments(next); localStorage.setItem("vela-hq-task-comments", JSON.stringify(next)); setCommentText("");
-  };
-
-  // Notice read tracking
-  const markNoticeRead = async (id: string) => {
-    setExpandedNotice(expandedNotice === id ? null : id);
-    const n = notices.find(x => x.id === id);
-    if (n && !(n.readBy ?? []).includes(userName)) {
-      const newReadBy = [...(n.readBy ?? []), userName];
-      setNotices(notices.map(x => x.id === id ? { ...x, readBy: newReadBy } : x));
-      const s = sb(); if (!s) return;
-      try { await s.from("hq_notices").update({ read_by: newReadBy }).eq("id", id); } catch {}
-    }
-  };
-
-  // Folder helpers
-  const createFolder = async () => {
-    if (!newFolderName.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_folders").insert({ name: newFolderName.trim(), parent_id: currentFolderId ?? null }).select().single();
-      if (error) { flash("생성 실패: " + error.message); return; }
-      if (data) {
-        const f: Folder = { id: data.id, name: data.name ?? "", parentId: data.parent_id ?? undefined };
-        setFolders([...folders, f]);
-      }
-      setNewFolderName(""); flash("✓ 폴더 생성됨");
-    } catch { flash("생성 실패"); }
-  };
-  const delFolder = async (id: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      // 하위 폴더도 삭제
-      await s.from("hq_folders").delete().eq("parent_id", id);
-      await s.from("hq_folders").delete().eq("id", id);
-      setFolders(folders.filter(f => f.id !== id && f.parentId !== id));
-    } catch {}
-  };
-  const getFolderBreadcrumb = (folderId?: string): Folder[] => {
-    const crumbs: Folder[] = []; let cur = folderId;
-    while (cur) { const f = folders.find(x => x.id === cur); if (f) { crumbs.unshift(f); cur = f.parentId; } else break; }
-    return crumbs;
-  };
-  const folderDepth = (folderId?: string): number => {
-    let d = 0; let cur = folderId;
-    while (cur) { const f = folders.find(x => x.id === cur); if (f) { d++; cur = f.parentId; } else break; }
-    return d;
-  };
-
-  // Report sub-type helpers
-  const saveDailyReport = async () => {
-    if (!dailyForm.content.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_reports").insert({ report_type: "daily", content: dailyForm.content, problems: dailyForm.problems, next_steps: dailyForm.nextSteps, status: "draft", author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const r: DailyReport = { id: data.id, date: data.created_at?.slice(0, 10) ?? dailyForm.date, content: data.content ?? "", problems: data.problems ?? "", nextSteps: data.next_steps ?? "", status: data.status ?? "draft", approver: data.approver };
-        setDailyReports([r, ...dailyReports]);
-      }
-      setDailyForm({ date: new Date().toISOString().slice(0, 10), content: "", problems: "", nextSteps: "" }); flash("✓ 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const saveIssueReport = async () => {
-    if (!issueForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_reports").insert({ report_type: "issue", title: issueForm.title, description: issueForm.description, priority: issueForm.priority, status: "draft", author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const r: IssueReport = { id: data.id, title: data.title ?? "", description: data.description ?? "", priority: data.priority ?? "중간", status: issueForm.status, reportStatus: data.status ?? "draft", approver: data.approver };
-        setIssueReports([r, ...issueReports]);
-      }
-      setIssueForm({ title: "", description: "", priority: "중간", status: "신규" }); flash("✓ 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const saveProjectReport = async () => {
-    if (!projectForm.title.trim()) return;
-    const s = sb(); if (!s) return;
-    try {
-      const { data, error } = await s.from("hq_reports").insert({ report_type: "project", title: projectForm.title, progress: Number(projectForm.progress) || 0, description: projectForm.description, deadline: projectForm.deadline || null, status: "draft", author: userName }).select().single();
-      if (error) { flash("저장 실패: " + error.message); return; }
-      if (data) {
-        const r: ProjectReport = { id: data.id, title: data.title ?? "", progress: data.progress ?? 0, description: data.description ?? "", deadline: data.deadline ?? "", reportStatus: data.status ?? "draft", approver: data.approver };
-        setProjectReports([r, ...projectReports]);
-      }
-      setProjectForm({ title: "", progress: "", description: "", deadline: "" }); flash("✓ 저장됨");
-    } catch { flash("저장 실패"); }
-  };
-  const updateDailyReportStatus = async (id: string, status: ReportStatus, approver?: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_reports").update({ status, approver: approver ?? null }).eq("id", id);
-      setDailyReports(dailyReports.map(r => r.id === id ? { ...r, status, approver: approver ?? r.approver } : r));
-      flash(`✓ ${REPORT_ST[status]?.label}`);
-    } catch {}
-  };
-  const updateIssueReportStatus = async (id: string, reportStatus: ReportStatus, approver?: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_reports").update({ status: reportStatus, approver: approver ?? null }).eq("id", id);
-      setIssueReports(issueReports.map(r => r.id === id ? { ...r, reportStatus, approver: approver ?? r.approver } : r));
-      flash(`✓ ${REPORT_ST[reportStatus]?.label}`);
-    } catch {}
-  };
-  const updateProjectReportStatus = async (id: string, reportStatus: ReportStatus, approver?: string) => {
-    const s = sb(); if (!s) return;
-    try {
-      await s.from("hq_reports").update({ status: reportStatus, approver: approver ?? null }).eq("id", id);
-      setProjectReports(projectReports.map(r => r.id === id ? { ...r, reportStatus, approver: approver ?? r.approver } : r));
-      flash(`✓ ${REPORT_ST[reportStatus]?.label}`);
-    } catch {}
-  };
-  const canApproveReport = myRole === "대표" || myRole === "이사" || myRole === "팀장";
-
-  // Report helper
-  const genReport = () => {
-    const now = new Date(); const weekAgo = new Date(now.getTime() - 7 * 86400000);
-    const weekStr = `${weekAgo.toISOString().slice(0, 10)} ~ ${now.toISOString().slice(0, 10)}`;
-    const kpi = latestKpi ? `매출: ${fmt(latestKpi.revenue)}원 | 사용자: ${fmt(latestKpi.users_count)} | 전환율: ${latestKpi.conversion_rate}% | 순이익: ${fmt(latestKpi.profit)}원` : "데이터 없음";
-    const goalLines = activeGoals.map(g => `- ${g.title}: ${g.target_value > 0 ? Math.round(g.current_value / g.target_value * 100) : 0}%`).join("\n") || "- 없음";
-    const weekTasks = tasks.filter(t => t.status === "completed"); const pendT = tasks.filter(t => t.status !== "completed" && t.status !== "failed");
-    const aarLine = aars[0] ? `목표: ${aars[0].goal} / 결과: ${aars[0].result}` : "없음";
-    return `[VELA 주간 보고서] ${weekStr}\n\n■ KPI\n${kpi}\n\n■ 목표 진행\n${goalLines}\n\n■ 태스크\n완료: ${weekTasks.length}건 / 미완료: ${pendT.length}건\n\n■ 최근 AAR\n${aarLine}`;
-  };
-
-  if (loading) return <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center"><div className="w-8 h-8 border-3 border-slate-300 border-t-slate-700 rounded-full animate-spin" /></div>;
+  // ── 미인증 ────────────────────────────────────────────
   if (!authorized) return (
-    <main className="min-h-screen bg-[#f0f2f5] pt-20 pb-16 px-4 flex items-center justify-center">
-      <div className="text-center"><div className="text-5xl mb-4">🔒</div><h2 className="text-xl font-bold text-slate-900 mb-2">접근 권한 없음</h2><p className="text-sm text-slate-500 mb-4">HQ는 관리자 전용입니다.</p><Link href="/" className="rounded-lg bg-slate-900 text-white font-semibold px-5 py-2.5 text-sm">홈으로</Link></div>
+    <main className="min-h-screen bg-[#F7F8FA] flex items-center justify-center px-4">
+      <div className="text-center bg-white rounded-3xl p-10 shadow-lg border border-slate-200/60 max-w-sm w-full">
+        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
+          <span className="text-3xl">🔒</span>
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">접근 권한 없음</h2>
+        <p className="text-sm text-slate-500 mb-6">VELA HQ는 등록된 팀원만 이용할 수 있습니다.</p>
+        <Link href="/" className="inline-block rounded-xl bg-[#3182F6] text-white font-semibold px-6 py-3 text-sm hover:bg-[#2672DE] transition-all">
+          홈으로 돌아가기
+        </Link>
+      </div>
     </main>
   );
 
-  const I = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none";
-  const C = "bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm";
-  const L = "block text-xs font-medium text-slate-600 mb-1";
-  const B = "rounded-lg bg-blue-600 text-white font-semibold px-4 py-2 text-sm hover:bg-blue-700 transition";
-
-  const activeGoals = goals.filter(g => g.status === "active");
-  const pendingTasks = tasks.filter(t => t.status !== "completed" && t.status !== "failed");
-  const completedTasks = tasks.filter(t => t.status === "completed");
-  const latestMett = metts[0];
-  const latestKpi = metrics[0];
-
   const allowedTabs = TABS.filter(t => ROLE_PERMISSIONS[myRole]?.includes(t.key));
+  const todayDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" });
+  const ActiveComponent = TAB_COMPONENTS[tab];
+  const activeTabInfo = TAB_MAP[tab];
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5]">
-      {/* 인트라넷 헤더 */}
-      <header className="bg-[#1a1a2e] text-white px-4 py-3 sticky top-0 z-50">
+    <div className="min-h-screen bg-[#F7F8FA]">
+      <style>{`.vela-nav,.vela-mobile-tab{display:none!important}body{padding-top:0!important}`}</style>
+
+      {/* ── 헤더 ───────────────────────────────────────── */}
+      <header className="bg-white border-b border-slate-200/80 px-4 lg:px-6 py-3 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold">🏛️ VELA HQ</span>
-            <span className="text-xs text-slate-400 hidden sm:inline">Internal Operations</span>
-            <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2">{myRole}</span>
+            {/* 모바일 햄버거 */}
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 transition">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
+            </button>
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-[#3182F6] rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-sm">V</span>
+              </div>
+              <span className="text-lg font-bold text-slate-900 tracking-tight hidden sm:block">VELA HQ</span>
+            </Link>
+            <span className="text-[11px] bg-[#3182F6]/10 text-[#3182F6] px-2.5 py-1 rounded-lg font-bold">{myRole}</span>
           </div>
+
           <div className="flex items-center gap-3">
-            {msg && <span className="text-xs bg-emerald-600 px-2 py-1 rounded">{msg}</span>}
-            <Link href="/dashboard" className="text-xs text-slate-400 hover:text-white">고객 대시보드 →</Link>
+            {msg && (
+              <span className="text-xs bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg font-semibold animate-pulse">
+                {msg}
+              </span>
+            )}
+            <span className="text-xs text-slate-400 hidden lg:block">{todayDate}</span>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center">
+                <span className="text-sm font-bold text-slate-600">{userName[0]}</span>
+              </div>
+              <span className="text-sm font-semibold text-slate-700 hidden sm:block">{userName}</span>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* 모바일: 가로 스크롤 탭 */}
-      <nav className="md:hidden bg-white border-b border-slate-200 sticky top-[48px] z-40">
-        <div className="flex overflow-x-auto">
-          {allowedTabs.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-shrink-0 px-4 py-3 text-xs font-semibold border-b-2 transition ${tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>
-              {t.icon} {t.label}
-            </button>
-          ))}
+      {/* ── 모바일 사이드바 오버레이 ─────────────────── */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setSidebarOpen(false)}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
+          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white border-r border-slate-200 shadow-2xl pt-16 overflow-y-auto"
+            onClick={e => e.stopPropagation()}>
+            <nav className="px-3 py-2">
+              {SIDEBAR_GROUPS.map(g => {
+                const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
+                if (groupTabs.length === 0) return null;
+                return (
+                  <div key={g.label} className="mb-4">
+                    <p className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{g.label}</p>
+                    {groupTabs.map(k => {
+                      const t = TAB_MAP[k]; if (!t) return null;
+                      return (
+                        <button key={k} onClick={() => { setTab(k); setSidebarOpen(false); }}
+                          className={`w-full text-left px-3 py-2.5 text-sm rounded-xl flex items-center gap-2.5 transition-all mb-0.5 ${
+                            tab === k ? "bg-[#3182F6]/10 text-[#3182F6] font-semibold" : "text-slate-600 hover:bg-slate-50"
+                          }`}>
+                          <span className="text-base">{t.icon}</span><span>{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </nav>
+          </aside>
         </div>
-      </nav>
+      )}
 
-      <div className="md:grid md:grid-cols-[220px_1fr]">
-        {/* 데스크톱 사이드바 */}
-        <aside className="hidden md:flex flex-col bg-[#1a1a2e] min-h-[calc(100vh-48px)] sticky top-[48px] overflow-y-auto">
-          <div className="flex-1 py-3">
+      <div className="flex">
+        {/* ── 데스크톱 사이드바 ──────────────────────── */}
+        <aside className="hidden md:flex flex-col w-[240px] min-h-[calc(100vh-53px)] sticky top-[53px] bg-white border-r border-slate-200/80 overflow-y-auto flex-shrink-0">
+          <nav className="flex-1 px-3 py-4">
             {SIDEBAR_GROUPS.map(g => {
               const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
               if (groupTabs.length === 0) return null;
               return (
-                <div key={g.label} className="mb-3">
-                  <p className="px-4 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">{g.label}</p>
+                <div key={g.label} className="mb-4">
+                  <p className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{g.label}</p>
                   {groupTabs.map(k => {
                     const t = TAB_MAP[k]; if (!t) return null;
-                    const active = tab === k;
                     return (
                       <button key={k} onClick={() => setTab(k)}
-                        className={`w-full text-left px-4 py-2 text-xs flex items-center gap-2 transition ${active ? "bg-white/10 text-white border-l-2 border-blue-500" : "text-slate-400 hover:text-white hover:bg-white/5 border-l-2 border-transparent"}`}>
-                        <span>{t.icon}</span><span>{t.label}</span>
+                        className={`w-full text-left px-3 py-2.5 text-sm rounded-xl flex items-center gap-2.5 transition-all mb-0.5 ${
+                          tab === k ? "bg-[#3182F6]/10 text-[#3182F6] font-semibold" : "text-slate-600 hover:bg-slate-50"
+                        }`}>
+                        <span className="text-base">{t.icon}</span><span>{t.label}</span>
                       </button>
                     );
                   })}
                 </div>
               );
             })}
-          </div>
-          <div className="px-4 py-3 border-t border-white/10">
-            <p className="text-xs text-white font-semibold">{userName}</p>
-            <p className="text-[10px] text-slate-500">{myRole}</p>
+          </nav>
+          <div className="px-4 py-4 border-t border-slate-100">
+            <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium">
+              <span>←</span><span>VELA 서비스로 이동</span>
+            </Link>
           </div>
         </aside>
 
-      <main className="max-w-5xl mx-auto px-4 py-5 w-full">
-
-        {/* 대시보드 */}
-        {tab === "dashboard" && (
-          <div className="space-y-4">
-            {/* 플랫폼 실시간 지표 */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { l: "총 사용자", v: platformStats.totalUsers + "명", c: "text-blue-600" },
-                { l: "오늘 가입", v: platformStats.todayUsers + "명", c: "text-emerald-600" },
-                { l: "총 매출", v: fmt(platformStats.totalRevenue) + "원", c: "text-slate-900" },
-                { l: "유료 구독자", v: platformStats.activeSubscribers + "명", c: "text-purple-600" },
-              ].map(s => (
-                <div key={s.l} className={C}><p className="text-[11px] text-slate-400">{s.l}</p><p className={`text-lg font-bold ${s.c}`}>{s.v}</p></div>
+        {/* ── 메인 콘텐츠 ──────────────────────────────── */}
+        <main className="flex-1 min-w-0">
+          {/* 모바일 탭바 */}
+          <nav className="md:hidden bg-white border-b border-slate-200/80 sticky top-[53px] z-30">
+            <div className="flex overflow-x-auto scrollbar-none">
+              {allowedTabs.map(t => (
+                <button key={t.key} onClick={() => setTab(t.key)}
+                  className={`flex-shrink-0 px-4 py-3 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                    tab === t.key
+                      ? "border-[#3182F6] text-[#3182F6]"
+                      : "border-transparent text-slate-400 hover:text-slate-600"
+                  }`}>
+                  {t.icon} {t.label}
+                </button>
               ))}
             </div>
+          </nav>
 
-            {/* 수동 KPI (매출/전환율 등) */}
-            {latestKpi && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { l: "수동 매출", v: fmt(latestKpi.revenue) + "원", c: "text-slate-700" },
-                  { l: "수동 사용자", v: fmt(latestKpi.users_count), c: "text-slate-700" },
-                  { l: "전환율", v: latestKpi.conversion_rate + "%", c: "text-slate-700" },
-                  { l: "수동 순이익", v: fmt(latestKpi.profit) + "원", c: latestKpi.profit >= 0 ? "text-emerald-600" : "text-red-500" },
-                ].map(s => (
-                  <div key={s.l} className={C}><p className="text-[11px] text-slate-400">{s.l}</p><p className={`text-sm font-bold ${s.c}`}>{s.v}</p></div>
-                ))}
-              </div>
-            )}
-
-            {/* KPI 차트 — 최근 7일 매출 */}
-            {metrics.length > 0 && (() => {
-              const last7 = [...metrics].sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
-              const maxRev = Math.max(...last7.map(m => m.revenue), 1);
-              return (
-                <div className={C}>
-                  <h3 className="text-sm font-bold mb-3">📊 최근 KPI 추이</h3>
-                  <div className="flex items-end gap-2 h-28">
-                    {last7.map(m => (
-                      <div key={m.id} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full bg-blue-500 rounded-t" style={{ height: `${Math.max((m.revenue / maxRev) * 100, 4)}%` }} />
-                        <span className={`w-2.5 h-2.5 rounded-full ${m.profit >= 0 ? "bg-emerald-500" : "bg-red-500"}`} />
-                        <span className="text-[9px] text-slate-400">{m.date.slice(5)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-3 mt-2 text-[10px] text-slate-400">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded inline-block" />매출</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-500 rounded-full inline-block" />흑자</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full inline-block" />적자</span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className={C}><p className="text-[11px] text-slate-400">진행중 태스크</p><p className="text-lg font-bold text-amber-600">{pendingTasks.length}<span className="text-xs text-slate-400 font-normal"> / {tasks.length}</span></p></div>
-              <div className={C}><p className="text-[11px] text-slate-400">목표 달성률</p><p className="text-lg font-bold text-blue-600">{activeGoals.length > 0 ? Math.round(activeGoals.reduce((s, g) => s + (g.target_value > 0 ? g.current_value / g.target_value * 100 : 0), 0) / activeGoals.length) : 0}%</p></div>
-              <div className={C}><p className="text-[11px] text-slate-400">미처리 피드백</p><p className="text-lg font-bold text-red-500">{feedbacks.filter(f => f.status !== "완료").length}</p></div>
-              <div className={C}><p className="text-[11px] text-slate-400">이번 달 AAR</p><p className="text-lg font-bold text-purple-600">{aars.filter(a => a.date.slice(0, 7) === new Date().toISOString().slice(0, 7)).length}</p></div>
-            </div>
-
-            {/* 이번 주 핵심 지시 */}
-            <div className={C}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold">📣 이번 주 핵심 지시</h3>
-                {directiveSaved && <span className="text-[10px] text-slate-400">저장됨: {directiveSaved}</span>}
-              </div>
-              <textarea className={`${I} h-16`} value={directive} placeholder="이번 주에 팀이 반드시 완수해야 할 것..."
-                onChange={e => { setDirective(e.target.value); saveDirective(e.target.value); }} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {/* 미션 */}
-              <div className={C}>
-                <div className="flex justify-between mb-2"><h3 className="text-sm font-bold">🎯 현재 미션</h3><button onClick={() => setTab("mett")} className="text-[11px] text-blue-600">수정 →</button></div>
-                {latestMett ? <p className="text-sm font-semibold text-slate-900">{latestMett.mission}</p> : <p className="text-xs text-slate-400">METT-TC를 작성하세요</p>}
-              </div>
-              {/* 목표 */}
-              <div className={C}>
-                <div className="flex justify-between mb-2"><h3 className="text-sm font-bold">🏆 목표 ({activeGoals.length}/2)</h3><button onClick={() => setTab("goal")} className="text-[11px] text-blue-600">관리 →</button></div>
-                {activeGoals.length === 0 ? <p className="text-xs text-slate-400">목표를 설정하세요</p> : activeGoals.map(g => (
-                  <div key={g.id} className="mb-2"><div className="flex justify-between text-xs mb-1"><span>{g.title}</span><span className="text-slate-400">{g.target_value > 0 ? Math.round(g.current_value / g.target_value * 100) : 0}%</span></div><div className="h-1.5 bg-slate-100 rounded-full"><div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.min(g.target_value > 0 ? g.current_value / g.target_value * 100 : 0, 100)}%` }} /></div></div>
-                ))}
-              </div>
-              {/* 태스크 */}
-              <div className={C}>
-                <div className="flex justify-between mb-2"><h3 className="text-sm font-bold">✅ 태스크 ({completedTasks.length}/{tasks.length})</h3><button onClick={() => setTab("task")} className="text-[11px] text-blue-600">관리 →</button></div>
-                {pendingTasks.length === 0 ? <p className="text-xs text-emerald-600 font-semibold">모두 완료!</p> : pendingTasks.slice(0, 5).map(t => (
-                  <div key={t.id} className="flex items-center gap-2 text-xs py-1"><span className={`w-1.5 h-1.5 rounded-full ${t.status === "in_progress" ? "bg-amber-400" : "bg-slate-300"}`} /><span className="truncate flex-1">{t.title}</span>{t.deadline && <span className="text-slate-400">{t.deadline.slice(5)}</span>}</div>
-                ))}
-              </div>
-              {/* AAR */}
-              <div className={C}>
-                <div className="flex justify-between mb-2"><h3 className="text-sm font-bold">📝 최근 AAR</h3><button onClick={() => setTab("aar")} className="text-[11px] text-blue-600">작성 →</button></div>
-                {aars[0] ? <div className="text-xs space-y-1"><p><b>목표:</b> {aars[0].goal}</p><p><b>결과:</b> {aars[0].result}</p>{aars[0].improvement && <p className="text-blue-600"><b>개선:</b> {aars[0].improvement}</p>}</div> : <p className="text-xs text-slate-400">AAR을 작성하세요</p>}
-              </div>
-            </div>
-
-            {/* 운영 리듬 */}
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">📅 운영 리듬</h3>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="bg-blue-50 rounded-lg p-2"><p className="font-bold text-blue-700 mb-1">일일</p><p className="text-blue-600">METT → KPI → Task → AAR</p></div>
-                <div className="bg-purple-50 rounded-lg p-2"><p className="font-bold text-purple-700 mb-1">주간</p><p className="text-purple-600">월:목표 / 수:점검 / 금:AAR</p></div>
-                <div className="bg-emerald-50 rounded-lg p-2"><p className="font-bold text-emerald-700 mb-1">월간</p><p className="text-emerald-600">KPI분석 / 전략수립</p></div>
+          {/* 페이지 헤더 */}
+          <div className="px-5 lg:px-8 pt-6 pb-2">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{activeTabInfo?.icon}</span>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">{activeTabInfo?.label}</h1>
               </div>
             </div>
           </div>
-        )}
 
-        {/* METT */}
-        {tab === "mett" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-3">🎯 상황 판단 (METT-TC)</h3>
-              <div className="space-y-2">
-                {([["mission", "M — 목표"], ["enemy", "E — 문제/경쟁"], ["terrain", "T — 시장/환경"], ["troops", "T — 자원"], ["time_constraint", "T — 일정"], ["civil", "C — 고객 반응"]] as const).map(([k, l]) => (
-                  <div key={k}><label className={L}>{l}</label><input className={I} value={mettForm[k]} onChange={e => setMettForm({ ...mettForm, [k]: e.target.value })} /></div>
-                ))}
-                <button onClick={saveMett} className={B}>저장</button>
-              </div>
-            </div>
-            {metts.map(m => (
-              <div key={m.id} className={C}>
-                <div className="flex justify-between text-[11px] text-slate-400 mb-2"><span>{new Date(m.created_at).toLocaleDateString("ko-KR")}</span><button onClick={() => delMett(m.id)} className="text-red-400 hover:text-red-600">삭제</button></div>
-                <p className="text-sm font-semibold mb-1">{m.mission}</p>
-                <div className="text-xs text-slate-500 space-y-0.5">
-                  {m.enemy && <p>문제: {m.enemy}</p>}{m.terrain && <p>환경: {m.terrain}</p>}{m.troops && <p>자원: {m.troops}</p>}{m.time_constraint && <p>일정: {m.time_constraint}</p>}{m.civil && <p>고객: {m.civil}</p>}
-                </div>
-              </div>
-            ))}
+          {/* 탭 콘텐츠 */}
+          <div className="px-5 lg:px-8 pb-10">
+            {userId && tab === "dashboard" ? (
+              <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
+            ) : userId ? (
+              <ActiveComponent userId={userId} userName={userName} myRole={myRole} flash={flash} />
+            ) : null}
           </div>
-        )}
-
-        {/* KPI */}
-        {tab === "kpi" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-3">📊 KPI 입력</h3>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div><label className={L}>날짜</label><input type="date" className={I} value={metricForm.date} onChange={e => setMetricForm({ ...metricForm, date: e.target.value })} /></div>
-                <div><label className={L}>매출</label><input className={I} inputMode="numeric" value={metricForm.revenue} onChange={e => setMetricForm({ ...metricForm, revenue: e.target.value })} /></div>
-                <div><label className={L}>사용자</label><input className={I} inputMode="numeric" value={metricForm.users_count} onChange={e => setMetricForm({ ...metricForm, users_count: e.target.value })} /></div>
-                <div><label className={L}>전환율(%)</label><input className={I} inputMode="decimal" value={metricForm.conversion_rate} onChange={e => setMetricForm({ ...metricForm, conversion_rate: e.target.value })} /></div>
-                <div><label className={L}>순이익</label><input className={I} inputMode="numeric" value={metricForm.profit} onChange={e => setMetricForm({ ...metricForm, profit: e.target.value })} /></div>
-              </div>
-              <button onClick={saveMetric} className={B}>저장</button>
-            </div>
-            {metrics.length > 0 && (
-              <div className={C}>
-                <table className="w-full text-xs"><thead><tr className="text-slate-400 border-b"><th className="py-1.5 text-left">날짜</th><th className="text-right">매출</th><th className="text-right">사용자</th><th className="text-right">전환율</th><th className="text-right">순이익</th><th className="w-6"></th></tr></thead>
-                <tbody>{metrics.slice(0, 15).map(m => (
-                  <tr key={m.id} className="border-b border-slate-50"><td className="py-1.5">{m.date}</td><td className="text-right">{fmt(m.revenue)}</td><td className="text-right">{m.users_count}</td><td className="text-right">{m.conversion_rate}%</td><td className={`text-right font-semibold ${m.profit >= 0 ? "text-emerald-600" : "text-red-500"}`}>{fmt(m.profit)}</td><td><button onClick={() => delMetric(m.id)} className="text-red-400 text-[10px]">✕</button></td></tr>
-                ))}</tbody></table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Goal */}
-        {tab === "goal" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-1">🏆 목표 추가</h3>
-              <p className="text-[11px] text-slate-400 mb-2">활성 목표 최대 2개</p>
-              <div className="space-y-2">
-                <div><label className={L}>목표</label><input className={I} value={goalForm.title} onChange={e => setGoalForm({ ...goalForm, title: e.target.value })} placeholder="예: 전환율 8% 달성" /></div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className={L}>목표 수치</label><input className={I} value={goalForm.target_value} onChange={e => setGoalForm({ ...goalForm, target_value: e.target.value })} /></div>
-                  <div><label className={L}>지표</label><select className={I} value={goalForm.metric_type} onChange={e => setGoalForm({ ...goalForm, metric_type: e.target.value })}><option value="revenue">매출</option><option value="users">사용자</option><option value="conversion">전환율</option><option value="profit">순이익</option></select></div>
-                  <div><label className={L}>시작일</label><input type="date" className={I} value={goalForm.start_date} onChange={e => setGoalForm({ ...goalForm, start_date: e.target.value })} /></div>
-                  <div><label className={L}>마감일</label><input type="date" className={I} value={goalForm.end_date} onChange={e => setGoalForm({ ...goalForm, end_date: e.target.value })} /></div>
-                </div>
-                <button onClick={saveGoal} className={B}>추가</button>
-              </div>
-            </div>
-            {goals.map(g => (
-              <div key={g.id} className={C}>
-                <div className="flex items-center justify-between mb-1"><h4 className="text-sm font-bold">{g.title}</h4><span className={`text-[10px] font-bold px-2 py-0.5 rounded ${ST[g.status]?.bg}`}>{ST[g.status]?.label}</span></div>
-                <div className="text-xs text-slate-400 mb-2">{g.start_date} ~ {g.end_date} · 목표: {g.target_value}</div>
-                <div className="h-1.5 bg-slate-100 rounded-full mb-2"><div className={`h-full rounded-full ${g.status === "completed" ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${Math.min(g.target_value > 0 ? g.current_value / g.target_value * 100 : 0, 100)}%` }} /></div>
-                <div className="flex gap-2 text-[11px]">
-                  {g.status === "active" && <><button onClick={() => updateGoal(g.id, "completed")} className="text-emerald-600 font-semibold">완료</button><button onClick={() => updateGoal(g.id, "failed")} className="text-red-500 font-semibold">실패</button></>}
-                  <button onClick={() => delGoal(g.id)} className="text-red-400 ml-auto">삭제</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Task */}
-        {tab === "task" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">✅ 태스크 추가</h3>
-              <div className="space-y-2">
-                <div><label className={L}>할 일</label><input className={I} value={taskForm.title} onChange={e => setTaskForm({ ...taskForm, title: e.target.value })} placeholder="구체적인 실행 항목" /></div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div><label className={L}>담당</label><input className={I} value={taskForm.assignee} onChange={e => setTaskForm({ ...taskForm, assignee: e.target.value })} /></div>
-                  <div><label className={L}>마감</label><input type="date" className={I} value={taskForm.deadline} onChange={e => setTaskForm({ ...taskForm, deadline: e.target.value })} /></div>
-                  <div><label className={L}>목표 연결</label><select className={I} value={taskForm.goal_id} onChange={e => setTaskForm({ ...taskForm, goal_id: e.target.value })}><option value="">없음</option>{activeGoals.map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></div>
-                </div>
-                <button onClick={saveTask} className={B}>추가</button>
-              </div>
-            </div>
-            {/* View toggle */}
-            <div className="flex gap-1">
-              <button onClick={() => setTaskView("list")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${taskView === "list" ? "bg-blue-600 text-white" : "bg-white text-slate-500 border border-slate-200"}`}>리스트</button>
-              <button onClick={() => setTaskView("kanban")} className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${taskView === "kanban" ? "bg-blue-600 text-white" : "bg-white text-slate-500 border border-slate-200"}`}>칸반</button>
-            </div>
-            {taskView === "list" ? (
-              <>
-                {tasks.map(t => (
-                  <div key={t.id} className={C}>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => updateTask(t.id, t.status === "completed" ? "planned" : "completed")} className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center text-[10px] ${t.status === "completed" ? "bg-emerald-500 text-white" : "border border-slate-300"}`}>{t.status === "completed" ? "✓" : ""}</button>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${t.status === "completed" ? "text-slate-400 line-through" : "text-slate-900"}`}>{t.title}</p>
-                        <div className="flex gap-2 text-[11px] text-slate-400">
-                          {t.assignee && <span>👤 {t.assignee}</span>}{t.deadline && <span>📅 {t.deadline.slice(5)}</span>}
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ST[t.status]?.bg ?? "bg-slate-100 text-slate-600"}`}>{ST[t.status]?.label ?? t.status}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => setExpandedTaskId(expandedTaskId === t.id ? null : t.id)} className="text-[10px] text-blue-500">💬 {(taskComments[t.id] ?? []).length}</button>
-                      <button onClick={() => delTask(t.id)} className="text-[10px] text-red-400">✕</button>
-                    </div>
-                    {expandedTaskId === t.id && (
-                      <div className="mt-2 pt-2 border-t border-slate-100">
-                        <p className="text-[11px] font-semibold text-slate-500 mb-1">코멘트</p>
-                        {(taskComments[t.id] ?? []).map(c => (
-                          <div key={c.id} className="text-xs text-slate-600 mb-1"><b>{c.author}</b> <span className="text-slate-400">{c.time}</span><p>{c.text}</p></div>
-                        ))}
-                        <div className="flex gap-1 mt-1">
-                          <input className={`${I} flex-1 !py-1 !text-xs`} value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="코멘트 입력..." onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTaskComment(t.id))} />
-                          <button onClick={() => addTaskComment(t.id)} className="text-[11px] text-blue-600 font-semibold px-2">등록</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </>
-            ) : (
-              /* Kanban View */
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {([["planned", "대기"], ["in_progress", "진행중"], ["review", "검토"], ["completed", "완료"]] as const).map(([status, label]) => {
-                  const col = tasks.filter(t => {
-                    if (status === "planned") return t.status === "planned" || t.status === "pending";
-                    return t.status === status;
-                  });
-                  const colColor: Record<string, string> = { planned: "border-slate-300", in_progress: "border-amber-400", review: "border-purple-400", completed: "border-emerald-400" };
-                  return (
-                    <div key={status} className={`bg-white rounded-lg border-t-2 ${colColor[status]} p-3 min-h-[200px]`}>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-xs font-bold text-slate-700">{label}</h4>
-                        <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{col.length}</span>
-                      </div>
-                      <div className="space-y-2">
-                        {col.map(t => (
-                          <div key={t.id} className="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
-                            <p className="text-xs font-semibold text-slate-800 mb-1.5">{t.title}</p>
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-2">
-                              {t.assignee && <span>👤 {t.assignee}</span>}
-                              {t.deadline && <span>📅 {t.deadline.slice(5)}</span>}
-                            </div>
-                            <select value={t.status === "pending" ? "planned" : t.status} onChange={e => updateTask(t.id, e.target.value)}
-                              className="w-full text-[10px] bg-white border border-slate-200 rounded px-1.5 py-1">
-                              <option value="planned">대기</option>
-                              <option value="in_progress">진행중</option>
-                              <option value="review">검토</option>
-                              <option value="completed">완료</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* AAR */}
-        {tab === "aar" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-1">📝 AAR 작성</h3>
-              <p className="text-[11px] text-slate-400 mb-2">목표 → 결과 → 차이 → 개선</p>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className={L}>날짜</label><input type="date" className={I} value={aarForm.date} onChange={e => setAarForm({ ...aarForm, date: e.target.value })} /></div>
-                  <div><label className={L}>목표</label><input className={I} value={aarForm.goal} onChange={e => setAarForm({ ...aarForm, goal: e.target.value })} /></div>
-                </div>
-                <div><label className={L}>결과</label><input className={I} value={aarForm.result} onChange={e => setAarForm({ ...aarForm, result: e.target.value })} /></div>
-                <div><label className={L}>차이 원인</label><textarea className={`${I} h-14`} value={aarForm.gap_reason} onChange={e => setAarForm({ ...aarForm, gap_reason: e.target.value })} /></div>
-                <div><label className={L}>개선안</label><textarea className={`${I} h-14`} value={aarForm.improvement} onChange={e => setAarForm({ ...aarForm, improvement: e.target.value })} /></div>
-                <button onClick={saveAAR} className={B}>저장</button>
-              </div>
-            </div>
-            {aars.map(a => (
-              <div key={a.id} className={C}>
-                <div className="flex justify-between text-[11px] text-slate-400 mb-1"><span>{a.date}</span><button onClick={() => delAAR(a.id)} className="text-red-400">삭제</button></div>
-                <div className="text-xs space-y-0.5"><p><b>목표:</b> {a.goal}</p><p><b>결과:</b> {a.result}</p>{a.gap_reason && <p className="text-amber-600"><b>차이:</b> {a.gap_reason}</p>}{a.improvement && <p className="text-blue-600"><b>개선:</b> {a.improvement}</p>}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Notice */}
-        {tab === "notice" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-3">📢 공지사항 작성</h3>
-              <div className="space-y-2">
-                <div><label className={L}>제목</label><input className={I} value={noticeForm.title} onChange={e => setNoticeForm({ ...noticeForm, title: e.target.value })} /></div>
-                <div><label className={L}>내용</label><textarea className={`${I} h-20`} value={noticeForm.content} onChange={e => setNoticeForm({ ...noticeForm, content: e.target.value })} /></div>
-                <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={noticeForm.pinned} onChange={e => setNoticeForm({ ...noticeForm, pinned: e.target.checked })} />📌 상단 고정</label>
-                <button onClick={saveNotice} className={B}>등록</button>
-              </div>
-            </div>
-            {sortedNotices.map(n => (
-              <div key={n.id} className={C}>
-                <div className="flex items-center justify-between mb-1">
-                  <button onClick={() => markNoticeRead(n.id)} className="text-sm font-bold text-left flex-1">{n.pinned && "📌 "}{n.title}</button>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0 ml-2">읽음 {(n.readBy ?? []).length}명 · {n.author ?? "관리자"} · {n.date}</span>
-                </div>
-                {expandedNotice === n.id && <p className="text-xs text-slate-600 whitespace-pre-wrap mt-1 mb-2">{n.content}</p>}
-                <div className="flex gap-2 text-[11px]">
-                  <button onClick={() => togglePin(n.id)} className="text-amber-600">{n.pinned ? "고정 해제" : "📌 고정"}</button>
-                  <button onClick={() => delNotice(n.id)} className="text-red-400 ml-auto">삭제</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Report */}
-        {tab === "report" && (
-          <div className="space-y-3">
-            <div className="flex gap-1 mb-2">
-              {([["daily", "일일"], ["weekly", "주간"], ["issue", "이슈"], ["project", "프로젝트"]] as const).map(([k, l]) => (
-                <button key={k} onClick={() => setReportType(k)} className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${reportType === k ? "bg-blue-600 text-white" : "bg-white text-slate-500 border border-slate-200"}`}>{l}</button>
-              ))}
-            </div>
-            {reportType === "weekly" && (
-              <div className={C}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-bold">📄 주간 보고서 (자동생성)</h3>
-                  <button onClick={() => { navigator.clipboard.writeText(genReport()); flash("📋 복사됨"); }} className={B}>📋 복사</button>
-                </div>
-                <pre className="text-xs text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg p-3 leading-relaxed">{genReport()}</pre>
-              </div>
-            )}
-            {reportType === "daily" && (<>
-              <div className={C}>
-                <h3 className="text-sm font-bold mb-2">일일 보고</h3>
-                <div className="space-y-2">
-                  <div><label className={L}>날짜</label><input type="date" className={I} value={dailyForm.date} onChange={e => setDailyForm({ ...dailyForm, date: e.target.value })} /></div>
-                  <div><label className={L}>업무 내용</label><textarea className={`${I} h-14`} value={dailyForm.content} onChange={e => setDailyForm({ ...dailyForm, content: e.target.value })} /></div>
-                  <div><label className={L}>문제점</label><input className={I} value={dailyForm.problems} onChange={e => setDailyForm({ ...dailyForm, problems: e.target.value })} /></div>
-                  <div><label className={L}>다음 계획</label><input className={I} value={dailyForm.nextSteps} onChange={e => setDailyForm({ ...dailyForm, nextSteps: e.target.value })} /></div>
-                  <button onClick={saveDailyReport} className={B}>저장</button>
-                </div>
-              </div>
-              {dailyReports.map(r => (<div key={r.id} className={C}>
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[11px] text-slate-400">{r.date}</p>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${REPORT_ST[r.status ?? "draft"]?.bg}`}>{REPORT_ST[r.status ?? "draft"]?.label}</span>
-                </div>
-                <p className="text-xs">{r.content}</p>{r.problems && <p className="text-xs text-red-500 mt-1">문제: {r.problems}</p>}{r.nextSteps && <p className="text-xs text-blue-600 mt-1">다음: {r.nextSteps}</p>}
-                {r.approver && <p className="text-[10px] text-slate-400 mt-1">결재자: {r.approver}</p>}
-                <div className="flex gap-2 mt-2 text-[11px]">
-                  {(!r.status || r.status === "draft") && <button onClick={() => updateDailyReportStatus(r.id, "submitted")} className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">제출</button>}
-                  {r.status === "submitted" && canApproveReport && <>
-                    <button onClick={() => updateDailyReportStatus(r.id, "approved", userName)} className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">승인</button>
-                    <button onClick={() => updateDailyReportStatus(r.id, "rejected", userName)} className="text-red-500 font-semibold bg-red-50 px-2 py-1 rounded">반려</button>
-                  </>}
-                  {r.status === "rejected" && <button onClick={() => updateDailyReportStatus(r.id, "draft")} className="text-slate-600 font-semibold bg-slate-50 px-2 py-1 rounded">재작성</button>}
-                </div>
-              </div>))}
-            </>)}
-            {reportType === "issue" && (<>
-              <div className={C}>
-                <h3 className="text-sm font-bold mb-2">이슈 보고</h3>
-                <div className="space-y-2">
-                  <div><label className={L}>제목</label><input className={I} value={issueForm.title} onChange={e => setIssueForm({ ...issueForm, title: e.target.value })} /></div>
-                  <div><label className={L}>설명</label><textarea className={`${I} h-14`} value={issueForm.description} onChange={e => setIssueForm({ ...issueForm, description: e.target.value })} /></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className={L}>우선순위</label><select className={I} value={issueForm.priority} onChange={e => setIssueForm({ ...issueForm, priority: e.target.value })}><option>높음</option><option>중간</option><option>낮음</option></select></div>
-                    <div><label className={L}>상태</label><select className={I} value={issueForm.status} onChange={e => setIssueForm({ ...issueForm, status: e.target.value })}><option>신규</option><option>진행</option><option>완료</option></select></div>
-                  </div>
-                  <button onClick={saveIssueReport} className={B}>저장</button>
-                </div>
-              </div>
-              {issueReports.map(r => (<div key={r.id} className={C}>
-                <div className="flex gap-2 text-[10px] mb-1 items-center">
-                  <span className="font-bold">{r.priority}</span><span className="text-slate-400">{r.status}</span>
-                  <span className={`ml-auto font-bold px-2 py-0.5 rounded ${REPORT_ST[r.reportStatus ?? "draft"]?.bg}`}>{REPORT_ST[r.reportStatus ?? "draft"]?.label}</span>
-                </div>
-                <p className="text-sm font-semibold">{r.title}</p>{r.description && <p className="text-xs text-slate-500 mt-1">{r.description}</p>}
-                {r.approver && <p className="text-[10px] text-slate-400 mt-1">결재자: {r.approver}</p>}
-                <div className="flex gap-2 mt-2 text-[11px]">
-                  {(!r.reportStatus || r.reportStatus === "draft") && <button onClick={() => updateIssueReportStatus(r.id, "submitted")} className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">제출</button>}
-                  {r.reportStatus === "submitted" && canApproveReport && <>
-                    <button onClick={() => updateIssueReportStatus(r.id, "approved", userName)} className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">승인</button>
-                    <button onClick={() => updateIssueReportStatus(r.id, "rejected", userName)} className="text-red-500 font-semibold bg-red-50 px-2 py-1 rounded">반려</button>
-                  </>}
-                  {r.reportStatus === "rejected" && <button onClick={() => updateIssueReportStatus(r.id, "draft")} className="text-slate-600 font-semibold bg-slate-50 px-2 py-1 rounded">재작성</button>}
-                </div>
-              </div>))}
-            </>)}
-            {reportType === "project" && (<>
-              <div className={C}>
-                <h3 className="text-sm font-bold mb-2">프로젝트 보고</h3>
-                <div className="space-y-2">
-                  <div><label className={L}>프로젝트명</label><input className={I} value={projectForm.title} onChange={e => setProjectForm({ ...projectForm, title: e.target.value })} /></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div><label className={L}>진행률(%)</label><input className={I} inputMode="numeric" value={projectForm.progress} onChange={e => setProjectForm({ ...projectForm, progress: e.target.value })} /></div>
-                    <div><label className={L}>마감일</label><input type="date" className={I} value={projectForm.deadline} onChange={e => setProjectForm({ ...projectForm, deadline: e.target.value })} /></div>
-                  </div>
-                  <div><label className={L}>설명</label><textarea className={`${I} h-14`} value={projectForm.description} onChange={e => setProjectForm({ ...projectForm, description: e.target.value })} /></div>
-                  <button onClick={saveProjectReport} className={B}>저장</button>
-                </div>
-              </div>
-              {projectReports.map(r => (<div key={r.id} className={C}>
-                <div className="flex justify-between mb-1 items-center">
-                  <p className="text-sm font-semibold">{r.title}</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${REPORT_ST[r.reportStatus ?? "draft"]?.bg}`}>{REPORT_ST[r.reportStatus ?? "draft"]?.label}</span>
-                    <span className="text-[11px] text-slate-400">{r.deadline}</span>
-                  </div>
-                </div>
-                <div className="h-1.5 bg-slate-100 rounded-full mb-1"><div className="h-full rounded-full bg-blue-500" style={{ width: `${Math.min(r.progress, 100)}%` }} /></div>
-                <p className="text-[11px] text-slate-400">{r.progress}%</p>{r.description && <p className="text-xs text-slate-500 mt-1">{r.description}</p>}
-                {r.approver && <p className="text-[10px] text-slate-400 mt-1">결재자: {r.approver}</p>}
-                <div className="flex gap-2 mt-2 text-[11px]">
-                  {(!r.reportStatus || r.reportStatus === "draft") && <button onClick={() => updateProjectReportStatus(r.id, "submitted")} className="text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">제출</button>}
-                  {r.reportStatus === "submitted" && canApproveReport && <>
-                    <button onClick={() => updateProjectReportStatus(r.id, "approved", userName)} className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">승인</button>
-                    <button onClick={() => updateProjectReportStatus(r.id, "rejected", userName)} className="text-red-500 font-semibold bg-red-50 px-2 py-1 rounded">반려</button>
-                  </>}
-                  {r.reportStatus === "rejected" && <button onClick={() => updateProjectReportStatus(r.id, "draft")} className="text-slate-600 font-semibold bg-slate-50 px-2 py-1 rounded">재작성</button>}
-                </div>
-              </div>))}
-            </>)}
-          </div>
-        )}
-
-        {/* Feedback */}
-        {tab === "feedback" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-3">🐛 피드백/버그 등록</h3>
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className={L}>유형</label><select className={I} value={fbForm.type} onChange={e => setFbForm({ ...fbForm, type: e.target.value })}><option>버그</option><option>기능요청</option><option>피드백</option></select></div>
-                  <div><label className={L}>우선순위</label><select className={I} value={fbForm.priority} onChange={e => setFbForm({ ...fbForm, priority: e.target.value })}><option>높음</option><option>중간</option><option>낮음</option></select></div>
-                </div>
-                <div><label className={L}>제목</label><input className={I} value={fbForm.title} onChange={e => setFbForm({ ...fbForm, title: e.target.value })} /></div>
-                <div><label className={L}>설명</label><textarea className={`${I} h-16`} value={fbForm.description} onChange={e => setFbForm({ ...fbForm, description: e.target.value })} /></div>
-                <button onClick={saveFb} className={B}>등록</button>
-              </div>
-            </div>
-            {feedbacks.map(f => {
-              const pBg: Record<string, string> = { "높음": "bg-red-100 text-red-700", "중간": "bg-amber-100 text-amber-700", "낮음": "bg-slate-100 text-slate-600" };
-              const sBg: Record<string, string> = { "신규": "bg-blue-100 text-blue-700", "진행": "bg-amber-100 text-amber-700", "완료": "bg-emerald-100 text-emerald-700" };
-              return (
-                <div key={f.id} className={C}>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${sBg[f.status] ?? ""}`}>{f.status}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${pBg[f.priority] ?? ""}`}>{f.priority}</span>
-                    <span className="text-[10px] text-slate-400">{f.type}</span>
-                    <span className="text-[10px] text-slate-400 ml-auto">{f.date}</span>
-                  </div>
-                  <p className="text-sm font-semibold mb-1">{f.title}</p>
-                  {f.description && <p className="text-xs text-slate-500 mb-2">{f.description}</p>}
-                  <div className="flex gap-2 text-[11px]">
-                    {f.status !== "완료" && <button onClick={() => updateFbStatus(f.id, f.status === "신규" ? "진행" : "완료")} className="text-blue-600 font-semibold">{f.status === "신규" ? "진행으로" : "완료로"}</button>}
-                    <button onClick={() => delFb(f.id)} className="text-red-400 ml-auto">삭제</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Calendar */}
-        {tab === "calendar" && (() => {
-          const { y, m } = calMonth;
-          const first = new Date(y, m, 1); const startDay = first.getDay();
-          const daysInMonth = new Date(y, m + 1, 0).getDate();
-          const today = new Date(); const todayStr = today.toISOString().slice(0, 10);
-          const cells: (number | null)[] = Array(startDay).fill(null);
-          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-          while (cells.length % 7 !== 0) cells.push(null);
-          const dateStr = (d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-          const taskDates = new Set(tasks.filter(t => t.deadline).map(t => t.deadline));
-          const goalDates = new Set(goals.flatMap(g => [g.end_date]));
-          return (
-            <div className="space-y-3">
-              <div className={C}>
-                <div className="flex items-center justify-between mb-3">
-                  <button onClick={() => setCalMonth(m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })} className="text-sm text-slate-500 hover:text-slate-800 px-2">◀</button>
-                  <h3 className="text-sm font-bold">{y}년 {m + 1}월</h3>
-                  <button onClick={() => setCalMonth(m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })} className="text-sm text-slate-500 hover:text-slate-800 px-2">▶</button>
-                </div>
-                <div className="grid grid-cols-7 text-center text-[11px]">
-                  {["일", "월", "화", "수", "목", "금", "토"].map(d => <div key={d} className="py-1 font-bold text-slate-400">{d}</div>)}
-                  {cells.map((d, i) => {
-                    if (!d) return <div key={i} className="py-2" />;
-                    const ds = dateStr(d); const isToday = ds === todayStr;
-                    const hasTask = taskDates.has(ds); const hasGoal = goalDates.has(ds);
-                    return (
-                      <div key={i} className={`py-2 rounded-lg text-xs relative ${isToday ? "bg-blue-600 text-white font-bold" : "text-slate-700"}`}>
-                        {d}
-                        {(hasTask || hasGoal) && <div className="flex justify-center gap-0.5 mt-0.5">{hasTask && <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />}{hasGoal && <span className="w-1 h-1 rounded-full bg-emerald-400 inline-block" />}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex gap-3 mt-2 text-[10px] text-slate-400"><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />태스크 마감</span><span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />목표 마감</span></div>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Memo */}
-        {tab === "memo" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">💬 빠른 메모</h3>
-              <textarea className={`${I} h-16`} value={memoText} onChange={e => setMemoText(e.target.value)} placeholder="메모를 입력하세요..." />
-              <button onClick={saveMemo} className={`${B} mt-2`}>저장</button>
-            </div>
-            {memos.map(m => (
-              <div key={m.id} className={C}>
-                <div className="flex justify-between text-[11px] text-slate-400 mb-1"><span>{m.time}</span><button onClick={() => delMemo(m.id)} className="text-red-400">삭제</button></div>
-                <p className="text-xs text-slate-700 whitespace-pre-wrap">{m.content}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Team */}
-        {tab === "team" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-3">👥 팀 멤버 추가</h3>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                <div><label className={L}>이름</label><input className={I} value={teamForm.name} onChange={e => setTeamForm({ ...teamForm, name: e.target.value })} placeholder="홍길동" /></div>
-                <div><label className={L}>역할</label><input className={I} value={teamForm.role} onChange={e => setTeamForm({ ...teamForm, role: e.target.value })} placeholder="개발자" /></div>
-                <div><label className={L}>이메일</label><input className={I} value={teamForm.email} onChange={e => setTeamForm({ ...teamForm, email: e.target.value })} placeholder="email@company.com" /></div>
-                <div><label className={L}>HQ 권한</label><select className={I} value={teamForm.hqRole} onChange={e => setTeamForm({ ...teamForm, hqRole: e.target.value as HQRole })}><option value="팀원">팀원</option><option value="팀장">팀장</option><option value="이사">이사</option><option value="대표">대표</option></select></div>
-              </div>
-              <button onClick={saveTeamMember} className={B}>추가</button>
-            </div>
-            {teamMembers.map(m => {
-              const statusDot: Record<string, string> = { active: "bg-emerald-500", away: "bg-amber-400", offline: "bg-slate-300" };
-              const statusLabel: Record<string, string> = { active: "활동", away: "자리비움", offline: "오프라인" };
-              return (
-                <div key={m.id} className={`${C} flex items-center gap-3`}>
-                  <button onClick={() => toggleTeamStatus(m.id)} className={`w-3 h-3 rounded-full flex-shrink-0 ${statusDot[m.status]}`} title={statusLabel[m.status]} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{m.name} <span className="text-xs text-slate-400 font-normal">{m.role}</span></p>
-                    {m.email && <p className="text-[11px] text-slate-400">{m.email}</p>}
-                  </div>
-                  <span className="text-[10px] text-slate-400">{statusLabel[m.status]}</span>
-                  <button onClick={() => delTeamMember(m.id)} className="text-[10px] text-red-400">✕</button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Timeline */}
-        {tab === "timeline" && (() => {
-          type TLItem = { time: string; icon: string; label: string; desc: string };
-          const items: TLItem[] = [];
-          metts.slice(0, 5).forEach(m => items.push({ time: m.created_at, icon: "🎯", label: "상황판단", desc: m.mission }));
-          metrics.slice(0, 5).forEach(m => items.push({ time: m.date + "T00:00:00", icon: "📊", label: "KPI", desc: `매출 ${fmt(m.revenue)}원 / 순이익 ${fmt(m.profit)}원` }));
-          goals.forEach(g => items.push({ time: g.start_date + "T00:00:00", icon: "🏆", label: `목표 [${ST[g.status]?.label ?? g.status}]`, desc: g.title }));
-          tasks.filter(t => t.status === "completed").slice(0, 5).forEach(t => items.push({ time: t.deadline ? t.deadline + "T00:00:00" : new Date().toISOString(), icon: "✅", label: "태스크 완료", desc: t.title }));
-          aars.slice(0, 5).forEach(a => items.push({ time: a.date + "T00:00:00", icon: "📝", label: "AAR", desc: a.goal }));
-          notices.slice(0, 5).forEach(n => items.push({ time: n.date + "T00:00:00", icon: "📢", label: "공지", desc: n.title }));
-          items.sort((a, b) => b.time.localeCompare(a.time));
-          return (
-            <div className="space-y-0">
-              <h3 className="text-sm font-bold mb-4">🕐 활동 타임라인</h3>
-              {items.length === 0 ? <p className="text-xs text-slate-400">데이터가 없습니다.</p> : (
-                <div className="relative border-l-2 border-slate-200 ml-3">
-                  {items.map((it, i) => (
-                    <div key={i} className="relative pl-6 pb-5">
-                      <span className="absolute -left-[11px] top-0.5 w-5 h-5 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center text-[10px]">{it.icon}</span>
-                      <p className="text-[10px] text-slate-400 mb-0.5">{new Date(it.time).toLocaleDateString("ko-KR")} · {it.label}</p>
-                      <p className="text-xs text-slate-800">{it.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
-        {/* Files */}
-        {tab === "files" && (() => {
-          const breadcrumb = getFolderBreadcrumb(currentFolderId);
-          const subFolders = folders.filter(f => currentFolderId ? f.parentId === currentFolderId : !f.parentId);
-          const currentFiles = files.filter(f => (f.folderId ?? undefined) === currentFolderId);
-          const canCreateSubfolder = folderDepth(currentFolderId) < 2;
-          return (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">📁 파일 공유</h3>
-              {/* Breadcrumb */}
-              <div className="flex items-center gap-1 text-xs mb-3 flex-wrap">
-                <button onClick={() => setCurrentFolderId(undefined)} className={`hover:text-blue-600 ${!currentFolderId ? "font-bold text-blue-600" : "text-slate-500"}`}>전체</button>
-                {breadcrumb.map(f => (
-                  <span key={f.id} className="flex items-center gap-1">
-                    <span className="text-slate-300">/</span>
-                    <button onClick={() => setCurrentFolderId(f.id)} className={`hover:text-blue-600 ${currentFolderId === f.id ? "font-bold text-blue-600" : "text-slate-500"}`}>{f.name}</button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2 items-end flex-wrap">
-                <label className={`${B} cursor-pointer inline-block`}>
-                  📎 파일 업로드
-                  <input type="file" className="hidden" onChange={e => { handleFileUpload(e); }} />
-                </label>
-                {canCreateSubfolder && (
-                  <div className="flex gap-1">
-                    <input className={`${I} !py-1.5 !text-xs w-32`} value={newFolderName} onChange={e => setNewFolderName(e.target.value)} placeholder="새 폴더명" onKeyDown={e => e.key === "Enter" && createFolder()} />
-                    <button onClick={createFolder} className="text-xs text-blue-600 font-semibold bg-blue-50 px-3 py-1.5 rounded-lg">+ 폴더</button>
-                  </div>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">Supabase Storage · 파일당 50MB · 총 1GB</p>
-            </div>
-            {/* Subfolders */}
-            {subFolders.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {subFolders.map(f => (
-                  <button key={f.id} onClick={() => setCurrentFolderId(f.id)} className={`${C} flex items-center gap-2 hover:bg-slate-50 group text-left`}>
-                    <span className="text-xl">📂</span>
-                    <span className="text-xs font-semibold text-slate-700 truncate flex-1">{f.name}</span>
-                    <button onClick={e => { e.stopPropagation(); delFolder(f.id); }} className="text-[10px] text-red-400 opacity-0 group-hover:opacity-100">✕</button>
-                  </button>
-                ))}
-              </div>
-            )}
-            {/* Files in current folder */}
-            {currentFiles.length === 0 && subFolders.length === 0 ? (
-              <div className={C}><p className="text-xs text-slate-400 text-center py-6">이 폴더에 파일이 없습니다</p></div>
-            ) : currentFiles.map(f => (
-              <div key={f.id} className={`${C} flex items-center gap-3`}>
-                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-lg flex-shrink-0">
-                  {f.type.includes("pdf") ? "📄" : f.type.includes("image") || f.type.includes("png") || f.type.includes("jpg") ? "🖼️" : f.type.includes("sheet") || f.type.includes("csv") ? "📊" : "📎"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-900 truncate">{f.name}</p>
-                  <p className="text-[11px] text-slate-400">{f.size} · {f.uploadedBy} · {new Date(f.uploadedAt).toLocaleDateString("ko-KR")}</p>
-                </div>
-                <button onClick={() => downloadFile(f)} className="text-[11px] text-blue-600 font-semibold flex-shrink-0">다운</button>
-                <button onClick={() => delFile(f.id)} className="text-[11px] text-red-400 flex-shrink-0">삭제</button>
-              </div>
-            ))}
-          </div>
-          );
-        })()}
-
-        {/* Chat */}
-        {tab === "chat" && (
-          <div className="flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
-            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
-              {chatMsgs.length === 0 && <p className="text-xs text-slate-400 text-center py-12">아직 메시지가 없습니다</p>}
-              {chatMsgs.map(m => (
-                <div key={m.id} className="flex items-start gap-2 group">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">{m.sender[0]}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-700">{m.sender}</span>
-                      <span className="text-[10px] text-slate-400">{new Date(m.time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
-                      <button onClick={() => delChat(m.id)} className="text-[10px] text-red-400 opacity-0 group-hover:opacity-100">삭제</button>
-                    </div>
-                    <p className="text-sm text-slate-900 mt-0.5 whitespace-pre-wrap">{m.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 sticky bottom-0 bg-[#f0f2f5] pt-2">
-              <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendChat())}
-                placeholder="메시지 입력..." className={`${I} flex-1`} />
-              <button onClick={sendChat} className={B}>전송</button>
-            </div>
-          </div>
-        )}
-        {/* Approval */}
-        {tab === "approval" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">📋 결재 요청</h3>
-              <div className="space-y-2">
-                <div><label className={L}>제목</label><input className={I} value={approvalForm.title} onChange={e => setApprovalForm({ ...approvalForm, title: e.target.value })} placeholder="결재 제목" /></div>
-                <div><label className={L}>내용</label><textarea className={`${I} h-20`} value={approvalForm.content} onChange={e => setApprovalForm({ ...approvalForm, content: e.target.value })} placeholder="결재 내용을 상세히 작성하세요" /></div>
-                <div><label className={L}>결재자</label><input className={I} value={approvalForm.approver} onChange={e => setApprovalForm({ ...approvalForm, approver: e.target.value })} placeholder="결재자 이름" /></div>
-                <div>
-                  <label className={L}>첨부파일</label>
-                  <label className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg cursor-pointer text-xs text-slate-600 hover:bg-slate-100">
-                    📎 {approvalFile ? approvalFile.name : "파일 선택"}
-                    <input type="file" className="hidden" onChange={e => setApprovalFile(e.target.files?.[0] ?? null)} />
-                  </label>
-                </div>
-                <button onClick={saveApproval} className={B}>결재 요청</button>
-              </div>
-            </div>
-
-            {approvals.length === 0 ? (
-              <div className={C}><p className="text-xs text-slate-400 text-center py-6">결재 요청이 없습니다</p></div>
-            ) : approvals.map(a => (
-              <div key={a.id} className={C}>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-bold">{a.title}</h4>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${a.status === "승인" ? "bg-emerald-100 text-emerald-700" : a.status === "반려" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>{a.status}</span>
-                </div>
-                <p className="text-xs text-slate-600 whitespace-pre-wrap mb-2">{a.content}</p>
-                <div className="flex gap-3 text-[11px] text-slate-400 mb-2">
-                  <span>요청: {a.author}</span>
-                  <span>결재자: {a.approver}</span>
-                  <span>{a.date}</span>
-                </div>
-                {a.fileName && <a href={a.fileUrl} target="_blank" className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg mb-2">📎 {a.fileName}</a>}
-                {a.comment && <p className="text-xs bg-slate-50 rounded-lg px-3 py-2 mb-2"><b>{a.status === "승인" ? "승인 의견:" : "반려 사유:"}</b> {a.comment}</p>}
-                {a.status === "대기" && (
-                  <div className="flex gap-2">
-                    <button onClick={() => { const c = prompt("승인 의견 (선택)"); updateApproval(a.id, "승인", c ?? ""); }} className="text-[11px] text-emerald-600 font-semibold bg-emerald-50 px-3 py-1.5 rounded-lg">✅ 승인</button>
-                    <button onClick={() => { const c = prompt("반려 사유"); if (c) updateApproval(a.id, "반려", c); }} className="text-[11px] text-red-500 font-semibold bg-red-50 px-3 py-1.5 rounded-lg">❌ 반려</button>
-                    <button onClick={() => delApproval(a.id)} className="text-[11px] text-red-400 ml-auto">삭제</button>
-                  </div>
-                )}
-                {a.status !== "대기" && (
-                  <button onClick={() => delApproval(a.id)} className="text-[11px] text-red-400">삭제</button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Decision Log */}
-        {tab === "decision" && (
-          <div className="space-y-3">
-            <div className={C}>
-              <h3 className="text-sm font-bold mb-2">⚖️ 의사결정 기록</h3>
-              <div className="space-y-2">
-                <div><label className={L}>제목</label><input className={I} value={decisionForm.title} onChange={e => setDecisionForm({ ...decisionForm, title: e.target.value })} placeholder="의사결정 주제" /></div>
-                <div><label className={L}>결정 사항</label><textarea className={`${I} h-14`} value={decisionForm.decision} onChange={e => setDecisionForm({ ...decisionForm, decision: e.target.value })} /></div>
-                <div><label className={L}>근거/이유</label><textarea className={`${I} h-14`} value={decisionForm.reason} onChange={e => setDecisionForm({ ...decisionForm, reason: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className={L}>책임자</label><input className={I} value={decisionForm.owner} onChange={e => setDecisionForm({ ...decisionForm, owner: e.target.value })} /></div>
-                  <div><label className={L}>후속 조치</label><input className={I} value={decisionForm.followUp} onChange={e => setDecisionForm({ ...decisionForm, followUp: e.target.value })} /></div>
-                </div>
-                <button onClick={saveDecision} className={B}>저장</button>
-              </div>
-            </div>
-            {decisions.map(d => (
-              <div key={d.id} className={C}>
-                <div className="flex justify-between mb-1"><h4 className="text-sm font-bold">{d.title}</h4><span className="text-[11px] text-slate-400">{d.date} · {d.owner}</span></div>
-                <p className="text-xs mb-1"><b>결정:</b> {d.decision}</p>
-                {d.reason && <p className="text-xs text-slate-500 mb-1"><b>근거:</b> {d.reason}</p>}
-                {d.followUp && <p className="text-xs text-blue-600 mb-1"><b>후속:</b> {d.followUp}</p>}
-                <button onClick={() => delDecision(d.id)} className="text-[11px] text-red-400">삭제</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-      </div>{/* close grid */}
+        </main>
+      </div>
     </div>
   );
 }
