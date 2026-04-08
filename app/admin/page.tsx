@@ -3,10 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
-import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
 import { fmt } from "@/lib/vela";
 
 export default function AdminPage() {
@@ -21,7 +17,6 @@ export default function AdminPage() {
     totalSnapshots: 0,
   });
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [signupChart, setSignupChart] = useState<any[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
 
   useEffect(() => {

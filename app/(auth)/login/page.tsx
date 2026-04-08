@@ -7,27 +7,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
-type Tab = "email" | "phone";
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/";
 
-  const [tab, setTab] = useState<Tab>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSocialLogin(provider: "kakao") {
     const supabase = createSupabaseBrowserClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider as any,
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
       },
@@ -46,30 +39,6 @@ function LoginForm() {
       setLoading(false);
       return;
     }
-    router.refresh();
-    router.push(nextPath);
-    setLoading(false);
-  }
-
-  async function handleSendOtp() {
-    setLoading(true);
-    setError("");
-    const supabase = createSupabaseBrowserClient();
-    const formatted = phone.startsWith("0") ? "+82" + phone.slice(1) : phone;
-    const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
-    if (error) { setError(error.message); setLoading(false); return; }
-    setOtpSent(true);
-    setLoading(false);
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const supabase = createSupabaseBrowserClient();
-    const formatted = phone.startsWith("0") ? "+82" + phone.slice(1) : phone;
-    const { error } = await supabase.auth.verifyOtp({ phone: formatted, token: otp, type: "sms" });
-    if (error) { setError(error.message); setLoading(false); return; }
     router.refresh();
     router.push(nextPath);
     setLoading(false);

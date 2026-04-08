@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import ToolNav from "@/components/ToolNav";
 import { useCloudSync } from "@/lib/useCloudSync";
@@ -68,12 +68,12 @@ export default function HiringPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const { data: hiringData, update: setHiringData, status, userId } = useCloudSync<{ employees: Employee[]; contract: ContractForm }>(KEY, { employees: [{ ...defaultEmp }], contract: defaultContract });
-  const simData = useSimulatorData();
+  useSimulatorData();
 
   // Cloud sync로 employees/contract 동기화
   useEffect(() => { setEmployees(hiringData.employees); setContract(hiringData.contract); }, [hiringData]);
-  const syncEmployees = (emps: Employee[]) => { setEmployees(emps); setHiringData({ ...hiringData, employees: emps }); };
-  const syncContract = (c: ContractForm) => { setContract(c); setHiringData({ ...hiringData, contract: c }); };
+  const _syncEmployees = (emps: Employee[]) => { setEmployees(emps); setHiringData({ ...hiringData, employees: emps }); };
+  const _syncContract = (c: ContractForm) => { setContract(c); setHiringData({ ...hiringData, contract: c }); };
 
   const inputCls = "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-blue-400 focus:bg-white outline-none transition";
   const cardCls = "bg-white ring-1 ring-slate-200 rounded-3xl p-6 mb-4";
@@ -81,7 +81,7 @@ export default function HiringPage() {
 
   /* 급여 계산 */
   const calcEmployee = (emp: Employee) => {
-    const monthlyHours = emp.weeklyHours / emp.weeklyDays * (365.25 / 12 / 7) * emp.weeklyDays; // ≒ 주급기준
+    const _monthlyHours = emp.weeklyHours / emp.weeklyDays * (365.25 / 12 / 7) * emp.weeklyDays; // ≒ 주급기준
     const basePay = emp.type === "정규직" ? emp.hourlyWage : Math.round(emp.hourlyWage * 209);
     const weeklyPay = emp.weeklyHours >= 15 ? Math.round(emp.hourlyWage * (emp.weeklyHours / emp.weeklyDays)) : 0; // 주휴수당
     const monthlyWeekly = Math.round(weeklyPay * 4.345);

@@ -42,6 +42,11 @@ function SignUpForm() {
   const [seats, setSeats] = useState("");
   const [address, setAddress] = useState("");
 
+  // 동의
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
+
   function validateStep1() {
     if (!name.trim()) { setError("이름을 입력해주세요."); return false; }
     if (!email.trim()) { setError("이메일을 입력해주세요."); return false; }
@@ -53,6 +58,10 @@ function SignUpForm() {
   }
 
   async function handleSubmit() {
+    if (!agreeTerms || !agreePrivacy) {
+      setError("이용약관과 개인정보 수집·이용에 동의해주세요.");
+      return;
+    }
     setLoading(true);
     setError("");
     const supabase = createSupabaseBrowserClient();
@@ -85,10 +94,17 @@ function SignUpForm() {
 
     // 출시 이벤트: 가입 시 프로 플랜 자동 부여
     if (signInData?.user) {
+      const now = new Date().toISOString();
       await supabase.from("profiles").upsert({
         id: signInData.user.id,
         plan: "standard",
-        plan_updated_at: new Date().toISOString(),
+        plan_updated_at: now,
+        terms_agreed_at: now,
+        terms_version: "2026-01-01",
+        privacy_agreed_at: now,
+        privacy_version: "2026-01-01",
+        marketing_agreed: agreeMarketing,
+        marketing_agreed_at: agreeMarketing ? now : null,
       }, { onConflict: "id" });
 
       // 추천인 기록
@@ -264,6 +280,41 @@ function SignUpForm() {
                 </div>
               </div>
 
+              {/* 약관 동의 */}
+              <div className="bg-slate-50 rounded-2xl p-4 space-y-2.5">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input type="checkbox" checked={agreeTerms && agreePrivacy && agreeMarketing}
+                    onChange={e => { setAgreeTerms(e.target.checked); setAgreePrivacy(e.target.checked); setAgreeMarketing(e.target.checked); }}
+                    className="accent-slate-900 mt-0.5 w-4 h-4" />
+                  <span className="text-sm font-bold text-slate-900">전체 동의</span>
+                </label>
+                <div className="border-t border-slate-200 pt-2 space-y-2">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={agreeTerms} onChange={e => setAgreeTerms(e.target.checked)}
+                      className="accent-slate-900 mt-0.5 w-4 h-4" />
+                    <span className="text-xs text-slate-700">
+                      <span className="text-red-500 font-bold">[필수]</span>{" "}
+                      <Link href="/terms" target="_blank" className="underline underline-offset-2">이용약관</Link>에 동의합니다
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={agreePrivacy} onChange={e => setAgreePrivacy(e.target.checked)}
+                      className="accent-slate-900 mt-0.5 w-4 h-4" />
+                    <span className="text-xs text-slate-700">
+                      <span className="text-red-500 font-bold">[필수]</span>{" "}
+                      <Link href="/privacy" target="_blank" className="underline underline-offset-2">개인정보 수집·이용</Link>에 동의합니다
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={agreeMarketing} onChange={e => setAgreeMarketing(e.target.checked)}
+                      className="accent-slate-900 mt-0.5 w-4 h-4" />
+                    <span className="text-xs text-slate-500">
+                      <span className="text-slate-400">[선택]</span> 마케팅 정보 수신에 동의합니다
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               {error && <p className="text-xs text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>}
 
               <div className="flex gap-3">
@@ -271,7 +322,7 @@ function SignUpForm() {
                   className="flex-shrink-0 rounded-2xl border border-slate-200 px-5 py-3.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">
                   ← 이전
                 </button>
-                <button onClick={handleSubmit} disabled={loading}
+                <button onClick={handleSubmit} disabled={loading || !agreeTerms || !agreePrivacy}
                   className="flex-1 rounded-2xl bg-slate-900 py-3.5 text-sm font-semibold text-white hover:bg-slate-700 transition disabled:opacity-50">
                   {loading ? "가입 중..." : "✅ 가입 완료"}
                 </button>

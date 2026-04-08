@@ -2,7 +2,6 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 import { PLANS as PLAN_DATA } from "@/lib/plans";

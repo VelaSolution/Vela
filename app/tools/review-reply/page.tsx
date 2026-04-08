@@ -38,7 +38,7 @@ const INDUSTRY_LABEL: Record<string, string> = {
 
 export default function ReviewReplyPage() {
   const simData = useSimulatorData();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();

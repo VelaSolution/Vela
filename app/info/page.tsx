@@ -2,7 +2,6 @@
 
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { PLANS } from "@/lib/plans";
 import { t } from "@/lib/i18n";
 

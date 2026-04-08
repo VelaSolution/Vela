@@ -60,7 +60,11 @@
       "Bash(/usr/bin/grep -rl \"60A5FA\\\\|1B64DA\" /Users/mnhyuk/my-rose-app/app /Users/mnhyuk/my-rose-app/components --include=\"*.tsx\" --include=\"*.css\")",
       "Bash(/usr/bin/grep -rl \"3B82F6\\\\|3b82f6\\\\|1B64DA\\\\|1b64da\\\\|60A5FA\\\\|60a5fa\" /Users/mnhyuk/my-rose-app/app /Users/mnhyuk/my-rose-app/components /Users/mnhyuk/my-rose-app/lib --include=\"*.tsx\" --include=\"*.css\" --include=\"*.ts\")",
       "Bash(/usr/bin/grep:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npx eslint:*)",
+      "Bash(/usr/bin/awk -F/ '{print $NF}')",
+      "Bash(/usr/bin/awk -F: '{print $1}')",
+      "Bash(/usr/bin/awk '{print $NF}')"
     ]
   }
 }

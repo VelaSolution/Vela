@@ -98,7 +98,7 @@ export default function MonthlyInputPage() {
   const profit = sales - totalCost;
   const netMargin = sales > 0 ? (profit / sales) * 100 : 0;
   const laborRatio = sales > 0 ? (num(values.laborCost ?? "") / sales) * 100 : 0;
-  const cogsRatio = sales > 0 ? (cogs / sales) * 100 : 0;
+  const _cogsRatio = sales > 0 ? (cogs / sales) * 100 : 0;
 
   async function handleSave() {
     if (!sales) return;

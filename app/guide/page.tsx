@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { t, getLocale } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 
 const SECTIONS = [
   {

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import DataBackup from "@/components/DataBackup";
 import DarkModeToggle from "@/components/DarkModeToggle";
+import ConsentManager from "@/components/ConsentManager";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import type { User } from "@supabase/supabase-js";
@@ -427,6 +428,9 @@ export default function ProfilePage() {
           {/* ── 계정 관리 탭 ── */}
           {tab==="account" && (
             <div className="space-y-4">
+
+              {/* 동의 관리 */}
+              <ConsentManager userId={user?.id ?? null} />
 
               {/* 다크모드 */}
               <DarkModeToggle />

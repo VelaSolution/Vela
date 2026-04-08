@@ -1,7 +1,6 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
-import PlanGate from "@/components/PlanGate";
 import UpgradeModal from "@/components/UpgradeModal";
 import { usePlan } from "@/lib/usePlan";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,7 +12,7 @@ import {
 } from "recharts";
 import {
   INDUSTRY_CONFIG, INDUSTRY_BENCHMARK, sanitizeFullForm, calcResult, calcSimulation,
-  calcStrategies, calcAnalysis, calcReverse, saveHistory, loadHistory, deleteHistory,
+  calcStrategies, calcAnalysis, saveHistory, loadHistory, deleteHistory,
   fmt, pct,
   type FullForm, type HistoryRecord,
 } from "@/lib/vela";
@@ -28,7 +27,7 @@ type Briefing = { currentStatus: string; mainIssue: string; topAction: string; a
 type GuideItem = { title: string; items: { action: string; detail: string }[] };
 
 function buildGuides(form: FullForm, result: ReturnType<typeof calcResult>): GuideItem[] {
-  const config = INDUSTRY_CONFIG[form.industry];
+  const _config = INDUSTRY_CONFIG[form.industry];
   return [
     {
       title: "객단가를 높이는 방법",

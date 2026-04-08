@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useCloudSync } from "@/lib/useCloudSync";
 import CloudSyncBadge from "@/components/CloudSyncBadge";

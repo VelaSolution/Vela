@@ -6,7 +6,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import OnboardingModal from "@/components/OnboardingModal";
 import { PLANS } from "@/lib/plans";
 import MonthlyReminder from "@/components/MonthlyReminder";
-import PromoModal from "@/components/PromoModal";
 import EventBanner from "@/components/EventBanner";
 import EventPopup from "@/components/EventPopup";
 import { useTranslation } from "@/lib/i18n";

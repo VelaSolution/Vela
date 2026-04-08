@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSimulatorData, type SimulatorSnapshot } from "@/lib/useSimulatorData";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 

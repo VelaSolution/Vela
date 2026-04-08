@@ -2,12 +2,11 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function PaymentSuccessContent() {
   const params = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState<"loading" | "success" | "fail">("loading");
   const [msg, setMsg] = useState("");
 

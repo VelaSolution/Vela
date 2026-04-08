@@ -7,7 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 function ResetForm() {
   const router = useRouter();
-  const params = useSearchParams();
+  const _params = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);

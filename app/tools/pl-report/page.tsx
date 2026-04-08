@@ -166,7 +166,7 @@ export default function PLReportPage() {
   const ebt = operatingProfit - loanPayment;
   const tax = Math.max(0, ebt * (num(form.taxRate) / 100));
   const netProfit = ebt - tax;
-  const cashFlow = netProfit; // simplified
+  const _cashFlow = netProfit; // simplified
 
   const profitColor = netProfit >= 0 ? "#059669" : "#EF4444";
 

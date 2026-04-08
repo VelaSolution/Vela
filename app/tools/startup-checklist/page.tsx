@@ -187,7 +187,7 @@ export default function StartupChecklistPage() {
 
   const [expandedPhase, setExpandedPhase] = useState<string | null>("planning");
   const [openMemo, setOpenMemo] = useState<string | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const _printRef = useRef<HTMLDivElement>(null);
 
   const changeIndustry = useCallback((ind: string) => {
     updateSavedData({ ...savedData, industry: ind, checked: {}, memos: {} });

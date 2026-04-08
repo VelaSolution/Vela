@@ -40,12 +40,6 @@ export default function NavBar() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocaleState] = useState<Locale>("ko");
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
-
   useEffect(() => { setLocaleState(getLocale()); }, []);
 
   useEffect(() => {
@@ -61,13 +55,6 @@ export default function NavBar() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     window.location.href = "/";
-  };
-
-  const toggleDarkMode = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("vela-theme", next ? "dark" : "light");
   };
 
   return (
