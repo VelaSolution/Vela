@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import NavBar from "@/components/NavBar";
 import CommandPalette from "@/components/CommandPalette";
 import InstallPrompt from "@/components/InstallPrompt";
+import MobileTabBar from "@/components/MobileTabBar";
 import ClientProviders from "@/components/ClientProviders";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -85,6 +86,7 @@ export default function RootLayout({
         <CommandPalette />
         <InstallPrompt />
         {children}
+        <MobileTabBar />
         <ClientProviders />
       </body>
     </html>
