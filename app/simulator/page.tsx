@@ -1996,23 +1996,20 @@ export default function Page() {
               </div>
             </section>
 
-            {/* 모바일 하단 고정 네비게이션 */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-3" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}>
+            {/* 모바일 네비게이션 — 콘텐츠 하단 (고정 아님) */}
+            <div className="lg:hidden mt-4 mb-6">
               {stepError && <p className="text-xs text-red-500 text-center mb-2">{stepError}</p>}
-              <div className="flex gap-3 max-w-lg mx-auto">
+              <div className="flex gap-3">
                 {step > 1 && (
-                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-5 py-3.5 text-sm font-semibold text-slate-600">이전</button>
+                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600">이전</button>
                 )}
                 {step < 3 ? (
-                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 py-3.5 text-sm font-bold text-white active:scale-[0.98]">다음 단계</button>
+                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">다음 단계 →</button>
                 ) : (
-                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 py-3.5 text-sm font-bold text-white active:scale-[0.98]">결과 보기</button>
+                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">결과 보기 →</button>
                 )}
               </div>
             </div>
-
-            {/* 모바일 하단 고정 버튼 여백 */}
-            <div className="lg:hidden h-28" />
           </div>
 
           <div className="hidden lg:block relative">

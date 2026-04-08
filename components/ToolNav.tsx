@@ -81,8 +81,8 @@ export default function ToolNav() {
   return (
     <>
       {/* 모바일: 고정 하단 탭 바 */}
-      <nav role="navigation" aria-label="도구 네비게이션" className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <div className="flex items-center justify-around h-14">
+      <nav role="navigation" aria-label="도구 네비게이션" className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center justify-around h-12">
           {MOBILE_TABS.map(tab => {
             const isActive = tab.href === "/tools"
               ? pathname === "/tools"

@@ -95,6 +95,9 @@ export default function NavBar() {
                   {user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "내 계정"}
                 </Link>
                 <Link href="/dashboard" className="vela-btn-dashboard">{t("nav.dashboard", locale)}</Link>
+                {["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"].includes(user.email ?? "") && (
+                  <Link href="/hq" className="vela-btn-dashboard" style={{background:"#1a1a2e",color:"#fff"}}>🏛️ HQ</Link>
+                )}
                 <button className="vela-btn-logout" onClick={handleLogout}>{t("nav.logout", locale)}</button>
                 <Link href="/simulator" className="vela-btn-start">{t("nav.simulator", locale)}</Link>
               </>

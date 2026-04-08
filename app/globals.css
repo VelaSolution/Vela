@@ -150,8 +150,15 @@ html.capacitor-app main { padding-bottom: 100px !important; }
 /* 앱에서 시뮬레이터 데스크탑 미리보기 숨기기 */
 html.capacitor-app .hidden.lg\:block.relative { display: none !important; }
 
-  /* 슬라이더 터치 영역 확보 */
-  input[type="range"] { height: 28px !important; }
+/* ── iOS 스타일 토글 ─────────────────────────────── */
+.w-11.h-6.rounded-full { width: 51px !important; height: 31px !important; border-radius: 16px !important; padding: 2px !important; }
+.w-11.h-6.rounded-full > span { width: 27px !important; height: 27px !important; border-radius: 14px !important; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.w-11.h-6.rounded-full > span.translate-x-5 { transform: translateX(20px) !important; }
+.w-11.h-6.rounded-full > span.translate-x-0\.5 { transform: translateX(0px) !important; }
+
+/* ── 슬라이더 ─────────────────────────────────────── */
+input[type="range"] { height: 6px !important; -webkit-appearance: none; appearance: none; background: #E5E8EB; border-radius: 3px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #3182F6; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; }
 
 /* ── 모바일 최적화 (max-width: 768px) ─────────────── */
 @media (max-width: 768px) {
