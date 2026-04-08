@@ -80,6 +80,7 @@ export default function HQPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
+  const [platformStats, setPlatformStats] = useState({ totalUsers: 0, todayUsers: 0, totalRevenue: 0, activeSubscribers: 0 });
   const directiveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
@@ -102,6 +103,23 @@ export default function HQPage() {
         setUserId(user.id);
         const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
         if (adminEmails.includes(user.email ?? "")) setAuthorized(true);
+
+        // 플랫폼 실시간 통계
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          const [usersRes, todayRes, revenueRes, subsRes] = await Promise.all([
+            sb.from("profiles").select("id", { count: "exact", head: true }),
+            sb.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", today),
+            sb.from("payments").select("amount").eq("status", "done"),
+            sb.from("payments").select("id", { count: "exact", head: true }).eq("status", "done"),
+          ]);
+          setPlatformStats({
+            totalUsers: usersRes.count ?? 0,
+            todayUsers: todayRes.count ?? 0,
+            totalRevenue: (revenueRes.data ?? []).reduce((s: number, r: { amount?: number }) => s + (r.amount ?? 0), 0),
+            activeSubscribers: subsRes.count ?? 0,
+          });
+        } catch { /* noop */ }
 
         const [m, met, g, t, a] = await Promise.all([
           sb.from("hq_mett").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(10),
@@ -315,17 +333,31 @@ export default function HQPage() {
         {/* 대시보드 */}
         {tab === "dashboard" && (
           <div className="space-y-4">
-            {/* KPI 카드 */}
+            {/* 플랫폼 실시간 지표 */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { l: "매출", v: latestKpi ? fmt(latestKpi.revenue) + "원" : "—", c: "text-slate-900" },
-                { l: "사용자", v: latestKpi ? fmt(latestKpi.users_count) : "—", c: "text-blue-600" },
-                { l: "전환율", v: latestKpi ? latestKpi.conversion_rate + "%" : "—", c: "text-purple-600" },
-                { l: "순이익", v: latestKpi ? fmt(latestKpi.profit) + "원" : "—", c: (latestKpi?.profit ?? 0) >= 0 ? "text-emerald-600" : "text-red-500" },
+                { l: "총 사용자", v: platformStats.totalUsers + "명", c: "text-blue-600" },
+                { l: "오늘 가입", v: platformStats.todayUsers + "명", c: "text-emerald-600" },
+                { l: "총 매출", v: fmt(platformStats.totalRevenue) + "원", c: "text-slate-900" },
+                { l: "유료 구독자", v: platformStats.activeSubscribers + "명", c: "text-purple-600" },
               ].map(s => (
                 <div key={s.l} className={C}><p className="text-[11px] text-slate-400">{s.l}</p><p className={`text-lg font-bold ${s.c}`}>{s.v}</p></div>
               ))}
             </div>
+
+            {/* 수동 KPI (매출/전환율 등) */}
+            {latestKpi && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { l: "수동 매출", v: fmt(latestKpi.revenue) + "원", c: "text-slate-700" },
+                  { l: "수동 사용자", v: fmt(latestKpi.users_count), c: "text-slate-700" },
+                  { l: "전환율", v: latestKpi.conversion_rate + "%", c: "text-slate-700" },
+                  { l: "수동 순이익", v: fmt(latestKpi.profit) + "원", c: latestKpi.profit >= 0 ? "text-emerald-600" : "text-red-500" },
+                ].map(s => (
+                  <div key={s.l} className={C}><p className="text-[11px] text-slate-400">{s.l}</p><p className={`text-sm font-bold ${s.c}`}>{s.v}</p></div>
+                ))}
+              </div>
+            )}
 
             {/* KPI 차트 — 최근 7일 매출 */}
             {metrics.length > 0 && (() => {
