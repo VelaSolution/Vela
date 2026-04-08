@@ -89,6 +89,7 @@ html.capacitor-app body {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom) + 20px) !important;
 }
 
 /* ── 모바일 최적화 (max-width: 768px) ─────────────── */
@@ -125,7 +126,7 @@ html.capacitor-app body {
   .mb-8 { margin-bottom: 20px !important; }
 
   /* 하단 탭바 공간 확보 */
-  .pb-16 { padding-bottom: 80px !important; }
+  .pb-16 { padding-bottom: 100px !important; }
 
   /* 카드 border-radius 모바일 축소 */
   .rounded-3xl { border-radius: 20px !important; }
