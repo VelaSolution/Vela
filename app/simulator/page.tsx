@@ -640,35 +640,36 @@ function PreviewBar({ form }: { form: FullForm }) {
 
   return (
     <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 p-5 lg:p-5 max-lg:p-3">
-      {/* 데스크톱: 풀 버전 */}
+      {/* 데스크톱: 컴팩트 버전 */}
       <div className="hidden lg:block">
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-[13px] font-semibold text-slate-500">실시간 미리보기</p>
-          <span className={`text-[13px] font-bold ${isProfit ? "text-emerald-500" : "text-red-500"}`}>
-            {isProfit ? "흑자" : "적자"} · 순이익률 {pct(result.netMargin)}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[12px] font-semibold text-slate-400">미리보기</p>
+          <span className={`text-[11px] font-bold ${isProfit ? "text-emerald-500" : "text-red-500"}`}>
+            {isProfit ? "흑자" : "적자"}
           </span>
         </div>
 
-        <div className="text-center mb-4">
-          <p className="text-[13px] text-slate-400">세후 실수령</p>
-          <p className={`text-[32px] font-extrabold tracking-tight mt-1 ${result.netProfit >= 0 ? "text-slate-900" : "text-red-500"}`}>
-            {result.netProfit >= 0 ? "+" : ""}{fmt(result.netProfit)}<span className="text-[18px] font-bold text-slate-400">원</span>
+        <div className="text-center mb-3">
+          <p className="text-[11px] text-slate-400">세후 실수령</p>
+          <p className={`text-[22px] font-extrabold tracking-tight mt-0.5 ${result.netProfit >= 0 ? "text-slate-900" : "text-red-500"}`}>
+            {result.netProfit >= 0 ? "+" : ""}{fmt(result.netProfit)}<span className="text-[13px] font-bold text-slate-400">원</span>
           </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">순이익률 {pct(result.netMargin)}</p>
         </div>
 
-        <div className="h-1.5 w-full rounded-full bg-slate-100 mb-4">
+        <div className="h-1 w-full rounded-full bg-slate-100 mb-3">
           <div className={`h-full rounded-full transition-all duration-500 ${isProfit ? "bg-blue-500" : "bg-red-400"}`} style={{ width: `${Math.min(Math.abs(result.netMargin) * 5, 100)}%` }} />
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1.5">
           {[
             { label: "월 매출", value: result.totalSales },
             { label: "세전 순이익", value: result.profit, colored: true },
             { label: "현금흐름", value: result.cashFlow, colored: true },
           ].map((item) => (
-            <div key={item.label} className="text-center">
+            <div key={item.label} className="flex items-center justify-between">
               <p className="text-[11px] text-slate-400">{item.label}</p>
-              <p className={`text-[14px] font-bold mt-0.5 ${item.colored ? (item.value >= 0 ? "text-slate-900" : "text-red-500") : "text-slate-900"}`}>{fmt(item.value)}원</p>
+              <p className={`text-[12px] font-bold ${item.colored ? (item.value >= 0 ? "text-slate-900" : "text-red-500") : "text-slate-900"}`}>{fmt(item.value)}원</p>
             </div>
           ))}
         </div>
@@ -1973,7 +1974,7 @@ export default function Page() {
           <PreviewBar form={form} />
         </div>
 
-        <div className="lg:grid lg:grid-cols-[1fr_440px] lg:gap-6 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[1fr_320px] lg:gap-5 lg:items-start">
 
           <div className="space-y-6">
             {step === 1 && <Step1 form={form} update={update} errors={step1Errors} loadIndustryDefaults={loadIndustryDefaults} applyPosResult={applyPosResult} plan={plan} />}
@@ -2015,7 +2016,7 @@ export default function Page() {
           </div>
 
           <div className="hidden lg:block relative">
-            <div className="fixed top-20 w-[420px] space-y-4" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
+            <div className="fixed top-20 w-[300px] space-y-3" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
               <PreviewBar form={form} />
               <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">입력 단계</p>
