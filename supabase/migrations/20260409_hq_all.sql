@@ -171,6 +171,18 @@ CREATE TABLE IF NOT EXISTS hq_files (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- ── 일정/캘린더 ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS hq_events (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  date DATE NOT NULL,
+  end_date DATE,
+  color TEXT DEFAULT 'blue',
+  author TEXT NOT NULL,
+  memo TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- ── 하이윅스 신규 테이블 ───────────────────────────────
 
 CREATE TABLE IF NOT EXISTS hq_attendance (
@@ -285,6 +297,7 @@ DO $$ BEGIN
   ALTER TABLE hq_reports ENABLE ROW LEVEL SECURITY;
   ALTER TABLE hq_folders ENABLE ROW LEVEL SECURITY;
   ALTER TABLE hq_files ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE hq_events ENABLE ROW LEVEL SECURITY;
   ALTER TABLE hq_attendance ENABLE ROW LEVEL SECURITY;
   ALTER TABLE hq_leave ENABLE ROW LEVEL SECURITY;
   ALTER TABLE hq_contacts ENABLE ROW LEVEL SECURITY;
@@ -321,7 +334,7 @@ DECLARE
   tbl TEXT;
 BEGIN
   FOREACH tbl IN ARRAY ARRAY[
-    'hq_notices','hq_feedback','hq_memos','hq_team','hq_chat',
+    'hq_events','hq_notices','hq_feedback','hq_memos','hq_team','hq_chat',
     'hq_decisions','hq_approvals','hq_reports','hq_folders','hq_files',
     'hq_attendance','hq_leave','hq_contacts','hq_board','hq_board_comments',
     'hq_surveys','hq_survey_responses','hq_wiki'
