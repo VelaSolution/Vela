@@ -149,7 +149,7 @@ export default function HQPage() {
         }
       } catch {}
       try { const d = localStorage.getItem("vela-hq-directive"); if (d) setDirective(d); } catch {}
-      try { const fl = localStorage.getItem("vela-hq-files"); if (fl) setFiles(JSON.parse(fl)); } catch {}
+      // files는 Supabase Storage에서 로드 (별도 처리 불필요 — 업로드 시 state에 추가)
       try { const ch = localStorage.getItem("vela-hq-chat"); if (ch) setChatMsgs(JSON.parse(ch)); } catch {}
       setLoading(false);
     })();
@@ -247,20 +247,25 @@ export default function HQPage() {
     const next = teamMembers.map(m => m.id === id ? { ...m, status: cycle[m.status] } : m); setTeamMembers(next); localStorage.setItem("vela-hq-team", JSON.stringify(next));
   };
 
-  // Files
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]; if (!f) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const item: FileItem = { id: Date.now().toString(), name: f.name, size: (f.size / 1024).toFixed(1) + "KB", type: f.type.split("/")[1] || "file", url: reader.result as string, uploadedAt: new Date().toISOString(), uploadedBy: "대표" };
-      const next = [item, ...files]; setFiles(next); localStorage.setItem("vela-hq-files", JSON.stringify(next));
-      flash("✓ 업로드 완료");
-    };
-    reader.readAsDataURL(f);
+  // Files — Supabase Storage
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f || !userId) return;
+    const s = sb(); if (!s) return;
+    const path = `${userId}/${Date.now()}_${f.name}`;
+    const { error } = await s.storage.from("hq-files").upload(path, f);
+    if (error) { flash("업로드 실패: " + error.message); e.target.value = ""; return; }
+    const { data: urlData } = s.storage.from("hq-files").getPublicUrl(path);
+    const item: FileItem = { id: path, name: f.name, size: (f.size / 1024 < 1024 ? (f.size / 1024).toFixed(1) + "KB" : (f.size / 1024 / 1024).toFixed(1) + "MB"), type: f.type.split("/")[1] || "file", url: urlData.publicUrl, uploadedAt: new Date().toISOString(), uploadedBy: "대표" };
+    setFiles([item, ...files]);
+    flash("✓ 업로드 완료");
     e.target.value = "";
   };
-  const delFile = (id: string) => { const next = files.filter(f => f.id !== id); setFiles(next); localStorage.setItem("vela-hq-files", JSON.stringify(next)); };
-  const downloadFile = (f: FileItem) => { const a = document.createElement("a"); a.href = f.url; a.download = f.name; a.click(); };
+  const delFile = async (id: string) => {
+    const s = sb(); if (!s) return;
+    await s.storage.from("hq-files").remove([id]);
+    setFiles(files.filter(f => f.id !== id));
+  };
+  const downloadFile = (f: FileItem) => { window.open(f.url, "_blank"); };
 
   // Chat
   const sendChat = () => {
@@ -778,7 +783,7 @@ export default function HQPage() {
                 📎 파일 업로드
                 <input type="file" className="hidden" onChange={handleFileUpload} />
               </label>
-              <p className="text-[11px] text-slate-400 mt-2">파일은 브라우저 로컬에 저장됩니다 (용량 제한 있음)</p>
+              <p className="text-[11px] text-slate-400 mt-2">Supabase Storage · 파일당 50MB · 총 1GB</p>
             </div>
             {files.length === 0 ? (
               <div className={C}><p className="text-xs text-slate-400 text-center py-6">업로드된 파일이 없습니다</p></div>
