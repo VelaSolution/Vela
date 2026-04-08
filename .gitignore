@@ -42,3 +42,9 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# old code
+/Vela/
+
+# capacitor build cache
+/ios/App/.next/
