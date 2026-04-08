@@ -43,30 +43,27 @@ describe("Input Sanitization", () => {
 // ─────────────────────────────────────────
 describe("CSV Injection Prevention", () => {
   it("escapes cells starting with = (formula injection)", () => {
-    // Current implementation does NOT strip formula prefixes — documenting this risk
     const formulaCell = "=CMD('calc')";
     const escaped = escapeCSVCell(formulaCell);
-    // The cell does NOT contain comma/quote/newline, so it passes through unchanged.
-    // This is a known limitation — CSV formula injection is possible.
-    expect(escaped).toBe(formulaCell);
+    expect(escaped).toBe("'=CMD('calc')");
   });
 
   it("escapes cells starting with + (formula injection)", () => {
     const cell = "+1+2";
     const escaped = escapeCSVCell(cell);
-    expect(escaped).toBe(cell);
+    expect(escaped).toBe("'+1+2");
   });
 
   it("escapes cells starting with - (formula injection)", () => {
     const cell = "-1-2";
     const escaped = escapeCSVCell(cell);
-    expect(escaped).toBe(cell);
+    expect(escaped).toBe("'-1-2");
   });
 
   it("escapes cells starting with @ (formula injection)", () => {
     const cell = "@SUM(A1:A10)";
     const escaped = escapeCSVCell(cell);
-    expect(escaped).toBe(cell);
+    expect(escaped).toBe("'@SUM(A1:A10)");
   });
 
   it("handles null and undefined gracefully", () => {
@@ -191,11 +188,9 @@ describe("Tax — security & edge cases", () => {
   it("compareTax handles negative profit", () => {
     const r = compareTax(-5000, 3000);
     expect(r.personal.incomeTax).toBe(0);
-    // healthIns = -5000 * 0.0709 = -354 (negative — a bug: should clamp to 0)
-    // Documenting actual behavior: total can be negative due to unclamped healthIns
-    expect(r.personal.incomeTax).toBe(0);
     expect(r.personal.localTax).toBe(0);
-    expect(r.personal.healthIns).toBe(Math.round(-5000 * 0.0709));
+    // healthIns is now clamped to 0 for negative profit
+    expect(r.personal.healthIns).toBe(0);
   });
 
   it("compareTax handles negative ceoSalary", () => {
