@@ -306,10 +306,10 @@ function SummaryCard({ title, value, sub, highlight }: { title: string; value: s
   const bg = highlight === "good" ? "bg-emerald-50 ring-emerald-200" : highlight === "bad" ? "bg-red-50 ring-red-200" : highlight === "info" ? "bg-blue-50 ring-blue-200" : "bg-white ring-slate-200";
   const tc = highlight === "good" ? "text-emerald-700" : highlight === "bad" ? "text-red-700" : highlight === "info" ? "text-blue-700" : "text-slate-900";
   return (
-    <div className={`rounded-3xl p-5 shadow-sm ring-1 ${bg}`}>
-      <p className="text-sm text-slate-500">{title}</p>
-      <p className={`mt-2 text-2xl font-bold tracking-tight ${tc}`}>{value}</p>
-      {sub && <p className="mt-2 text-xs text-slate-400">{sub}</p>}
+    <div className={`rounded-3xl p-4 shadow-sm ring-1 ${bg}`}>
+      <p className="text-xs text-slate-500">{title}</p>
+      <p className={`mt-1.5 text-lg font-bold tracking-tight ${tc}`}>{value}</p>
+      {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
     </div>
   );
 }
@@ -800,7 +800,7 @@ function ResultContent() {
         </section>
 
         {/* 핵심 요약 — 6개 */}
-        <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <SummaryCard title="월 총 매출" value={`${fmt(result.totalSales)}원`} sub={`홀 ${fmt(result.hallSales)} · 배달 ${fmt(result.deliveryNetSales)}`} />
           <SummaryCard title="세전 순이익" value={`${fmt(result.profit)}원`} sub={`순이익률 ${pct(result.netMargin)}`} highlight={isProfit ? "good" : "bad"} />
           <SummaryCard title="세후 실수령" value={`${fmt(result.netProfit)}원`} sub={`세금 ${fmt(result.incomeTax + result.vatBurden)}원 차감`} highlight={result.netProfit >= 0 ? "good" : "bad"} />

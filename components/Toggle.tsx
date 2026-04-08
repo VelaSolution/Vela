@@ -1,6 +1,6 @@
 "use client";
 
-/** iOS 스타일 토글 스위치 — 모든 곳에서 동일한 모양 */
+/** iOS 설정 화면과 동일한 토글 스위치 */
 export default function Toggle({
   checked,
   onChange,
@@ -21,18 +21,15 @@ export default function Toggle({
         position: "relative",
         width: 51,
         height: 31,
-        borderRadius: 16,
-        background: checked ? "#34C759" : "#E5E8EB",
+        borderRadius: 31,
+        background: checked ? "#34C759" : "#E9E9EA",
         border: "none",
         cursor: "pointer",
-        transition: "background 0.2s",
+        transition: "background 0.3s ease",
         flexShrink: 0,
         padding: 0,
-        minHeight: "auto",
-        display: "inline-block",
-        fontSize: "inherit",
-        fontWeight: "inherit",
-        lineHeight: "inherit",
+        WebkitTapHighlightColor: "transparent",
+        outline: "none",
       }}
     >
       <span
@@ -42,10 +39,10 @@ export default function Toggle({
           left: checked ? 22 : 2,
           width: 27,
           height: 27,
-          borderRadius: 14,
-          background: "#fff",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-          transition: "left 0.2s",
+          borderRadius: "50%",
+          background: "#FFFFFF",
+          boxShadow: "0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16)",
+          transition: "left 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
         }}
       />
     </button>
