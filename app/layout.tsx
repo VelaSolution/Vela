@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import NavBar from "@/components/NavBar";
 import CommandPalette from "@/components/CommandPalette";
+import InstallPrompt from "@/components/InstallPrompt";
 import ClientProviders from "@/components/ClientProviders";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -70,6 +71,7 @@ export default function RootLayout({
       <body className="flex flex-col min-h-screen pt-16 bg-slate-50">
         <NavBar />
         <CommandPalette />
+        <InstallPrompt />
         {children}
         <ClientProviders />
       </body>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import DataBackup from "@/components/DataBackup";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import ConsentManager from "@/components/ConsentManager";
+import NotificationSettings from "@/components/NotificationSettings";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import type { User } from "@supabase/supabase-js";
@@ -431,6 +432,9 @@ export default function ProfilePage() {
 
               {/* 동의 관리 */}
               <ConsentManager userId={user?.id ?? null} />
+
+              {/* 알림 설정 */}
+              <NotificationSettings />
 
               {/* 다크모드 */}
               <DarkModeToggle />

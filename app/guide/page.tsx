@@ -142,6 +142,30 @@ export default function GuidePage() {
             ))}
           </div>
 
+          {/* 영상 가이드 */}
+          <div className="rounded-3xl bg-white ring-1 ring-slate-200 p-6 mt-6">
+            <h2 className="text-base font-bold text-slate-900 mb-4">📹 영상 가이드</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { title: "시뮬레이터 사용법", desc: "3분 만에 매장 수익 분석하기", duration: "3:24", emoji: "📊" },
+                { title: "원가 계산기 활용", desc: "메뉴별 원가율 계산 방법", duration: "2:15", emoji: "🧮" },
+                { title: "AI 도구 활용 가이드", desc: "SNS 콘텐츠·리뷰 답변 생성", duration: "4:02", emoji: "🤖" },
+                { title: "게임으로 경영 연습", desc: "90일 매장 운영 시뮬레이션", duration: "2:48", emoji: "🎮" },
+              ].map(v => (
+                <div key={v.title} className="rounded-2xl bg-slate-50 p-4 flex items-center gap-3 hover:bg-slate-100 transition cursor-pointer group">
+                  <div className="w-14 h-14 rounded-xl bg-slate-200 flex items-center justify-center text-2xl flex-shrink-0 group-hover:bg-blue-50 transition">
+                    {v.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-900">{v.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{v.desc}</p>
+                    <span className="text-[10px] text-slate-400 mt-1 inline-block">⏱ {v.duration} · Coming Soon</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* FAQ 링크 */}
           <Link href="/help" className="block mt-8 rounded-3xl bg-white ring-1 ring-slate-200 p-6 hover:ring-blue-300 transition group">
             <div className="flex items-center gap-4">
