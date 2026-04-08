@@ -81,8 +81,8 @@ export default function ToolNav() {
   return (
     <>
       {/* 모바일: 고정 하단 탭 바 */}
-      <nav role="navigation" aria-label="도구 네비게이션" className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-center justify-around h-12">
+      <nav role="navigation" aria-label="도구 네비게이션" className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)", background: "#fff", borderTop: "1px solid #E5E8EB" }}>
+        <div style={{ display: "flex", height: 50 }}>
           {MOBILE_TABS.map(tab => {
             const isActive = tab.href === "/tools"
               ? pathname === "/tools"
@@ -92,12 +92,13 @@ export default function ToolNav() {
                 key={tab.href}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-                  isActive ? "text-blue-600" : "text-slate-400"
-                }`}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  textDecoration: "none", color: isActive ? "#3182F6" : "#9EA6B3", gap: 2,
+                }}
               >
-                <span className="text-lg leading-none">{tab.emoji}</span>
-                <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
+                <span style={{ fontSize: 20, lineHeight: 1 }}>{tab.emoji}</span>
+                <span style={{ fontSize: 10, fontWeight: 500 }}>{tab.label}</span>
               </Link>
             );
           })}
@@ -105,15 +106,15 @@ export default function ToolNav() {
           <button
             onClick={() => setOpen(v => !v)}
             aria-expanded={open}
-            className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-              open ? "text-blue-600" : "text-slate-400"
-            }`}
+            style={{
+              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              background: "none", border: "none", color: open ? "#3182F6" : "#9EA6B3", gap: 2, cursor: "pointer",
+            }}
           >
-            <span className="text-lg leading-none">⋯</span>
-            <span className="text-[10px] mt-0.5 font-medium">더보기</span>
+            <span style={{ fontSize: 20, lineHeight: 1 }}>⋯</span>
+            <span style={{ fontSize: 10, fontWeight: 500 }}>더보기</span>
           </button>
         </div>
-        <div className="pb-[env(safe-area-inset-bottom)]" />
 
         {/* 더보기 패널: 하단에서 슬라이드 업 */}
         {open && (
