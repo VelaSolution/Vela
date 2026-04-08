@@ -1969,8 +1969,8 @@ export default function Page() {
           )}
         </section>
 
-        {/* 모바일 플로팅 미리보기 — 스크롤 시 상단 고정 */}
-        <div className="lg:hidden sticky top-[64px] z-40 mb-4 -mx-4 px-4 pt-2 pb-1 bg-slate-50">
+        {/* 모바일 플로팅 미리보기 — 최상단 고정 */}
+        <div className="lg:hidden sticky top-[56px] z-40 mb-3 -mx-4 px-3 pt-1 pb-1 bg-slate-50/95 backdrop-blur-sm">
           <PreviewBar form={form} />
         </div>
 
@@ -1997,7 +1997,7 @@ export default function Page() {
             </section>
 
             {/* 모바일 하단 고정 네비게이션 */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-3 safe-bottom">
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-3" style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom))" }}>
               {stepError && <p className="text-xs text-red-500 text-center mb-2">{stepError}</p>}
               <div className="flex gap-3 max-w-lg mx-auto">
                 {step > 1 && (
@@ -2012,7 +2012,7 @@ export default function Page() {
             </div>
 
             {/* 모바일 하단 고정 버튼 여백 */}
-            <div className="lg:hidden h-20" />
+            <div className="lg:hidden h-28" />
           </div>
 
           <div className="hidden lg:block relative">

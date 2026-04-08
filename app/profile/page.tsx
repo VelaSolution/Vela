@@ -430,6 +430,19 @@ export default function ProfilePage() {
           {tab==="account" && (
             <div className="space-y-4">
 
+              {/* 글씨 크기 */}
+              <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">🔤 글씨 크기</h3>
+                <p className="text-xs text-slate-400 mb-3">화면 전체 글씨 크기를 조절합니다</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400">가</span>
+                  <input type="range" min={13} max={19} defaultValue={typeof window !== "undefined" ? parseInt(localStorage.getItem("vela-font-size") || "15") : 15}
+                    onChange={e => { const s = e.target.value; document.documentElement.style.fontSize = s + "px"; localStorage.setItem("vela-font-size", s); }}
+                    className="flex-1" style={{ accentColor: "#3182F6" }} />
+                  <span className="text-base text-slate-900 font-bold">가</span>
+                </div>
+              </div>
+
               {/* 동의 관리 */}
               <ConsentManager userId={user?.id ?? null} />
 
