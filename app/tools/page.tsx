@@ -9,6 +9,143 @@ import MonthlyTipCard from "@/components/MonthlyTipCard";
 import TaxReminder from "@/components/TaxReminder";
 import OnboardingModal from "@/components/OnboardingModal";
 import { t, getLocale } from "@/lib/i18n";
+import type { SimulatorSnapshot } from "@/lib/useSimulatorData";
+
+/* ── 데이터 소스 선택 배너 ── */
+type SourceItem = { id: string; label: string; sub: string; industry: string; totalSales: number; profit: number; netMargin: number };
+
+function DataSourceBanner({ simData, industryLabel }: { simData: SimulatorSnapshot | null; industryLabel: Record<string, string> }) {
+  const [sources, setSources] = useState<SourceItem[]>([]);
+  const [selected, setSelected] = useState<string>("current");
+  const [open, setOpen] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const all: SourceItem[] = [];
+
+      // 로컬 시뮬레이터
+      if (simData) {
+        all.push({ id: "current", label: "현재 시뮬레이션", sub: "로컬 저장", industry: simData.industry, totalSales: simData.totalSales, profit: simData.profit, netMargin: simData.netMargin });
+      }
+
+      // Supabase 데이터
+      try {
+        const sb = createSupabaseBrowserClient();
+        if (!sb) { setLoaded(true); setSources(all); return; }
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) { setLoaded(true); setSources(all); return; }
+
+        // 시뮬레이션 기록
+        const { data: simRows } = await sb.from("simulation_history").select("id, label, created_at, result, form")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5);
+        if (simRows) {
+          for (const row of simRows) {
+            const r = (row.result || {}) as Record<string, number>;
+            const f = (row.form || {}) as Record<string, string>;
+            const ts = r.totalSales || 0;
+            if (ts === 0) continue;
+            const date = new Date(row.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+            all.push({ id: "sim-" + row.id, label: `☁️ ${row.label}`, sub: date, industry: String(f.industry || "restaurant"), totalSales: ts, profit: r.netProfit || r.profit || 0, netMargin: ts > 0 ? Math.round((r.netProfit || r.profit || 0) / ts * 1000) / 10 : 0 });
+          }
+        }
+
+        // 월별 매출
+        const { data: monthRows } = await sb.from("monthly_snapshots").select("id, month, industry, total_sales, net_profit")
+          .eq("user_id", user.id).order("month", { ascending: false }).limit(6);
+        if (monthRows) {
+          for (const row of monthRows) {
+            const ts = Number(row.total_sales || 0);
+            const np = Number(row.net_profit || 0);
+            if (ts === 0) continue;
+            all.push({ id: "month-" + row.id, label: `📈 ${row.month}`, sub: "월별매출", industry: row.industry || "restaurant", totalSales: ts, profit: np, netMargin: ts > 0 ? Math.round(np / ts * 1000) / 10 : 0 });
+          }
+        }
+      } catch { /* noop */ }
+
+      setSources(all);
+      if (all.length > 0) setSelected(all[0].id);
+      setLoaded(true);
+    })();
+  }, [simData]);
+
+  const active = sources.find(s => s.id === selected) ?? (simData ? { id: "current", label: "현재 시뮬레이션", sub: "", industry: simData.industry, totalSales: simData.totalSales, profit: simData.profit, netMargin: simData.netMargin } : null);
+
+  if (!loaded) return null;
+
+  if (!active && sources.length === 0) {
+    return (
+      <div className="rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 px-6 py-5 mb-8 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-lg flex-shrink-0">💡</div>
+        <span className="text-slate-500 text-sm">시뮬레이터를 먼저 실행하면 도구들과 데이터가 연결됩니다.</span>
+        <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 hover:bg-slate-800 transition">
+          시뮬레이터 →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-5 mb-8 shadow-xl shadow-slate-900/20 ring-1 ring-white/5">
+      {/* 상단: 현재 선택된 데이터 */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              데이터 연결됨
+            </span>
+            <span className="text-xs text-slate-500">{active ? (industryLabel[active.industry] ?? active.industry) : ""}</span>
+            {sources.length > 1 && (
+              <button onClick={() => setOpen(!open)} className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold transition ml-1">
+                {open ? "▲ 닫기" : `▼ 소스 변경 (${sources.length})`}
+              </button>
+            )}
+          </div>
+          {active && (
+            <div className="flex gap-6 flex-wrap">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-slate-500 mb-0.5">월매출</span>
+                <span className="text-white text-sm font-bold">{fmt(active.totalSales)}<span className="text-blue-300 text-xs ml-0.5">원</span></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] text-slate-500 mb-0.5">순이익</span>
+                <span className={`text-sm font-bold ${active.profit >= 0 ? "text-emerald-300" : "text-red-400"}`}>{fmt(active.profit)}<span className="text-xs ml-0.5">원</span></span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] text-slate-500 mb-0.5">순이익률</span>
+                <span className="text-slate-200 text-sm font-bold">{active.netMargin}<span className="text-xs ml-0.5">%</span></span>
+              </div>
+            </div>
+          )}
+        </div>
+        <Link href="/simulator" className="flex-shrink-0 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 transition ring-1 ring-white/10">
+          시뮬레이터 →
+        </Link>
+      </div>
+
+      {/* 소스 선택 드롭다운 */}
+      {open && (
+        <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {sources.map(src => (
+            <button
+              key={src.id}
+              onClick={() => { setSelected(src.id); setOpen(false); }}
+              className={`text-left px-3 py-2.5 rounded-xl text-xs transition ${
+                selected === src.id
+                  ? "bg-white/15 ring-1 ring-blue-400/50 text-white"
+                  : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <p className="font-semibold">{src.label}</p>
+              <p className="text-[10px] opacity-60 mt-0.5">{industryLabel[src.industry] ?? src.industry} · {fmt(src.totalSales)}원 · {src.sub}</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type Tool = { href: string; emoji: string; title: string; desc: string; color: string; bg: string; badge: string | null; paid?: boolean; i18nKey?: string };
 const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] = [
@@ -176,47 +313,8 @@ export default function ToolsPage() {
             )}
           </div>
 
-          {/* Simulator data banner */}
-          {isLoggedIn && simData ? (
-            <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-5 mb-8 shadow-xl shadow-slate-900/20 ring-1 ring-white/5">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      데이터 연결됨
-                    </span>
-                    <span className="text-xs text-slate-500">{industryLabel[simData.industry] ?? simData.industry}</span>
-                  </div>
-                  <div className="flex gap-6 flex-wrap">
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-slate-500 mb-0.5">월매출</span>
-                      <span className="text-white text-sm font-bold">{fmt(simData.totalSales)}<span className="text-blue-300 text-xs ml-0.5">원</span></span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-slate-500 mb-0.5">순이익</span>
-                      <span className={`text-sm font-bold ${simData.profit >= 0 ? "text-emerald-300" : "text-red-400"}`}>{fmt(simData.profit)}<span className="text-xs ml-0.5">원</span></span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-slate-500 mb-0.5">순이익률</span>
-                      <span className="text-slate-200 text-sm font-bold">{simData.netMargin}<span className="text-xs ml-0.5">%</span></span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/simulator" className="flex-shrink-0 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-4 py-2.5 transition ring-1 ring-white/10">
-                  시뮬레이터 →
-                </Link>
-              </div>
-            </div>
-          ) : isLoggedIn ? (
-            <div className="rounded-2xl bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 px-6 py-5 mb-8 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center text-lg flex-shrink-0">💡</div>
-              <span className="text-slate-500 text-sm">시뮬레이터를 먼저 실행하면 도구들과 데이터가 연결됩니다.</span>
-              <Link href="/simulator" className="ml-auto flex-shrink-0 rounded-xl bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 hover:bg-slate-800 transition">
-                시뮬레이터 →
-              </Link>
-            </div>
-          ) : null}
+          {/* 데이터 소스 선택 배너 */}
+          {isLoggedIn && <DataSourceBanner simData={simData} industryLabel={industryLabel} />}
 
           {/* No results */}
           {search.trim() && filteredCategories.length === 0 && (
