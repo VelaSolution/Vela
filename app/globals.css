@@ -29,12 +29,37 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* ── 미디어 오버플로 방지 ─────────────────────────── */
+img, video, svg { max-width: 100%; height: auto; }
+
+/* ── 모바일 포커스 스타일 ─────────────────────────── */
+input:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(49,130,246,0.3);
 }
 
 /* ── Capacitor 앱 모드 ────────────────────────────── */
+html.capacitor-app {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
 html.capacitor-app body {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+html.capacitor-app main {
+  overflow-x: hidden !important;
+}
+html.capacitor-app input, html.capacitor-app textarea, html.capacitor-app select {
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
 }
 html.capacitor-app .vela-nav {
   padding-top: env(safe-area-inset-top) !important;
@@ -45,6 +70,8 @@ html.capacitor-app .vela-nav-inner {
   height: 52px;
   align-items: center;
 }
+/* 앱에서 NavBar 축소로 인한 상단 패딩 보정 */
+html.capacitor-app .pt-20 { padding-top: 72px !important; }
 /* 앱에서 NavBar 드롭다운/링크 숨기기 — 하단 탭바로 대체 */
 html.capacitor-app .vela-nav-links { display: none !important; }
 html.capacitor-app .vela-nav-actions { display: none !important; }
@@ -84,12 +111,14 @@ html.capacitor-app nav.fixed.bottom-0 {
 html.capacitor-app {
   height: 100%;
   overflow: hidden;
+  overflow-x: hidden !important;
 }
 html.capacitor-app body {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
   padding-bottom: calc(56px + env(safe-area-inset-bottom) + 20px) !important;
 }
 /* 앱에서 다크모드 비활성화 — 항상 라이트 */
@@ -127,7 +156,13 @@ html.capacitor-app .hidden.lg\:block.relative { display: none !important; }
 /* ── 모바일 최적화 (max-width: 768px) ─────────────── */
 @media (max-width: 768px) {
   /* 전체 폰트 크기 약간 줄이기 */
-  html { font-size: 15px; }
+  html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+
+  /* 한국어 텍스트 줄바꿈 최적화 */
+  body { word-break: keep-all; }
+
+  /* 모든 요소 좌우 오버플로 방지 */
+  *, *::before, *::after { max-width: 100vw; }
 
   /* NavBar 높이 축소 */
   .vela-nav { height: 56px !important; }
@@ -157,11 +192,15 @@ html.capacitor-app .hidden.lg\:block.relative { display: none !important; }
   .mb-10 { margin-bottom: 24px !important; }
   .mb-8 { margin-bottom: 20px !important; }
 
-  /* 하단 탭바 공간 확보 */
-  .pb-16 { padding-bottom: 100px !important; }
+  /* 하단 탭바 공간 확보 — pb-16과 pb-20 모두 */
+  .pb-16, .pb-20 { padding-bottom: 100px !important; }
 
   /* 카드 border-radius 모바일 축소 */
   .rounded-3xl { border-radius: 20px !important; }
+
+  /* 카드 그림자 성능 최적화 */
+  .shadow-lg { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+  .shadow-md { box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important; }
 
   /* 버튼 터치 영역 확보 */
   button, a[role="button"], .rounded-xl {
@@ -197,6 +236,9 @@ html.capacitor-app .hidden.lg\:block.relative { display: none !important; }
 
   /* 좌우 스크롤 방지 */
   html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+
+  /* 모든 페이지 하단 여백 — 탭바 공간 */
+  main { min-height: calc(100vh - 56px); padding-bottom: 100px !important; }
 }
 
 /* ── 라이트 모드 가독성 강화 ───────────────────────── */
