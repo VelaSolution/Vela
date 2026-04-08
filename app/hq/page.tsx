@@ -5,7 +5,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
-type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar" | "notice" | "report" | "feedback" | "calendar" | "memo" | "team" | "timeline";
+type Tab = "dashboard" | "mett" | "kpi" | "goal" | "task" | "aar" | "notice" | "report" | "feedback" | "calendar" | "memo" | "team" | "timeline" | "files" | "chat";
+type FileItem = { id: string; name: string; size: string; type: string; url: string; uploadedAt: string; uploadedBy: string };
+type ChatMsg = { id: string; sender: string; text: string; time: string };
 type TeamMember = { id: string; name: string; role: string; email: string; status: "active" | "away" | "offline" };
 type Notice = { id: string; title: string; content: string; date: string; pinned: boolean };
 type Feedback = { id: string; type: string; title: string; description: string; priority: string; status: string; date: string };
@@ -30,6 +32,8 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "memo", label: "메모", icon: "💬" },
   { key: "team", label: "팀", icon: "👥" },
   { key: "timeline", label: "타임라인", icon: "🕐" },
+  { key: "files", label: "파일", icon: "📁" },
+  { key: "chat", label: "채팅", icon: "💬" },
 ];
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
@@ -73,6 +77,9 @@ export default function HQPage() {
   const [teamForm, setTeamForm] = useState({ name: "", role: "", email: "" });
   const [directive, setDirective] = useState("");
   const [directiveSaved, setDirectiveSaved] = useState("");
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
   const directiveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
@@ -124,6 +131,8 @@ export default function HQPage() {
         }
       } catch {}
       try { const d = localStorage.getItem("vela-hq-directive"); if (d) setDirective(d); } catch {}
+      try { const fl = localStorage.getItem("vela-hq-files"); if (fl) setFiles(JSON.parse(fl)); } catch {}
+      try { const ch = localStorage.getItem("vela-hq-chat"); if (ch) setChatMsgs(JSON.parse(ch)); } catch {}
       setLoading(false);
     })();
   }, []);
@@ -219,6 +228,30 @@ export default function HQPage() {
     const cycle: Record<string, "active" | "away" | "offline"> = { active: "away", away: "offline", offline: "active" };
     const next = teamMembers.map(m => m.id === id ? { ...m, status: cycle[m.status] } : m); setTeamMembers(next); localStorage.setItem("vela-hq-team", JSON.stringify(next));
   };
+
+  // Files
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const item: FileItem = { id: Date.now().toString(), name: f.name, size: (f.size / 1024).toFixed(1) + "KB", type: f.type.split("/")[1] || "file", url: reader.result as string, uploadedAt: new Date().toISOString(), uploadedBy: "대표" };
+      const next = [item, ...files]; setFiles(next); localStorage.setItem("vela-hq-files", JSON.stringify(next));
+      flash("✓ 업로드 완료");
+    };
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+  const delFile = (id: string) => { const next = files.filter(f => f.id !== id); setFiles(next); localStorage.setItem("vela-hq-files", JSON.stringify(next)); };
+  const downloadFile = (f: FileItem) => { const a = document.createElement("a"); a.href = f.url; a.download = f.name; a.click(); };
+
+  // Chat
+  const sendChat = () => {
+    if (!chatInput.trim()) return;
+    const msg: ChatMsg = { id: Date.now().toString(), sender: "대표", text: chatInput.trim(), time: new Date().toISOString() };
+    const next = [...chatMsgs, msg]; setChatMsgs(next); localStorage.setItem("vela-hq-chat", JSON.stringify(next));
+    setChatInput("");
+  };
+  const delChat = (id: string) => { const next = chatMsgs.filter(m => m.id !== id); setChatMsgs(next); localStorage.setItem("vela-hq-chat", JSON.stringify(next)); };
 
   // Report helper
   const genReport = () => {
@@ -704,6 +737,61 @@ export default function HQPage() {
             </div>
           );
         })()}
+        {/* Files */}
+        {tab === "files" && (
+          <div className="space-y-3">
+            <div className={C}>
+              <h3 className="text-sm font-bold mb-2">📁 파일 공유</h3>
+              <label className={`${B} cursor-pointer inline-block`}>
+                📎 파일 업로드
+                <input type="file" className="hidden" onChange={handleFileUpload} />
+              </label>
+              <p className="text-[11px] text-slate-400 mt-2">파일은 브라우저 로컬에 저장됩니다 (용량 제한 있음)</p>
+            </div>
+            {files.length === 0 ? (
+              <div className={C}><p className="text-xs text-slate-400 text-center py-6">업로드된 파일이 없습니다</p></div>
+            ) : files.map(f => (
+              <div key={f.id} className={`${C} flex items-center gap-3`}>
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-lg flex-shrink-0">
+                  {f.type.includes("pdf") ? "📄" : f.type.includes("image") || f.type.includes("png") || f.type.includes("jpg") ? "🖼️" : f.type.includes("sheet") || f.type.includes("csv") ? "📊" : "📎"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{f.name}</p>
+                  <p className="text-[11px] text-slate-400">{f.size} · {f.uploadedBy} · {new Date(f.uploadedAt).toLocaleDateString("ko-KR")}</p>
+                </div>
+                <button onClick={() => downloadFile(f)} className="text-[11px] text-blue-600 font-semibold flex-shrink-0">다운</button>
+                <button onClick={() => delFile(f.id)} className="text-[11px] text-red-400 flex-shrink-0">삭제</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Chat */}
+        {tab === "chat" && (
+          <div className="flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
+            <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+              {chatMsgs.length === 0 && <p className="text-xs text-slate-400 text-center py-12">아직 메시지가 없습니다</p>}
+              {chatMsgs.map(m => (
+                <div key={m.id} className="flex items-start gap-2 group">
+                  <div className="w-7 h-7 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">{m.sender[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-700">{m.sender}</span>
+                      <span className="text-[10px] text-slate-400">{new Date(m.time).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <button onClick={() => delChat(m.id)} className="text-[10px] text-red-400 opacity-0 group-hover:opacity-100">삭제</button>
+                    </div>
+                    <p className="text-sm text-slate-900 mt-0.5 whitespace-pre-wrap">{m.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 sticky bottom-0 bg-[#f0f2f5] pt-2">
+              <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), sendChat())}
+                placeholder="메시지 입력..." className={`${I} flex-1`} />
+              <button onClick={sendChat} className={B}>전송</button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
