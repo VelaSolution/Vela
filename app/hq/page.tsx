@@ -192,12 +192,12 @@ export default function HQPage() {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-xl hover:bg-slate-100 transition">
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h14M3 10h14M3 14h14"/></svg>
             </button>
-            <Link href="/" className="flex items-center gap-2">
+            <button onClick={() => setTab("dashboard")} className="flex items-center gap-2">
               <div className="w-8 h-8 bg-[#3182F6] rounded-xl flex items-center justify-center">
                 <span className="text-white font-bold text-sm">V</span>
               </div>
               <span className="text-lg font-bold text-slate-900 tracking-tight hidden sm:block">VELA HQ</span>
-            </Link>
+            </button>
             <span className="text-[11px] bg-[#3182F6]/10 text-[#3182F6] px-2.5 py-1 rounded-lg font-bold">{myRole}</span>
           </div>
 

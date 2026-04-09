@@ -257,14 +257,17 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
       {/* Platform Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { label: "총 사용자", value: fmt(totalUsers), color: "text-slate-900" },
-          { label: "오늘 가입", value: fmt(todaySignups), color: "text-[#3182F6]" },
-          { label: "총 매출", value: `₩${fmt(totalRevenue)}`, color: "text-emerald-600" },
-          { label: "활성 구독", value: fmt(activeSubs), color: "text-amber-600" },
+          { label: "총 사용자", value: fmt(totalUsers), icon: "👥", bg: "bg-blue-50", color: "text-[#3182F6]" },
+          { label: "오늘 가입", value: fmt(todaySignups), icon: "🆕", bg: "bg-emerald-50", color: "text-emerald-600" },
+          { label: "총 매출", value: `₩${fmt(totalRevenue)}`, icon: "💰", bg: "bg-amber-50", color: "text-amber-600" },
+          { label: "활성 구독", value: fmt(activeSubs), icon: "⭐", bg: "bg-purple-50", color: "text-purple-600" },
         ].map((s) => (
-          <div key={s.label} className={C}>
-            <p className="text-xs font-medium text-slate-500">{s.label}</p>
-            <p className={`mt-1 text-lg font-bold ${s.color}`}>{s.value}</p>
+          <div key={s.label} className={`${C} border-l-4 ${s.bg.replace("50", "400")}`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`w-8 h-8 ${s.bg} rounded-xl flex items-center justify-center text-sm`}>{s.icon}</span>
+              <p className="text-xs font-semibold text-slate-500">{s.label}</p>
+            </div>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
         ))}
       </div>
@@ -346,7 +349,8 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
                 <div className="flex-1 min-w-0">
                   <span className="truncate text-slate-700 block">{a.title}</span>
                 </div>
-                <span className={`${BADGE} text-[9px]`}>{a.type}</span>
+                <span className={`${BADGE} text-[9px] bg-slate-100 text-slate-500`}>{a.type}</span>
+                <span className="text-[10px] text-slate-400 flex-shrink-0">{a.time ? new Date(a.time).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}</span>
                 <span className="text-[10px] text-slate-400 flex-shrink-0">
                   {a.time ? new Date(a.time).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : ""}
                 </span>
