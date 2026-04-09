@@ -281,9 +281,9 @@ export default function HQPage() {
         </aside>
       </div>
 
-      <div className="flex">
-        {/* ── 데스크톱 사이드바 ──────────────────────── */}
-        <aside className="hidden md:flex flex-col w-[240px] min-h-[calc(100vh-53px)] sticky top-[53px] bg-white border-r border-slate-200/80 overflow-y-auto flex-shrink-0">
+      <div className="flex h-[calc(100vh-45px)] lg:h-[calc(100vh-53px)]">
+        {/* ── 데스크톱 사이드바 (독립 스크롤) ─────────── */}
+        <aside className="hidden md:flex flex-col w-[240px] bg-white border-r border-slate-200/80 overflow-y-auto flex-shrink-0">
           <nav className="flex-1 px-3 py-4">
             {SIDEBAR_GROUPS.map(g => {
               const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
@@ -319,8 +319,8 @@ export default function HQPage() {
           </div>
         </aside>
 
-        {/* ── 메인 콘텐츠 ──────────────────────────────── */}
-        <main className="flex-1 min-w-0 pb-16 md:pb-0">
+        {/* ── 메인 콘텐츠 (독립 스크롤) ─────────────────── */}
+        <main className="flex-1 min-w-0 pb-16 md:pb-0 overflow-y-auto">
           {/* 페이지 헤더 (compact on mobile) */}
           <div className="px-4 lg:px-8 pt-4 lg:pt-6 pb-1 lg:pb-2">
             <div className="flex items-center gap-2 lg:gap-3">
