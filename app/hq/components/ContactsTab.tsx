@@ -45,24 +45,31 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
     const s = sb();
     if (!s) { setLoading(false); return; }
     try {
-      const { data, error } = await s
-        .from("hq_contacts")
-        .select("*")
-        .order("name", { ascending: true });
-      if (error) throw error;
-      if (data) {
-        const mapped: Contact[] = data.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          department: r.department || "",
-          position: r.position || "",
-          phone: r.phone || "",
-          email: r.email || "",
-          extension: r.extension || "",
-          manager: r.manager,
+      // hq_contacts + hq_team 동시 로드
+      const [contactsRes, teamRes] = await Promise.all([
+        s.from("hq_contacts").select("*").order("name", { ascending: true }),
+        s.from("hq_team").select("*").order("created_at", { ascending: true }),
+      ]);
+
+      const contactsList: Contact[] = (contactsRes.data ?? []).map((r: any) => ({
+        id: r.id, name: r.name,
+        department: r.department || "", position: r.position || "",
+        phone: r.phone || "", email: r.email || "",
+        extension: r.extension || "", manager: r.manager,
+      }));
+
+      // hq_team 데이터를 Contact 형식으로 변환 (중복 제거: 이메일 기준)
+      const contactEmails = new Set(contactsList.map(c => c.email).filter(Boolean));
+      const teamAsContacts: Contact[] = (teamRes.data ?? [])
+        .filter((t: any) => !contactEmails.has(t.email))
+        .map((t: any) => ({
+          id: `team-${t.id}`, name: t.name,
+          department: t.role || "", position: t.hq_role || "팀원",
+          phone: "", email: t.email || "",
+          extension: "", manager: undefined,
         }));
-        setContacts(mapped);
-      }
+
+      setContacts([...contactsList, ...teamAsContacts]);
     } catch (e) {
       console.error("ContactsTab load error:", e);
     }
