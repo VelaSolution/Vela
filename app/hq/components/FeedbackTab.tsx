@@ -34,6 +34,7 @@ export default function FeedbackTab({ userId, userName, myRole, flash }: Props) 
   const [desc, setDesc] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("전체");
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Feedback | null>(null);
 
   const load = async () => {
     const s = sb();
@@ -81,10 +82,58 @@ export default function FeedbackTab({ userId, userName, myRole, flash }: Props) 
     load();
   };
 
+  const deleteFb = async (id: string) => {
+    const s = sb();
+    if (!s) return;
+    await s.from("hq_feedback").delete().eq("id", id);
+    flash("삭제되었습니다");
+    setSelected(null);
+    load();
+  };
+
   const filtered = filterStatus === "전체" ? items : items.filter((i) => i.status === filterStatus);
 
   return (
     <div className="space-y-6">
+      {/* 상세 모달 */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{typeIcon[selected.type] ?? "📝"}</span>
+                <h3 className="text-lg font-bold text-slate-900">{selected.title}</h3>
+              </div>
+              <button onClick={() => setSelected(null)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400">✕</button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <div className="flex gap-2 flex-wrap">
+                <span className={`${BADGE} ${priorityColor[selected.priority]}`}>{selected.priority}</span>
+                {STATUS_FLOW.map(st => (
+                  <button key={st} onClick={() => { updateStatus(selected.id, st); setSelected({ ...selected, status: st }); }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${selected.status === st ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>
+                    {st}
+                  </button>
+                ))}
+              </div>
+              <div className="bg-slate-50 rounded-xl p-4">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{selected.description || "설명 없음"}</p>
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>작성자: {selected.author} · {selected.date}</span>
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-slate-100 flex justify-between">
+              {selected.author === userName && (
+                <button onClick={() => deleteFb(selected.id)} className="text-xs text-red-500 hover:text-red-700 font-semibold">삭제</button>
+              )}
+              <div />
+              <button onClick={() => setSelected(null)} className={B2}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 작성 폼 */}
       <div className={C}>
         <h3 className="text-lg font-bold text-slate-800 mb-4">피드백 등록</h3>
@@ -143,7 +192,7 @@ export default function FeedbackTab({ userId, userName, myRole, flash }: Props) 
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((fb) => (
-            <div key={fb.id} className={C}>
+            <div key={fb.id} className={`${C} cursor-pointer`} onClick={() => setSelected(fb)}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-base">{typeIcon[fb.type] ?? "📝"}</span>
