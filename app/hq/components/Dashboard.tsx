@@ -31,6 +31,10 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const [activeSubs, setActiveSubs] = useState(0);
   const [directive, setDirective] = useState("");
   const [loading, setLoading] = useState(true);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [attendanceIn, setAttendanceIn] = useState(0);
+  const [attendanceOut, setAttendanceOut] = useState(0);
+  const [recentActivity, setRecentActivity] = useState<{ type: string; icon: string; title: string; time: string; tab: Tab }[]>([]);
 
   useEffect(() => {
     load();
@@ -73,6 +77,43 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
       try {
         const { data: dirData } = await s.from("hq_directives").select("content").eq("user_id", userId).single();
         if (dirData?.content) setDirective(dirData.content);
+      } catch {}
+
+      // 미결 결재 수
+      try {
+        const { count } = await s.from("hq_approvals").select("id", { count: "exact", head: true }).eq("status", "대기");
+        setPendingApprovals(count ?? 0);
+      } catch {}
+
+      // 오늘 출근 현황
+      try {
+        const todayStr = today();
+        const { data: attData } = await s.from("hq_attendance").select("id, status").eq("date", todayStr);
+        if (attData) {
+          setAttendanceIn(attData.filter((a: any) => a.status !== "결근").length);
+          setAttendanceOut(attData.filter((a: any) => a.status === "결근").length);
+        }
+        // 전체 팀원 수에서 출근자를 빼서 미출근 계산
+        const { count: teamCount } = await s.from("hq_team").select("id", { count: "exact", head: true }).eq("status", "active");
+        if (teamCount && attData) {
+          setAttendanceOut(Math.max(0, (teamCount ?? 0) - attData.length));
+          setAttendanceIn(attData.length);
+        }
+      } catch {}
+
+      // 최근 활동 피드 (공지, 태스크, 피드백에서 최신 5개)
+      try {
+        const [noticeRecent, taskRecent, fbRecent] = await Promise.all([
+          s.from("hq_notices").select("id, title, created_at").order("created_at", { ascending: false }).limit(3),
+          s.from("hq_tasks").select("id, title, created_at").order("created_at", { ascending: false }).limit(3),
+          s.from("hq_feedback").select("id, title, created_at").order("created_at", { ascending: false }).limit(3),
+        ]);
+        const activities: { type: string; icon: string; title: string; time: string; tab: Tab }[] = [];
+        (noticeRecent.data ?? []).forEach((n: any) => activities.push({ type: "공지", icon: "📢", title: n.title, time: n.created_at, tab: "notice" }));
+        (taskRecent.data ?? []).forEach((t: any) => activities.push({ type: "태스크", icon: "✅", title: t.title, time: t.created_at, tab: "task" }));
+        (fbRecent.data ?? []).forEach((f: any) => activities.push({ type: "피드백", icon: "🐛", title: f.title, time: f.created_at, tab: "feedback" }));
+        activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+        setRecentActivity(activities.slice(0, 5));
       } catch {}
 
       // 댓글 로드
@@ -207,7 +248,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
         <div>
           <h2 className="text-xl font-bold text-slate-900">현황판</h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            {userName}님, 오늘도 좋은 하루 되세요.
+            {userName}님, {(() => { const h = new Date().getHours(); return h < 12 ? "좋은 오전이에요" : h < 18 ? "좋은 오후에요" : "좋은 저녁이에요"; })()}. 오늘도 화이팅!
           </p>
         </div>
         <span className={`${BADGE} bg-blue-50 text-blue-700`}>{myRole}</span>
@@ -227,6 +268,93 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
           </div>
         ))}
       </div>
+
+      {/* 오늘 할 일 / 미결 결재 / 출근 현황 */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* 오늘 할 일 */}
+        <div className={`${C} md:col-span-2`}>
+          <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span>📌</span> 오늘 할 일
+            <span className="text-[10px] text-slate-400 font-normal">({tasks.filter(t => t.deadline === today() || t.status === "pending" || t.status === "planned").length}건)</span>
+          </h3>
+          {tasks.filter(t => t.deadline === today() || t.status === "pending" || t.status === "planned").length === 0 ? (
+            <p className="text-sm text-slate-400 py-2">오늘 예정된 할 일이 없습니다.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+              {tasks
+                .filter(t => t.deadline === today() || t.status === "pending" || t.status === "planned")
+                .slice(0, 8)
+                .map(t => {
+                  const isDone = t.status === "completed";
+                  return (
+                    <div key={t.id} className="flex items-center gap-2.5 text-sm px-1 py-1 rounded-lg hover:bg-slate-50 transition cursor-pointer"
+                      onClick={() => openTask(t)}>
+                      <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${isDone ? "bg-[#3182F6] border-[#3182F6]" : "border-slate-300"}`}>
+                        {isDone && <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 5l2.5 2.5L8 3" /></svg>}
+                      </span>
+                      <span className={`truncate ${isDone ? "line-through text-slate-400" : "text-slate-700"}`}>{t.title}</span>
+                      {t.deadline && <span className="text-[10px] text-slate-400 flex-shrink-0 ml-auto">{t.deadline === today() ? "오늘" : t.deadline.slice(5)}</span>}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+
+        {/* 미결 결재 & 출근 현황 */}
+        <div className="space-y-4">
+          <div className={`${C} cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("approval")}>
+            <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+              <span>📋</span> 미결 결재
+            </h3>
+            <p className={`text-2xl font-bold ${pendingApprovals > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+              {pendingApprovals}건
+            </p>
+            <p className="mt-1 text-[10px] text-slate-400">클릭하여 결재함으로 이동 →</p>
+          </div>
+
+          <div className={`${C} cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("attendance")}>
+            <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
+              <span>⏰</span> 오늘 출근 현황
+            </h3>
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-lg font-bold text-[#3182F6]">{attendanceIn}명</p>
+                <p className="text-[10px] text-slate-400">출근</p>
+              </div>
+              <div className="w-px h-8 bg-slate-200" />
+              <div>
+                <p className="text-lg font-bold text-slate-400">{attendanceOut}명</p>
+                <p className="text-[10px] text-slate-400">미출근</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 최근 활동 피드 */}
+      {recentActivity.length > 0 && (
+        <div className={C}>
+          <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span>🕐</span> 최근 활동
+          </h3>
+          <div className="space-y-2">
+            {recentActivity.map((a, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                onClick={() => go(a.tab)}>
+                <span className="text-base flex-shrink-0">{a.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="truncate text-slate-700 block">{a.title}</span>
+                </div>
+                <span className={`${BADGE} text-[9px]`}>{a.type}</span>
+                <span className="text-[10px] text-slate-400 flex-shrink-0">
+                  {a.time ? new Date(a.time).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Manual KPI */}
       {latest && (

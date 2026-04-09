@@ -10,6 +10,7 @@ import {
 } from "./types";
 
 // ── 탭 컴포넌트 ────────────────────────────────────────
+import SearchModal from "./components/SearchModal";
 import Dashboard from "./components/Dashboard";
 import MettTab from "./components/MettTab";
 import KpiTab from "./components/KpiTab";
@@ -33,6 +34,7 @@ import ContactsTab from "./components/ContactsTab";
 import BoardTab from "./components/BoardTab";
 import SurveyTab from "./components/SurveyTab";
 import WikiTab from "./components/WikiTab";
+import OrgChartTab from "./components/OrgChartTab";
 
 // ── 탭 → 컴포넌트 매핑 ────────────────────────────────
 const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }>> = {
@@ -59,6 +61,7 @@ const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName
   board: BoardTab,
   survey: SurveyTab,
   wiki: WikiTab,
+  orgchart: OrgChartTab,
 };
 
 export default function HQPage() {
@@ -73,6 +76,19 @@ export default function HQPage() {
   const [userName, setUserName] = useState("관리자");
   const [myRole, setMyRole] = useState<HQRole>("팀원");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Cmd+K keyboard shortcut for search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const setTab = useCallback((t: Tab) => {
     setTabState(t);
@@ -192,11 +208,21 @@ export default function HQPage() {
               </span>
             )}
             <span className="text-xs text-slate-400 hidden lg:block">{todayDate}</span>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 transition text-slate-500"
+              title="검색 (Cmd+K)"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="7" cy="7" r="5" />
+                <path d="M15 15l-3.5-3.5" />
+              </svg>
+            </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center">
                 <span className="text-sm font-bold text-slate-600">{userName[0]}</span>
               </div>
-              <span className="text-sm font-semibold text-slate-700 hidden sm:block">{userName}</span>
+              <span className="text-sm font-semibold text-slate-700 hidden sm:block">{myRole} {userName}</span>
             </div>
           </div>
         </div>
@@ -259,7 +285,13 @@ export default function HQPage() {
               );
             })}
           </nav>
-          <div className="px-4 py-4 border-t border-slate-100">
+          <div className="px-4 py-4 border-t border-slate-100 space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <div className="w-7 h-7 bg-slate-100 rounded-lg flex items-center justify-center">
+                <span className="text-xs font-bold text-slate-600">{userName[0]}</span>
+              </div>
+              <span className="text-xs font-semibold text-slate-600">{myRole} {userName}</span>
+            </div>
             <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium">
               <span>←</span><span>VELA 서비스로 이동</span>
             </Link>
@@ -304,6 +336,16 @@ export default function HQPage() {
           </div>
         </main>
       </div>
+
+      {/* ── 검색 모달 ───────────────────────────────────── */}
+      {userId && (
+        <SearchModal
+          userId={userId}
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(t) => setTab(t as Tab)}
+        />
+      )}
     </div>
   );
 }

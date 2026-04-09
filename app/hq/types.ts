@@ -5,7 +5,8 @@ export type Tab =
   | "notice" | "report" | "feedback" | "calendar" | "memo"
   | "team" | "timeline" | "files" | "chat" | "approval" | "decision"
   // 하이윅스 신규
-  | "attendance" | "leave" | "contacts" | "board" | "survey" | "wiki";
+  | "attendance" | "leave" | "contacts" | "board" | "survey" | "wiki"
+  | "orgchart";
 
 export type HQRole = "대표" | "이사" | "팀장" | "팀원";
 
@@ -95,6 +96,7 @@ export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "approval", label: "결재", icon: "📋" },
   { key: "decision", label: "의사결정", icon: "⚖️" },
   { key: "wiki", label: "위키", icon: "📖" },
+  { key: "orgchart", label: "조직도", icon: "🏢" },
 ];
 
 export const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
@@ -103,7 +105,7 @@ export const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
   { label: "전략", items: ["mett", "kpi", "goal"] },
   { label: "보고", items: ["report", "aar", "decision"] },
   { label: "소통", items: ["notice", "board", "feedback", "chat", "memo"] },
-  { label: "조직", items: ["team", "contacts", "survey"] },
+  { label: "조직", items: ["team", "contacts", "survey", "orgchart"] },
   { label: "문서", items: ["files", "approval", "wiki"] },
   { label: "분석", items: ["timeline"] },
 ];
@@ -111,8 +113,8 @@ export const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
 export const ROLE_PERMISSIONS: Record<HQRole, Tab[]> = {
   "대표": TABS.map(t => t.key),
   "이사": TABS.map(t => t.key).filter(k => k !== "team"),
-  "팀장": ["dashboard", "attendance", "leave", "kpi", "task", "aar", "notice", "report", "feedback", "board", "survey", "calendar", "memo", "contacts", "files", "chat", "decision", "wiki"],
-  "팀원": ["dashboard", "attendance", "leave", "task", "notice", "board", "calendar", "memo", "chat", "contacts", "wiki", "survey"],
+  "팀장": ["dashboard", "attendance", "leave", "kpi", "task", "aar", "notice", "report", "feedback", "board", "survey", "calendar", "memo", "contacts", "files", "chat", "decision", "wiki", "orgchart"],
+  "팀원": ["dashboard", "attendance", "leave", "task", "notice", "board", "calendar", "memo", "chat", "contacts", "wiki", "survey", "orgchart"],
 };
 
 export const TAB_MAP = Object.fromEntries(TABS.map(t => [t.key, t]));

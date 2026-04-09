@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { HQRole, Notice } from "@/app/hq/types";
 import { sb, today, I, C, L, B, B2, BADGE } from "@/app/hq/utils";
 
@@ -10,13 +10,43 @@ interface Props {
   flash: (m: string) => void;
 }
 
+const CATEGORIES = [
+  { key: "일반", color: "bg-slate-50 text-slate-600" },
+  { key: "긴급", color: "bg-red-50 text-red-600" },
+  { key: "인사", color: "bg-purple-50 text-purple-600" },
+  { key: "경영", color: "bg-blue-50 text-blue-600" },
+] as const;
+type NoticeCategory = typeof CATEGORIES[number]["key"];
+
+interface EnrichedNotice extends Notice {
+  category?: NoticeCategory;
+  important?: boolean;
+}
+
+function linkify(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    urlRegex.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-[#3182F6] underline hover:text-[#2672DE] break-all">
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
-  const [notices, setNotices] = useState<Notice[]>([]);
+  const [notices, setNotices] = useState<EnrichedNotice[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [pinned, setPinned] = useState(false);
+  const [important, setImportant] = useState(false);
+  const [category, setCategory] = useState<NoticeCategory>("일반");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     const s = sb();
@@ -36,6 +66,8 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
           pinned: d.pinned ?? false,
           author: d.author ?? "",
           readBy: d.read_by ?? [],
+          category: d.category ?? "일반",
+          important: d.important ?? false,
         }))
       );
     }
@@ -43,6 +75,14 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
   };
 
   useEffect(() => { load(); }, []);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return notices;
+    const q = search.toLowerCase();
+    return notices.filter(
+      n => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || n.author.toLowerCase().includes(q)
+    );
+  }, [notices, search]);
 
   const handleAdd = async () => {
     if (!title.trim()) { flash("제목을 입력하세요"); return; }
@@ -52,6 +92,8 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
       title: title.trim(),
       content: content.trim(),
       pinned,
+      important,
+      category,
       author: userName,
       read_by: [userName],
     });
@@ -59,11 +101,13 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
     setTitle("");
     setContent("");
     setPinned(false);
+    setImportant(false);
+    setCategory("일반");
     flash("공지 등록 완료");
     load();
   };
 
-  const markRead = async (n: Notice) => {
+  const markRead = async (n: EnrichedNotice) => {
     if (n.readBy?.includes(userName)) return;
     const s = sb();
     if (!s) return;
@@ -72,7 +116,7 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
     load();
   };
 
-  const togglePin = async (n: Notice) => {
+  const togglePin = async (n: EnrichedNotice) => {
     const s = sb();
     if (!s) return;
     await s.from("hq_notices").update({ pinned: !n.pinned }).eq("id", n.id);
@@ -90,6 +134,7 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
   };
 
   const canManage = myRole === "대표" || myRole === "이사" || myRole === "팀장";
+  const catMeta = (key: string) => CATEGORIES.find(c => c.key === key) ?? CATEGORIES[0];
 
   return (
     <div className="space-y-6">
@@ -98,37 +143,76 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
         <div className={C}>
           <h3 className="text-lg font-bold text-slate-800 mb-4">공지 작성</h3>
           <div className="space-y-3">
-            <div>
-              <label className={L}>제목</label>
-              <input className={I} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공지 제목" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className={L}>제목</label>
+                <input className={I} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공지 제목" />
+              </div>
+              <div>
+                <label className={L}>카테고리</label>
+                <div className="flex gap-2 flex-wrap">
+                  {CATEGORIES.map(c => (
+                    <button
+                      key={c.key}
+                      onClick={() => setCategory(c.key)}
+                      className={`${BADGE} transition-all ${category === c.key ? c.color + " ring-2 ring-offset-1 ring-blue-300" : "bg-slate-50 text-slate-400"}`}
+                    >
+                      {c.key}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div>
               <label className={L}>내용</label>
               <textarea className={`${I} min-h-[100px]`} rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder="공지 내용을 입력하세요" />
             </div>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
-                <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]" />
-                상단 고정
-              </label>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                  <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]" />
+                  상단 고정
+                </label>
+                <label className="flex items-center gap-2 text-sm text-red-500 cursor-pointer">
+                  <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} className="rounded border-red-300 text-red-500 focus:ring-red-300" />
+                  중요 공지
+                </label>
+              </div>
               <button className={B} onClick={handleAdd}>등록</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* 검색 */}
+      <div className="relative">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          className={`${I} pl-10`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="공지 검색..."
+        />
+      </div>
+
       {/* 공지 목록 */}
       {loading ? (
         <div className="text-center py-12 text-slate-400">불러오는 중...</div>
-      ) : notices.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">등록된 공지가 없습니다</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-slate-400">{search ? "검색 결과가 없습니다" : "등록된 공지가 없습니다"}</div>
       ) : (
         <div className="space-y-3">
-          {notices.map((n) => {
+          {filtered.map((n) => {
             const isRead = n.readBy?.includes(userName);
             const expanded = expandedId === n.id;
+            const cm = catMeta(n.category ?? "일반");
             return (
-              <div key={n.id} className={C}>
+              <div
+                key={n.id}
+                className={`${C} ${n.important ? "border-red-300 border-l-4 bg-red-50/30" : ""}`}
+              >
                 <div
                   className="flex items-start justify-between cursor-pointer"
                   onClick={() => {
@@ -137,16 +221,24 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
                   }}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {n.pinned && (
                         <span className={`${BADGE} bg-amber-50 text-amber-700`}>
                           <span className="mr-1">&#128204;</span>고정
                         </span>
                       )}
+                      {n.important && (
+                        <span className={`${BADGE} bg-red-50 text-red-600`}>
+                          중요
+                        </span>
+                      )}
+                      <span className={`${BADGE} ${cm.color}`}>
+                        {n.category ?? "일반"}
+                      </span>
                       {!isRead && (
                         <span className="w-2 h-2 rounded-full bg-[#3182F6] flex-shrink-0" />
                       )}
-                      <h4 className="font-semibold text-slate-800 truncate">{n.title}</h4>
+                      <h4 className={`text-slate-800 truncate ${isRead ? "font-medium" : "font-bold"}`}>{n.title}</h4>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-400">
                       <span>{n.author}</span>
@@ -161,7 +253,9 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
 
                 {expanded && (
                   <div className="mt-4 pt-4 border-t border-slate-100">
-                    <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{n.content || "(내용 없음)"}</p>
+                    <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                      {n.content ? linkify(n.content) : "(내용 없음)"}
+                    </div>
                     {canManage && (
                       <div className="flex gap-2 mt-4">
                         <button className={B2} onClick={(e) => { e.stopPropagation(); togglePin(n); }}>

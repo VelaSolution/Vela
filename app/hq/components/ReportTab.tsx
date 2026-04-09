@@ -205,12 +205,28 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
         <div className={C}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-slate-800">주간 보고서 자동 생성</h3>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button className={B2} onClick={generateWeekly} disabled={weeklyLoading}>
                 {weeklyLoading ? "생성중..." : "새로고침"}
               </button>
-              <button className={B} onClick={() => { navigator.clipboard.writeText(weeklyText); flash("클립보드에 복사됨"); }}>
-                복사
+              <button className={B2} onClick={() => { navigator.clipboard.writeText(weeklyText); flash("클립보드에 복사됨"); }}>
+                클립보드 복사
+              </button>
+              <button className={B} onClick={() => {
+                if (!weeklyText) { flash("보고서를 먼저 생성하세요"); return; }
+                const blob = new Blob([weeklyText], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                const dateStr = new Date().toISOString().slice(0, 10);
+                a.href = url;
+                a.download = `VELA_주간보고서_${dateStr}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                flash("파일 다운로드 완료");
+              }}>
+                PDF 다운로드
               </button>
             </div>
           </div>
