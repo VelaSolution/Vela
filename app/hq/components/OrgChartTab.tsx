@@ -205,6 +205,7 @@ export default function OrgChartTab({ userId, userName, myRole, flash }: Props) 
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<OrgNode | null>(null);
+  const [teamFilter, setTeamFilter] = useState<string>("전체");
 
   useEffect(() => {
     (async () => {
@@ -230,7 +231,14 @@ export default function OrgChartTab({ userId, userName, myRole, flash }: Props) 
     })();
   }, []);
 
-  const tree = buildTree(members);
+  // 팀 목록 추출
+  const teamNames = [...new Set(members.map(m => m.role).filter(Boolean))].sort();
+
+  // 필터 적용
+  const filteredMembers = teamFilter === "전체"
+    ? members
+    : members.filter(m => m.role === teamFilter || m.hqRole === "대표" || m.hqRole === "이사");
+  const tree = buildTree(filteredMembers);
 
   if (loading) {
     return (
@@ -271,6 +279,22 @@ export default function OrgChartTab({ userId, userName, myRole, flash }: Props) 
           <span className="text-sm font-semibold text-slate-700">전체</span>
         </div>
       </div>
+
+      {/* Team Filter */}
+      {teamNames.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => setTeamFilter("전체")}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${teamFilter === "전체" ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+            전체 조직도
+          </button>
+          {teamNames.map(t => (
+            <button key={t} onClick={() => setTeamFilter(t)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${teamFilter === t ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
+              {t}팀
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Org Chart */}
       <div className={`${C} !p-6 overflow-x-auto`}>
