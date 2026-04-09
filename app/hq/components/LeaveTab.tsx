@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HQRole, LeaveRequest } from "@/app/hq/types";
 import { sb, today, I, C, L, B, B2, BADGE } from "@/app/hq/utils";
 
@@ -18,6 +18,22 @@ const STATUS_STYLE: Record<string, string> = {
   "반려": "bg-red-50 text-red-700",
 };
 
+/* DB row (snake_case) → client LeaveRequest (camelCase) */
+function toClient(row: Record<string, unknown>): LeaveRequest {
+  return {
+    id: row.id as string,
+    requester: row.requester as string,
+    type: row.type as LeaveRequest["type"],
+    startDate: row.start_date as string,
+    endDate: row.end_date as string,
+    days: Number(row.days),
+    reason: row.reason as string,
+    status: row.status as LeaveRequest["status"],
+    approver: (row.approver as string) ?? "",
+    date: (row.created_at as string)?.slice(0, 10) ?? "",
+  };
+}
+
 function calcDays(start: string, end: string, type: string): number {
   if (!start || !end) return 0;
   const s = new Date(start);
@@ -29,31 +45,32 @@ function calcDays(start: string, end: string, type: string): number {
 
 export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [type, setType] = useState<LeaveRequest["type"]>("연차");
   const [startDate, setStartDate] = useState(today());
   const [endDate, setEndDate] = useState(today());
   const [reason, setReason] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState<"all" | "mine" | "pending">("mine");
+  const [filter, setFilter] = useState<"mine" | "pending" | "all">("mine");
 
-  useEffect(() => {
-    (async () => {
-      const s = sb();
-      if (s) {
-        try {
-          const { data } = await s.from("hq_leave").select("*").order("created_at", { ascending: false });
-          if (data && data.length >= 0) { setRequests(data as LeaveRequest[]); return; }
-        } catch {}
-      }
-      try { const d = localStorage.getItem("vela-hq-leave"); if (d) setRequests(JSON.parse(d)); } catch {}
-    })();
-  }, []);
+  /* ── fetch ────────────────────────────────────────────── */
+  const fetchAll = useCallback(async () => {
+    const s = sb();
+    if (!s) return;
+    const { data, error } = await s
+      .from("hq_leave")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) { flash("데이터 로드 실패"); return; }
+    setRequests((data ?? []).map(toClient));
+    setLoading(false);
+  }, [flash]);
 
-  const persist = (next: LeaveRequest[]) => { setRequests(next); localStorage.setItem("vela-hq-leave", JSON.stringify(next)); };
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const isManager = myRole === "팀장" || myRole === "이사" || myRole === "대표";
+  const isManager = myRole === "대표" || myRole === "이사" || myRole === "팀장";
 
-  // Remaining leave
+  /* ── remaining leave ──────────────────────────────────── */
   const year = new Date().getFullYear();
   const usedDays = requests
     .filter(r => r.requester === userName && r.status !== "반려" && r.startDate.startsWith(String(year)))
@@ -63,46 +80,69 @@ export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
 
   const days = calcDays(startDate, endDate, type);
 
-  const submit = () => {
+  /* ── submit ───────────────────────────────────────────── */
+  const submit = async () => {
     if (!reason.trim()) { flash("사유를 입력하세요"); return; }
     if (days > remaining && (type === "연차" || type === "반차(오전)" || type === "반차(오후)")) {
       flash("잔여 연차가 부족합니다"); return;
     }
-    const req: LeaveRequest = {
+    const s = sb();
+    if (!s) { flash("DB 연결 실패"); return; }
+    const { error } = await s.from("hq_leave").insert({
       id: crypto.randomUUID(),
+      requester: userName,
       type,
-      startDate,
-      endDate,
+      start_date: startDate,
+      end_date: endDate,
+      days,
       reason: reason.trim(),
       status: "대기",
-      approver: "",
-      requester: userName,
-      days,
-      date: today(),
-    };
-    persist([req, ...requests]);
+      approver: null,
+    });
+    if (error) { flash("신청 실패: " + error.message); return; }
     flash("휴가 신청이 완료되었습니다");
     setReason("");
     setStartDate(today());
     setEndDate(today());
     setType("연차");
     setShowForm(false);
+    fetchAll();
   };
 
-  const approve = (id: string) => {
-    persist(requests.map(r => r.id === id ? { ...r, status: "승인" as const, approver: userName } : r));
-    flash("승인 완료");
+  /* ── cancel (승인 전에만) ──────────────────────────────── */
+  const cancelRequest = async (id: string) => {
+    const s = sb();
+    if (!s) return;
+    const { error } = await s.from("hq_leave").delete().eq("id", id);
+    if (error) { flash("취소 실패"); return; }
+    flash("휴가 신청이 취소되었습니다");
+    fetchAll();
   };
-  const reject = (id: string) => {
-    persist(requests.map(r => r.id === id ? { ...r, status: "반려" as const, approver: userName } : r));
-    flash("반려 완료");
+
+  /* ── approve / reject ─────────────────────────────────── */
+  const updateStatus = async (id: string, status: "승인" | "반려") => {
+    const s = sb();
+    if (!s) { flash("DB 연결 실패"); return; }
+    const { error } = await s
+      .from("hq_leave")
+      .update({ status, approver: userName })
+      .eq("id", id);
+    if (error) { flash("처리 실패: " + error.message); return; }
+    flash(status === "승인" ? "승인 완료" : "반려 완료");
+    fetchAll();
   };
+
+  /* ── filter ───────────────────────────────────────────── */
+  const pendingCount = requests.filter(r => r.status === "대기" && r.requester !== userName).length;
 
   const filtered = requests.filter(r => {
     if (filter === "mine") return r.requester === userName;
     if (filter === "pending") return r.status === "대기";
     return true;
   });
+
+  /* ── render ───────────────────────────────────────────── */
+  if (loading) return <p className="text-center text-sm text-slate-400 py-12">불러오는 중...</p>;
 
   return (
     <div className="space-y-6">
@@ -188,15 +228,24 @@ export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-slate-700">신청 내역</h3>
           <div className="flex gap-1">
-            {([["mine", "내 신청"], ["pending", "대기중"], ["all", "전체"]] as const).map(([k, label]) => (
+            {([
+              ["mine", "내 신청", 0],
+              ["pending", "승인 대기", isManager ? pendingCount : 0],
+              ["all", "전체", 0],
+            ] as const).map(([k, label, badge]) => (
               <button
                 key={k}
-                onClick={() => setFilter(k)}
+                onClick={() => setFilter(k as "mine" | "pending" | "all")}
                 className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-all ${
                   filter === k ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
                 {label}
+                {badge > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold leading-none px-1">
+                    {badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -219,16 +268,23 @@ export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">{r.reason}</p>
                 </div>
-                {isManager && r.status === "대기" && r.requester !== userName && (
-                  <div className="flex gap-2 ml-3 shrink-0">
-                    <button onClick={() => approve(r.id)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors">
-                      승인
+                <div className="flex gap-2 ml-3 shrink-0">
+                  {isManager && r.status === "대기" && r.requester !== userName && (
+                    <>
+                      <button onClick={() => updateStatus(r.id, "승인")} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors">
+                        승인
+                      </button>
+                      <button onClick={() => updateStatus(r.id, "반려")} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100 transition-colors">
+                        반려
+                      </button>
+                    </>
+                  )}
+                  {r.requester === userName && r.status === "대기" && (
+                    <button onClick={() => cancelRequest(r.id)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 font-semibold hover:bg-red-50 hover:text-red-600 transition-colors">
+                      취소
                     </button>
-                    <button onClick={() => reject(r.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 font-semibold hover:bg-red-100 transition-colors">
-                      반려
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>
