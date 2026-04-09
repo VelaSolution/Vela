@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
-import type { HQRole, Mett, Metric, Goal, Task, AAR, Tab } from "@/app/hq/types";
-import { sb, fmt, today, C, B, BADGE, ST } from "@/app/hq/utils";
+import type { HQRole, Mett, Metric, Goal, Task, AAR, Tab, Feedback } from "@/app/hq/types";
+import { sb, fmt, today, I, C, B, BADGE, ST } from "@/app/hq/utils";
+
+type Comment = { id: string; author: string; text: string; time: string };
+type DetailItem = { type: "task" | "feedback"; id: string; title: string; status: string; extra: Record<string, string> };
 
 interface Props {
   userId: string;
@@ -18,8 +21,11 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [aars, setAars] = useState<AAR[]>([]);
   const [metts, setMetts] = useState<Mett[]>([]);
-  const [feedbackCount, setFeedbackCount] = useState(0);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [detail, setDetail] = useState<DetailItem | null>(null);
+  const [comments, setComments] = useState<Record<string, Comment[]>>({});
+  const [commentText, setCommentText] = useState("");
   const [todaySignups, setTodaySignups] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [activeSubs, setActiveSubs] = useState(0);
@@ -59,8 +65,14 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
       setTotalRevenue((payAll.data ?? []).reduce((s: number, p: { amount: number }) => s + (p.amount || 0), 0));
       setActiveSubs(paySub.count ?? 0);
 
-      // feedback count from localStorage or 0
-      setFeedbackCount(0);
+      // 피드백 로드
+      try {
+        const { data: fbData } = await s.from("hq_feedback").select("*").order("created_at", { ascending: false });
+        if (fbData) setFeedbacks(fbData.map((r: any) => ({ id: r.id, type: r.type ?? "", title: r.title ?? "", description: r.description ?? "", priority: r.priority ?? "중간", status: r.status ?? "신규", date: r.created_at?.slice(0, 10) ?? "", author: r.author ?? "" })));
+      } catch {}
+
+      // 댓글 로드
+      try { const c = localStorage.getItem("vela-hq-dashboard-comments"); if (c) setComments(JSON.parse(c)); } catch {}
     } catch {
       flash("데이터 로딩 실패");
     } finally {
@@ -79,6 +91,26 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const achievedGoals = goals.filter((g) => g.status === "completed").length;
   const totalGoals = goals.length || 1;
   const monthAars = aars.filter((a) => a.date?.startsWith(today().slice(0, 7))).length;
+  const feedbackCount = feedbacks.filter(f => f.status !== "완료").length;
+
+  const addComment = (itemId: string) => {
+    if (!commentText.trim()) return;
+    const c: Comment = { id: Date.now().toString(), author: userName, text: commentText.trim(), time: new Date().toLocaleString("ko-KR") };
+    const next = { ...comments, [itemId]: [...(comments[itemId] ?? []), c] };
+    setComments(next);
+    localStorage.setItem("vela-hq-dashboard-comments", JSON.stringify(next));
+    setCommentText("");
+  };
+
+  const openTask = (t: Task) => setDetail({
+    type: "task", id: t.id, title: t.title, status: t.status,
+    extra: { 담당자: t.assignee || "-", 마감일: t.deadline || "-", 결과: t.result || "-" },
+  });
+
+  const openFeedback = (f: Feedback) => setDetail({
+    type: "feedback", id: f.id, title: f.title, status: f.status,
+    extra: { 유형: f.type, 우선순위: f.priority, 설명: f.description || "-", 작성자: f.author, 날짜: f.date },
+  });
 
   // 7-day revenue chart
   const last7 = metrics.slice(0, 7).reverse();
@@ -94,6 +126,65 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
   return (
     <div className="space-y-6">
+      {/* 상세 모달 */}
+      {detail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setDetail(null); setCommentText(""); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-slate-100">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-base">{detail.type === "task" ? "✅" : "🐛"}</span>
+                <h3 className="text-lg font-bold text-slate-900 flex-1">{detail.title}</h3>
+                <span className={`${BADGE} ${(ST[detail.status] ?? ST.pending).bg}`}>{(ST[detail.status] ?? ST.pending).label}</span>
+                <button onClick={() => { setDetail(null); setCommentText(""); }} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400">✕</button>
+              </div>
+              <p className="text-xs text-slate-400">{detail.type === "task" ? "태스크" : "피드백"}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              {/* 상세 정보 */}
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(detail.extra).map(([k, v]) => (
+                  <div key={k} className="bg-slate-50 rounded-xl px-3 py-2">
+                    <p className="text-[10px] font-semibold text-slate-400 mb-0.5">{k}</p>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{v}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* 댓글 */}
+              <div>
+                <h4 className="text-sm font-bold text-slate-700 mb-3">댓글 ({(comments[detail.id] ?? []).length})</h4>
+                {(comments[detail.id] ?? []).length === 0 ? (
+                  <p className="text-xs text-slate-400 py-3 text-center">아직 댓글이 없습니다</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(comments[detail.id] ?? []).map(c => (
+                      <div key={c.id} className="bg-slate-50 rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-5 h-5 bg-[#3182F6] rounded-full flex items-center justify-center">
+                            <span className="text-[9px] text-white font-bold">{c.author[0]}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-slate-700">{c.author}</span>
+                          <span className="text-[10px] text-slate-400">{c.time}</span>
+                        </div>
+                        <p className="text-sm text-slate-600 pl-7">{c.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 댓글 입력 */}
+            <div className="px-5 py-3 border-t border-slate-100 flex gap-2">
+              <input className={`${I} flex-1`} placeholder="댓글을 입력하세요..."
+                value={commentText} onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && detail) addComment(detail.id); }} />
+              <button className={B} onClick={() => detail && addComment(detail.id)}>전송</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -251,10 +342,36 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
             <div className="space-y-1.5">
               {tasks.slice(0, 4).map((t) => {
                 const st = ST[t.status] ?? ST.pending;
+                const cmtCount = (comments[t.id] ?? []).length;
                 return (
-                  <div key={t.id} className="flex items-center gap-2 text-sm">
+                  <div key={t.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 rounded-lg px-1 py-0.5 -mx-1 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); openTask(t); }}>
                     <span className={`${BADGE} text-[10px] ${st.bg}`}>{st.label}</span>
                     <span className="truncate text-slate-700">{t.title}</span>
+                    {cmtCount > 0 && <span className="text-[10px] text-slate-400 flex-shrink-0">💬{cmtCount}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Feedback */}
+        <div className={`${C} cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("feedback")}>
+          <h3 className="mb-2 text-sm font-bold text-slate-700">최근 피드백 <span className="text-[10px] text-slate-400 font-normal">→</span></h3>
+          {feedbacks.length === 0 ? (
+            <p className="text-sm text-slate-400">피드백이 없습니다.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {feedbacks.slice(0, 4).map((f) => {
+                const cmtCount = (comments[f.id] ?? []).length;
+                return (
+                  <div key={f.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-slate-50 rounded-lg px-1 py-0.5 -mx-1 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); openFeedback(f); }}>
+                    <span className={`${BADGE} text-[10px] ${f.status === "완료" ? "bg-emerald-50 text-emerald-700" : f.status === "진행" ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"}`}>{f.status}</span>
+                    <span className="truncate text-slate-700">{f.title}</span>
+                    <span className={`${BADGE} text-[9px] ${f.priority === "높음" ? "bg-red-50 text-red-600" : f.priority === "낮음" ? "bg-slate-50 text-slate-500" : "bg-amber-50 text-amber-600"}`}>{f.priority}</span>
+                    {cmtCount > 0 && <span className="text-[10px] text-slate-400 flex-shrink-0">💬{cmtCount}</span>}
                   </div>
                 );
               })}
