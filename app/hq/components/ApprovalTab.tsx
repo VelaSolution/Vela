@@ -12,18 +12,25 @@ interface Props {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  "대기": "bg-amber-50 text-amber-700",
-  "승인": "bg-emerald-50 text-emerald-700",
-  "반려": "bg-red-50 text-red-700",
+  "\ub300\uae30": "bg-amber-50 text-amber-700",
+  "\uc2b9\uc778": "bg-emerald-50 text-emerald-700",
+  "\ubc18\ub824": "bg-red-50 text-red-700",
 };
 
 type TeamMember = { name: string; hqRole: string };
 
+interface EnrichedApproval extends Approval {
+  urgent?: boolean;
+  approved_at?: string;
+  seq?: number;
+}
+
 export default function ApprovalTab({ userId, userName, myRole, flash }: Props) {
-  const [list, setList] = useState<Approval[]>([]);
+  const [list, setList] = useState<EnrichedApproval[]>([]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [comment, setComment] = useState("");
+  const [urgent, setUrgent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [filter, setFilter] = useState<"all" | "mine" | "pending">("all");
@@ -31,9 +38,10 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
   const [selectedApprover, setSelectedApprover] = useState("");
   const [approverSearch, setApproverSearch] = useState("");
   const [showApproverList, setShowApproverList] = useState(false);
+  const [expandedApproval, setExpandedApproval] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const canApprove = myRole === "대표" || myRole === "이사" || myRole === "팀장";
+  const canApprove = myRole === "\ub300\ud45c" || myRole === "\uc774\uc0ac" || myRole === "\ud300\uc7a5";
 
   const load = async () => {
     const s = sb();
@@ -43,16 +51,19 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
       s.from("hq_team").select("name, hq_role").order("created_at", { ascending: true }),
     ]);
     if (data)
-      setList(data.map((r: any) => ({
+      setList(data.map((r: any, index: number) => ({
         id: r.id, title: r.title, content: r.content,
         author: r.author, approver: r.approver,
         status: r.status, comment: r.comment || "",
         fileUrl: r.file_url, fileName: r.file_name,
         date: r.created_at,
+        urgent: r.urgent ?? false,
+        approved_at: r.approved_at ?? null,
+        seq: data.length - index,
       })));
     if (teamData)
       setApprovers(
-        (teamData as any[]).map(m => ({ name: m.name, hqRole: m.hq_role ?? "팀원" })).filter(m => ["대표", "이사"].includes(m.hqRole))
+        (teamData as any[]).map(m => ({ name: m.name, hqRole: m.hq_role ?? "\ud300\uc6d0" })).filter(m => ["\ub300\ud45c", "\uc774\uc0ac"].includes(m.hqRole))
       );
     setLoading(false);
   };
@@ -60,8 +71,8 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
   useEffect(() => { load(); }, []);
 
   const submit = async () => {
-    if (!title.trim()) return flash("제목을 입력하세요");
-    if (!selectedApprover) return flash("결재자를 선택하세요");
+    if (!title.trim()) return flash("\uc81c\ubaa9\uc744 \uc785\ub825\ud558\uc138\uc694");
+    if (!selectedApprover) return flash("\uacb0\uc7ac\uc790\ub97c \uc120\ud0dd\ud558\uc138\uc694");
     const s = sb();
     if (!s) return;
 
@@ -80,21 +91,27 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
     const { error } = await s.from("hq_approvals").insert({
       title: title.trim(), content: content.trim(),
       author: userName, approver: selectedApprover,
-      status: "대기",
+      status: "\ub300\uae30",
       file_url: fileUrl || null, file_name: fileName || null,
+      urgent: urgent,
     });
-    if (error) return flash("저장 실패: " + error.message);
-    flash("결재가 요청되었습니다");
-    setTitle(""); setContent(""); setSelectedApprover(""); setFile(null);
+    if (error) return flash("\uc800\uc7a5 \uc2e4\ud328: " + error.message);
+    flash("\uacb0\uc7ac\uac00 \uc694\uccad\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
+    setTitle(""); setContent(""); setSelectedApprover(""); setFile(null); setUrgent(false);
+    setApproverSearch("");
     if (fileRef.current) fileRef.current.value = "";
     load();
   };
 
-  const act = async (id: string, status: "승인" | "반려") => {
+  const act = async (id: string, status: "\uc2b9\uc778" | "\ubc18\ub824") => {
     const s = sb();
     if (!s) return;
-    await s.from("hq_approvals").update({ status, comment: comment.trim() || null }).eq("id", id);
-    flash(`${status}되었습니다`);
+    await s.from("hq_approvals").update({
+      status,
+      comment: comment.trim() || null,
+      approved_at: new Date().toISOString(),
+    }).eq("id", id);
+    flash(`${status}\ub418\uc5c8\uc2b5\ub2c8\ub2e4`);
     setComment("");
     load();
   };
@@ -103,32 +120,43 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
     const s = sb();
     if (!s) return;
     await s.from("hq_approvals").delete().eq("id", id);
-    flash("삭제되었습니다");
+    flash("\uc0ad\uc81c\ub418\uc5c8\uc2b5\ub2c8\ub2e4");
     load();
   };
 
   const filtered = list.filter(a => {
     if (filter === "mine") return a.author === userName || a.approver === userName;
-    if (filter === "pending") return a.status === "대기" && a.approver === userName;
+    if (filter === "pending") return a.status === "\ub300\uae30" && a.approver === userName;
     return true;
   });
 
-  const pendingCount = list.filter(a => a.status === "대기" && a.approver === userName).length;
+  const pendingCount = list.filter(a => a.status === "\ub300\uae30" && a.approver === userName).length;
+
+  function seqLabel(seq: number) {
+    return `\uacb0\uc7ac-${String(seq).padStart(3, "0")}`;
+  }
+
+  function formatDateTime(dateStr: string) {
+    return new Date(dateStr).toLocaleString("ko-KR", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+  }
 
   return (
     <div className="space-y-6">
-      {/* 결재 요청 폼 */}
+      {/* \uacb0\uc7ac \uc694\uccad \ud3fc */}
       <div className={C}>
-        <h3 className="text-lg font-bold text-slate-800 mb-4">결재 요청</h3>
+        <h3 className="text-lg font-bold text-slate-800 mb-4">\uacb0\uc7ac \uc694\uccad</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={L}>제목</label>
-              <input className={I} placeholder="결재 제목" value={title} onChange={e => setTitle(e.target.value)} />
+              <label className={L}>\uc81c\ubaa9</label>
+              <input className={I} placeholder="\uacb0\uc7ac \uc81c\ubaa9" value={title} onChange={e => setTitle(e.target.value)} />
             </div>
             <div className="relative">
-              <label className={L}>결재자 (대표/이사)</label>
-              <input className={I} placeholder="이름으로 검색..." value={approverSearch}
+              <label className={L}>\uacb0\uc7ac\uc790 (\ub300\ud45c/\uc774\uc0ac)</label>
+              <input className={I} placeholder="\uc774\ub984\uc73c\ub85c \uac80\uc0c9..." value={approverSearch}
                 onChange={e => { setApproverSearch(e.target.value); setShowApproverList(true); setSelectedApprover(""); }}
                 onFocus={() => setShowApproverList(true)} />
               {selectedApprover && (
@@ -137,7 +165,7 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
               {showApproverList && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto">
                   {approvers.filter(a => !approverSearch || a.name.includes(approverSearch)).length === 0 ? (
-                    <p className="text-xs text-slate-400 px-3 py-2">검색 결과 없음</p>
+                    <p className="text-xs text-slate-400 px-3 py-2">\uac80\uc0c9 \uacb0\uacfc \uc5c6\uc74c</p>
                   ) : (
                     approvers.filter(a => !approverSearch || a.name.includes(approverSearch)).map(a => (
                       <button key={a.name} type="button"
@@ -153,34 +181,45 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
             </div>
           </div>
           <div>
-            <label className={L}>보고자</label>
+            <label className={L}>\ubcf4\uace0\uc790</label>
             <div className="text-sm text-slate-600 bg-slate-50 rounded-xl px-3.5 py-2.5 border border-slate-200">{userName} ({myRole})</div>
           </div>
           <div>
-            <label className={L}>내용</label>
+            <label className={L}>\ub0b4\uc6a9</label>
             <textarea
               className={`${I} min-h-[100px] resize-y`}
-              placeholder="결재 내용을 작성하세요"
+              placeholder="\uacb0\uc7ac \ub0b4\uc6a9\uc744 \uc791\uc131\ud558\uc138\uc694"
               value={content} onChange={e => setContent(e.target.value)} rows={4}
             />
           </div>
           <div>
-            <label className={L}>첨부파일</label>
+            <label className={L}>\ucca8\ubd80\ud30c\uc77c</label>
             <input ref={fileRef} type="file"
               className="text-sm text-slate-500 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
               onChange={e => setFile(e.target.files?.[0] || null)}
             />
           </div>
-          <button className={B} onClick={submit}>결재 요청</button>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={urgent}
+                onChange={(e) => setUrgent(e.target.checked)}
+                className="rounded border-red-300 text-red-500 focus:ring-red-300"
+              />
+              <span className="text-red-500 font-semibold">\uae34\uae09 \uacb0\uc7ac</span>
+            </label>
+            <button className={B} onClick={submit}>\uacb0\uc7ac \uc694\uccad</button>
+          </div>
         </div>
       </div>
 
-      {/* 필터 */}
+      {/* \ud544\ud130 */}
       <div className="flex gap-2 items-center">
         {[
-          { key: "all" as const, label: "전체" },
-          { key: "mine" as const, label: "내 결재" },
-          { key: "pending" as const, label: `승인 대기 ${pendingCount > 0 ? `(${pendingCount})` : ""}` },
+          { key: "all" as const, label: "\uc804\uccb4" },
+          { key: "mine" as const, label: "\ub0b4 \uacb0\uc7ac" },
+          { key: "pending" as const, label: `\uc2b9\uc778 \ub300\uae30 ${pendingCount > 0 ? `(${pendingCount})` : ""}` },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
@@ -191,63 +230,127 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
         ))}
       </div>
 
-      {/* 결재 목록 */}
+      {/* \uacb0\uc7ac \ubaa9\ub85d */}
       <div className={C}>
-        <h3 className="text-lg font-bold text-slate-800 mb-4">결재 목록</h3>
+        <h3 className="text-lg font-bold text-slate-800 mb-4">\uacb0\uc7ac \ubaa9\ub85d</h3>
         {loading ? (
-          <p className="text-sm text-slate-400 py-8 text-center">불러오는 중...</p>
+          <p className="text-sm text-slate-400 py-8 text-center">\ubd88\ub7ec\uc624\ub294 \uc911...</p>
         ) : filtered.length === 0 ? (
-          <p className="text-sm text-slate-400 py-8 text-center">결재 내역이 없습니다</p>
+          <p className="text-sm text-slate-400 py-8 text-center">\uacb0\uc7ac \ub0b4\uc5ed\uc774 \uc5c6\uc2b5\ub2c8\ub2e4</p>
         ) : (
           <div className="space-y-3">
             {filtered.map(a => {
               const isApprover = a.approver === userName;
               const isAuthor = a.author === userName;
+              const isExpanded = expandedApproval === a.id;
               return (
-                <div key={a.id} className="rounded-xl border border-slate-100 p-4 hover:bg-slate-50/60 transition-colors">
-                  <div className="flex items-start justify-between gap-3 mb-2">
+                <div key={a.id} className={`rounded-xl border p-4 hover:bg-slate-50/60 transition-colors ${a.urgent ? "border-red-300 border-l-4 bg-red-50/20" : "border-slate-100"}`}>
+                  <div
+                    className="flex items-start justify-between gap-3 mb-2 cursor-pointer"
+                    onClick={() => setExpandedApproval(isExpanded ? null : a.id)}
+                  >
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded">
+                          {seqLabel(a.seq ?? 0)}
+                        </span>
+                        {a.urgent && (
+                          <span className={`${BADGE} text-[10px] bg-red-500 text-white`}>\uae34\uae09</span>
+                        )}
                         <span className="text-sm font-bold text-slate-800">{a.title}</span>
                         <span className={`${BADGE} ${STATUS_STYLE[a.status]}`}>{a.status}</span>
-                        {isApprover && a.status === "대기" && (
-                          <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">결재 필요</span>
+                        {isApprover && a.status === "\ub300\uae30" && (
+                          <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">\uacb0\uc7ac \ud544\uc694</span>
                         )}
                       </div>
                       <p className="text-xs text-slate-400">
-                        보고자: <span className="text-slate-600 font-medium">{a.author}</span> → 결재자: <span className="text-slate-600 font-medium">{a.approver}</span>
-                        {" · "}{new Date(a.date).toLocaleDateString("ko-KR")}
+                        \ubcf4\uace0\uc790: <span className="text-slate-600 font-medium">{a.author}</span> → \uacb0\uc7ac\uc790: <span className="text-slate-600 font-medium">{a.approver}</span>
                       </p>
                     </div>
-                    {isAuthor && a.status === "대기" && (
-                      <button onClick={() => delApproval(a.id)} className="text-xs text-slate-400 hover:text-red-500 transition-colors">취소</button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isAuthor && a.status === "\ub300\uae30" && (
+                        <button onClick={(e) => { e.stopPropagation(); delApproval(a.id); }} className="text-xs text-slate-400 hover:text-red-500 transition-colors">\ucde8\uc18c</button>
+                      )}
+                      <svg className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
 
-                  {a.content && <p className="text-sm text-slate-600 mb-2 whitespace-pre-wrap">{a.content}</p>}
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                      {a.content && <p className="text-sm text-slate-600 whitespace-pre-wrap">{a.content}</p>}
 
-                  {a.fileUrl && (
-                    <a href={a.fileUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-[#3182F6] hover:underline mb-2">
-                      📎 {a.fileName || "첨부파일"}
-                    </a>
-                  )}
+                      {a.fileUrl && (
+                        <a href={a.fileUrl} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-[#3182F6] hover:underline">
+                          \ud83d\udcce {a.fileName || "\ucca8\ubd80\ud30c\uc77c"}
+                        </a>
+                      )}
 
-                  {a.comment && (
-                    <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2 mb-2">
-                      💬 <span className="font-semibold">{a.approver}:</span> {a.comment}
-                    </p>
-                  )}
+                      {a.comment && (
+                        <p className="text-xs text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+                          \ud83d\udcac <span className="font-semibold">{a.approver}:</span> {a.comment}
+                        </p>
+                      )}
 
-                  {/* 결재자만 승인/반려 가능 */}
-                  {a.status === "대기" && isApprover && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
-                      <input className={`${I} !text-xs flex-1`} placeholder="코멘트 (선택)"
-                        value={comment} onChange={e => setComment(e.target.value)} />
-                      <button className="rounded-xl bg-emerald-500 text-white font-semibold px-4 py-2 text-xs hover:bg-emerald-600 transition-colors"
-                        onClick={() => act(a.id, "승인")}>승인</button>
-                      <button className="rounded-xl bg-red-500 text-white font-semibold px-4 py-2 text-xs hover:bg-red-600 transition-colors"
-                        onClick={() => act(a.id, "반려")}>반려</button>
+                      {/* Timeline / History */}
+                      <div className="bg-slate-50/80 rounded-xl p-3">
+                        <p className="text-xs font-semibold text-slate-500 mb-2">\uacb0\uc7ac \uc774\ub825</p>
+                        <div className="space-y-2">
+                          {/* Submitted */}
+                          <div className="flex items-start gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[#3182F6] mt-1.5 flex-shrink-0" />
+                            <div>
+                              <p className="text-xs text-slate-600">
+                                <span className="font-semibold">{a.author}</span>\uc774(\uac00) \uacb0\uc7ac\ub97c \uc694\uccad\ud588\uc2b5\ub2c8\ub2e4
+                              </p>
+                              <p className="text-[10px] text-slate-400">{formatDateTime(a.date)}</p>
+                            </div>
+                          </div>
+
+                          {/* Approved/Rejected */}
+                          {a.status !== "\ub300\uae30" && (
+                            <div className="flex items-start gap-2">
+                              <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.status === "\uc2b9\uc778" ? "bg-emerald-500" : "bg-red-500"}`} />
+                              <div>
+                                <p className="text-xs text-slate-600">
+                                  <span className="font-semibold">{a.approver}</span>\uc774(\uac00){" "}
+                                  <span className={a.status === "\uc2b9\uc778" ? "text-emerald-600 font-semibold" : "text-red-600 font-semibold"}>
+                                    {a.status}
+                                  </span>
+                                  \ud588\uc2b5\ub2c8\ub2e4
+                                </p>
+                                <p className="text-[10px] text-slate-400">
+                                  {a.approved_at ? formatDateTime(a.approved_at) : "-"}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Pending indicator */}
+                          {a.status === "\ub300\uae30" && (
+                            <div className="flex items-start gap-2">
+                              <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0 animate-pulse" />
+                              <p className="text-xs text-amber-600">
+                                <span className="font-semibold">{a.approver}</span>\uc758 \uacb0\uc7ac\ub97c \ub300\uae30 \uc911\uc785\ub2c8\ub2e4...
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* \uacb0\uc7ac\uc790\ub9cc \uc2b9\uc778/\ubc18\ub824 \uac00\ub2a5 */}
+                      {a.status === "\ub300\uae30" && isApprover && (
+                        <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                          <input className={`${I} !text-xs flex-1`} placeholder="\ucf54\uba58\ud2b8 (\uc120\ud0dd)"
+                            value={comment} onChange={e => setComment(e.target.value)} />
+                          <button className="rounded-xl bg-emerald-500 text-white font-semibold px-4 py-2 text-xs hover:bg-emerald-600 transition-colors"
+                            onClick={() => act(a.id, "\uc2b9\uc778")}>\uc2b9\uc778</button>
+                          <button className="rounded-xl bg-red-500 text-white font-semibold px-4 py-2 text-xs hover:bg-red-600 transition-colors"
+                            onClick={() => act(a.id, "\ubc18\ub824")}>\ubc18\ub824</button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

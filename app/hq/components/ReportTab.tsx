@@ -13,56 +13,82 @@ interface Props {
 
 type SubTab = "weekly" | "daily" | "issue" | "project";
 
+const TEMPLATES = [
+  {
+    label: "일일 업무 보고",
+    content: `[오늘 한 일]\n- \n\n[내일 할 일]\n- \n\n[이슈사항]\n- `,
+    problems: "",
+    next: "",
+  },
+  {
+    label: "주간 보고",
+    content: `[이번 주 성과]\n- \n\n[다음 주 계획]\n- \n\n[건의사항]\n- `,
+    problems: "",
+    next: "",
+  },
+  {
+    label: "프로젝트 진행",
+    content: `[진행률]\n- \n\n[이슈]\n- \n\n[일정변경]\n- \n\n[리스크]\n- `,
+    problems: "",
+    next: "",
+  },
+];
+
 export default function ReportTab({ userId, userName, myRole, flash }: Props) {
   const [sub, setSub] = useState<SubTab>("weekly");
+  const [showTemplates, setShowTemplates] = useState(false);
 
-  /* ── weekly summary ── */
+  /* -- weekly summary -- */
   const [weeklyText, setWeeklyText] = useState("");
   const [weeklyLoading, setWeeklyLoading] = useState(false);
 
-  /* ── daily ── */
-  const [dailies, setDailies] = useState<(DailyReport & { author?: string })[]>([]);
+  /* -- daily -- */
+  const [dailies, setDailies] = useState<(DailyReport & { author?: string; feedback?: string })[]>([]);
   const [dDate, setDDate] = useState(today());
   const [dContent, setDContent] = useState("");
   const [dProblems, setDProblems] = useState("");
   const [dNext, setDNext] = useState("");
 
-  /* ── issue ── */
-  const [issues, setIssues] = useState<(IssueReport & { author?: string })[]>([]);
+  /* -- issue -- */
+  const [issues, setIssues] = useState<(IssueReport & { author?: string; feedback?: string })[]>([]);
   const [iTitle, setITitle] = useState("");
   const [iDesc, setIDesc] = useState("");
   const [iPriority, setIPriority] = useState("중간");
   const [iStatus, setIStatus] = useState("신규");
 
-  /* ── project ── */
-  const [projects, setProjects] = useState<(ProjectReport & { author?: string })[]>([]);
+  /* -- project -- */
+  const [projects, setProjects] = useState<(ProjectReport & { author?: string; feedback?: string })[]>([]);
   const [pTitle, setPTitle] = useState("");
   const [pProgress, setPProgress] = useState(0);
   const [pDeadline, setPDeadline] = useState(today());
   const [pDesc, setPDesc] = useState("");
 
+  /* -- feedback input -- */
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState("");
+
   const canApprove = myRole === "대표" || myRole === "이사" || myRole === "팀장";
 
-  /* ── loaders ── */
+  /* -- loaders -- */
   const loadDailies = async () => {
     const s = sb();
     if (!s) return;
     const { data } = await s.from("hq_reports").select("*").eq("report_type", "daily").order("created_at", { ascending: false });
-    if (data) setDailies(data.map((d: any) => ({ id: d.id, date: d.created_at?.slice(0, 10) ?? "", content: d.content ?? "", problems: d.problems ?? "", nextSteps: d.next_steps ?? "", status: d.status ?? "submitted", approver: d.approver, author: d.author })));
+    if (data) setDailies(data.map((d: any) => ({ id: d.id, date: d.created_at?.slice(0, 10) ?? "", content: d.content ?? "", problems: d.problems ?? "", nextSteps: d.next_steps ?? "", status: d.status ?? "submitted", approver: d.approver, author: d.author, feedback: d.feedback ?? "" })));
   };
 
   const loadIssues = async () => {
     const s = sb();
     if (!s) return;
     const { data } = await s.from("hq_reports").select("*").eq("report_type", "issue").order("created_at", { ascending: false });
-    if (data) setIssues(data.map((d: any) => ({ id: d.id, title: d.title ?? "", description: d.description ?? "", priority: d.priority ?? "중간", status: d.status ?? "신규", reportStatus: d.status ?? "submitted", approver: d.approver, author: d.author })));
+    if (data) setIssues(data.map((d: any) => ({ id: d.id, title: d.title ?? "", description: d.description ?? "", priority: d.priority ?? "중간", status: d.status ?? "신규", reportStatus: d.status ?? "submitted", approver: d.approver, author: d.author, feedback: d.feedback ?? "" })));
   };
 
   const loadProjects = async () => {
     const s = sb();
     if (!s) return;
     const { data } = await s.from("hq_reports").select("*").eq("report_type", "project").order("created_at", { ascending: false });
-    if (data) setProjects(data.map((d: any) => ({ id: d.id, title: d.title ?? "", progress: d.progress ?? 0, description: d.description ?? "", deadline: d.deadline ?? "", reportStatus: d.status ?? "submitted", approver: d.approver, author: d.author })));
+    if (data) setProjects(data.map((d: any) => ({ id: d.id, title: d.title ?? "", progress: d.progress ?? 0, description: d.description ?? "", deadline: d.deadline ?? "", reportStatus: d.status ?? "submitted", approver: d.approver, author: d.author, feedback: d.feedback ?? "" })));
   };
 
   const generateWeekly = async () => {
@@ -82,7 +108,6 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     lines.push(`=== 주간 보고서 (${sevenDaysAgo.slice(0, 10)} ~ ${today()}) ===`);
     lines.push(`작성자: ${userName}\n`);
 
-    // KPI
     lines.push("[ KPI 현황 ]");
     if (kpiRes.data?.length) {
       kpiRes.data.forEach((k: any) => lines.push(`  ${k.date} | 매출 ${fmt(k.revenue ?? 0)}원 | 사용자 ${fmt(k.users_count ?? 0)}명 | 전환율 ${k.conversion_rate ?? 0}%`));
@@ -91,7 +116,6 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     }
     lines.push("");
 
-    // Goals
     lines.push("[ 목표 달성률 ]");
     if (goalRes.data?.length) {
       goalRes.data.slice(0, 5).forEach((g: any) => {
@@ -103,7 +127,6 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     }
     lines.push("");
 
-    // Tasks
     lines.push("[ 태스크 진행 ]");
     if (taskRes.data?.length) {
       const byStatus: Record<string, number> = {};
@@ -114,7 +137,6 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     }
     lines.push("");
 
-    // AAR
     lines.push("[ AAR (사후검토) ]");
     if (aarRes.data?.length) {
       aarRes.data.forEach((a: any) => lines.push(`  ${a.date} | 목표: ${a.goal} | 결과: ${a.result}`));
@@ -133,7 +155,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     if (sub === "project") loadProjects();
   }, [sub]);
 
-  /* ── actions ── */
+  /* -- actions -- */
   const addDaily = async () => {
     if (!dContent.trim()) { flash("내용을 입력하세요"); return; }
     const s = sb();
@@ -171,9 +193,29 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     if (sub === "project") loadProjects();
   };
 
+  const submitFeedback = async (id: string) => {
+    if (!feedbackText.trim()) { flash("코멘트를 입력하세요"); return; }
+    const s = sb();
+    if (!s) return;
+    await s.from("hq_reports").update({ feedback: feedbackText.trim() }).eq("id", id);
+    flash("코멘트 등록 완료");
+    setFeedbackId(null);
+    setFeedbackText("");
+    if (sub === "daily") loadDailies();
+    if (sub === "issue") loadIssues();
+    if (sub === "project") loadProjects();
+  };
+
   const statusBadge = (st: string) => {
     const r = REPORT_ST[st] ?? REPORT_ST.draft;
-    return <span className={`${BADGE} ${r.bg}`}>{r.label}</span>;
+    const sizeClass = "px-3 py-1.5 text-xs";
+    return (
+      <span className={`inline-flex items-center rounded-xl font-bold shadow-sm ${sizeClass} ${r.bg}`}>
+        {st === "approved" && <span className="mr-1">&#10003;</span>}
+        {st === "rejected" && <span className="mr-1">&#10007;</span>}
+        {r.label}
+      </span>
+    );
   };
 
   const priorityColor: Record<string, string> = { "높음": "bg-red-50 text-red-700", "중간": "bg-amber-50 text-amber-700", "낮음": "bg-slate-50 text-slate-600" };
@@ -184,6 +226,46 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
     { key: "issue", label: "이슈 보고" },
     { key: "project", label: "프로젝트 보고" },
   ];
+
+  const applyTemplate = (tpl: typeof TEMPLATES[number]) => {
+    setDContent(tpl.content);
+    setDProblems(tpl.problems);
+    setDNext(tpl.next);
+    setShowTemplates(false);
+    flash(`"${tpl.label}" 템플릿 적용됨`);
+  };
+
+  const FeedbackSection = ({ item }: { item: { id: string; feedback?: string; author?: string } }) => (
+    <div className="mt-3 pt-3 border-t border-slate-100">
+      {item.feedback && (
+        <div className="mb-2 p-2.5 rounded-xl bg-amber-50/60 border border-amber-100">
+          <p className="text-[10px] font-bold text-amber-600 mb-0.5">승인자 코멘트</p>
+          <p className="text-xs text-amber-800">{item.feedback}</p>
+        </div>
+      )}
+      {canApprove && item.author !== userName && (
+        <>
+          {feedbackId === item.id ? (
+            <div className="flex gap-2 items-end">
+              <textarea
+                className={`${I} flex-1 min-h-[40px] text-xs`}
+                rows={2}
+                placeholder="코멘트를 입력하세요..."
+                value={feedbackText}
+                onChange={e => setFeedbackText(e.target.value)}
+              />
+              <button className="rounded-xl bg-amber-50 text-amber-700 font-semibold px-3 py-2 text-xs hover:bg-amber-100 transition-all shrink-0" onClick={() => submitFeedback(item.id)}>등록</button>
+              <button className="rounded-xl bg-slate-100 text-slate-500 font-semibold px-3 py-2 text-xs hover:bg-slate-200 transition-all shrink-0" onClick={() => { setFeedbackId(null); setFeedbackText(""); }}>취소</button>
+            </div>
+          ) : (
+            <button className="text-xs text-slate-400 hover:text-[#3182F6] font-semibold transition-colors" onClick={() => { setFeedbackId(item.id); setFeedbackText(item.feedback ?? ""); }}>
+              {item.feedback ? "코멘트 수정" : "+ 코멘트 추가"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -200,7 +282,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
         ))}
       </div>
 
-      {/* ── Weekly ── */}
+      {/* -- Weekly -- */}
       {sub === "weekly" && (
         <div className={C}>
           <div className="flex items-center justify-between mb-4">
@@ -236,11 +318,31 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
         </div>
       )}
 
-      {/* ── Daily ── */}
+      {/* -- Daily -- */}
       {sub === "daily" && (
         <>
           <div className={C}>
-            <h3 className="text-lg font-bold text-slate-800 mb-4">일일 보고 작성</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-800">일일 보고 작성</h3>
+              <div className="relative">
+                <button className={B2} onClick={() => setShowTemplates(!showTemplates)}>
+                  템플릿
+                </button>
+                {showTemplates && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg z-20 overflow-hidden">
+                    {TEMPLATES.map((tpl, i) => (
+                      <button
+                        key={i}
+                        onClick={() => applyTemplate(tpl)}
+                        className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-[#3182F6]/5 hover:text-[#3182F6] transition-colors border-b border-slate-100 last:border-0 font-medium"
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="space-y-3">
               <div>
                 <label className={L}>날짜</label>
@@ -283,6 +385,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
                     <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={() => approveReport(d.id, "rejected")}>반려</button>
                   </div>
                 )}
+                <FeedbackSection item={d} />
               </div>
             ))}
             {dailies.length === 0 && <div className="text-center py-8 text-slate-400">일일 보고가 없습니다</div>}
@@ -290,7 +393,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
         </>
       )}
 
-      {/* ── Issue ── */}
+      {/* -- Issue -- */}
       {sub === "issue" && (
         <>
           <div className={C}>
@@ -346,6 +449,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
                     <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={() => approveReport(iss.id, "rejected")}>반려</button>
                   </div>
                 )}
+                <FeedbackSection item={iss} />
               </div>
             ))}
             {issues.length === 0 && <div className="col-span-2 text-center py-8 text-slate-400">이슈 보고가 없습니다</div>}
@@ -353,7 +457,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
         </>
       )}
 
-      {/* ── Project ── */}
+      {/* -- Project -- */}
       {sub === "project" && (
         <>
           <div className={C}>
@@ -410,6 +514,7 @@ export default function ReportTab({ userId, userName, myRole, flash }: Props) {
                     <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={() => approveReport(p.id, "rejected")}>반려</button>
                   </div>
                 )}
+                <FeedbackSection item={p} />
               </div>
             ))}
             {projects.length === 0 && <div className="text-center py-8 text-slate-400">프로젝트 보고가 없습니다</div>}

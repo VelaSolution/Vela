@@ -11,10 +11,10 @@ interface Props {
 }
 
 const CATEGORIES = [
-  { key: "일반", color: "bg-slate-50 text-slate-600" },
-  { key: "긴급", color: "bg-red-50 text-red-600" },
-  { key: "인사", color: "bg-purple-50 text-purple-600" },
-  { key: "경영", color: "bg-blue-50 text-blue-600" },
+  { key: "\uc77c\ubc18", color: "bg-slate-50 text-slate-600" },
+  { key: "\uae34\uae09", color: "bg-red-50 text-red-600" },
+  { key: "\uc778\uc0ac", color: "bg-purple-50 text-purple-600" },
+  { key: "\uacbd\uc601", color: "bg-blue-50 text-blue-600" },
 ] as const;
 type NoticeCategory = typeof CATEGORIES[number]["key"];
 
@@ -43,19 +43,23 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
   const [content, setContent] = useState("");
   const [pinned, setPinned] = useState(false);
   const [important, setImportant] = useState(false);
-  const [category, setCategory] = useState<NoticeCategory>("일반");
+  const [category, setCategory] = useState<NoticeCategory>("\uc77c\ubc18");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [teamCount, setTeamCount] = useState(0);
 
   const load = async () => {
     const s = sb();
     if (!s) { setLoading(false); return; }
-    const { data } = await s
-      .from("hq_notices")
-      .select("*")
-      .order("pinned", { ascending: false })
-      .order("created_at", { ascending: false });
+    const [{ data }, { count }] = await Promise.all([
+      s.from("hq_notices")
+        .select("*")
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false }),
+      s.from("hq_team").select("*", { count: "exact", head: true }).eq("status", "active"),
+    ]);
+    if (count !== null) setTeamCount(count);
     if (data) {
       setNotices(
         data.map((d: any) => ({
@@ -66,7 +70,7 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
           pinned: d.pinned ?? false,
           author: d.author ?? "",
           readBy: d.read_by ?? [],
-          category: d.category ?? "일반",
+          category: d.category ?? "\uc77c\ubc18",
           important: d.important ?? false,
         }))
       );
@@ -85,7 +89,7 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
   }, [notices, search]);
 
   const handleAdd = async () => {
-    if (!title.trim()) { flash("제목을 입력하세요"); return; }
+    if (!title.trim()) { flash("\uc81c\ubaa9\uc744 \uc785\ub825\ud558\uc138\uc694"); return; }
     const s = sb();
     if (!s) return;
     const { error } = await s.from("hq_notices").insert({
@@ -97,13 +101,13 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
       author: userName,
       read_by: [userName],
     });
-    if (error) { flash("저장 실패"); return; }
+    if (error) { flash("\uc800\uc7a5 \uc2e4\ud328"); return; }
     setTitle("");
     setContent("");
     setPinned(false);
     setImportant(false);
-    setCategory("일반");
-    flash("공지 등록 완료");
+    setCategory("\uc77c\ubc18");
+    flash("\uacf5\uc9c0 \ub4f1\ub85d \uc644\ub8cc");
     load();
   };
 
@@ -120,36 +124,37 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
     const s = sb();
     if (!s) return;
     await s.from("hq_notices").update({ pinned: !n.pinned }).eq("id", n.id);
-    flash(n.pinned ? "고정 해제" : "고정됨");
+    flash(n.pinned ? "\uace0\uc815 \ud574\uc81c" : "\uace0\uc815\ub428");
     load();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("삭제하시겠습니까?")) return;
+    if (!confirm("\uc0ad\uc81c\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?")) return;
     const s = sb();
     if (!s) return;
     await s.from("hq_notices").delete().eq("id", id);
-    flash("삭제 완료");
+    flash("\uc0ad\uc81c \uc644\ub8cc");
     load();
   };
 
-  const canManage = myRole === "대표" || myRole === "이사" || myRole === "팀장";
+  const canManage = myRole === "\ub300\ud45c" || myRole === "\uc774\uc0ac" || myRole === "\ud300\uc7a5";
   const catMeta = (key: string) => CATEGORIES.find(c => c.key === key) ?? CATEGORIES[0];
+  const displayTeamCount = teamCount > 0 ? teamCount : "?";
 
   return (
     <div className="space-y-6">
-      {/* 작성 폼 */}
+      {/* \uc791\uc131 \ud3fc */}
       {canManage && (
         <div className={C}>
-          <h3 className="text-lg font-bold text-slate-800 mb-4">공지 작성</h3>
+          <h3 className="text-lg font-bold text-slate-800 mb-4">\uacf5\uc9c0 \uc791\uc131</h3>
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className={L}>제목</label>
-                <input className={I} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공지 제목" />
+                <label className={L}>\uc81c\ubaa9</label>
+                <input className={I} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="\uacf5\uc9c0 \uc81c\ubaa9" />
               </div>
               <div>
-                <label className={L}>카테고리</label>
+                <label className={L}>\uce74\ud14c\uace0\ub9ac</label>
                 <div className="flex gap-2 flex-wrap">
                   {CATEGORIES.map(c => (
                     <button
@@ -164,27 +169,27 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
               </div>
             </div>
             <div>
-              <label className={L}>내용</label>
-              <textarea className={`${I} min-h-[100px]`} rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder="공지 내용을 입력하세요" />
+              <label className={L}>\ub0b4\uc6a9</label>
+              <textarea className={`${I} min-h-[100px]`} rows={4} value={content} onChange={(e) => setContent(e.target.value)} placeholder="\uacf5\uc9c0 \ub0b4\uc6a9\uc744 \uc785\ub825\ud558\uc138\uc694" />
             </div>
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
                   <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]" />
-                  상단 고정
+                  \uc0c1\ub2e8 \uace0\uc815
                 </label>
                 <label className="flex items-center gap-2 text-sm text-red-500 cursor-pointer">
                   <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} className="rounded border-red-300 text-red-500 focus:ring-red-300" />
-                  중요 공지
+                  \uc911\uc694 \uacf5\uc9c0
                 </label>
               </div>
-              <button className={B} onClick={handleAdd}>등록</button>
+              <button className={B} onClick={handleAdd}>\ub4f1\ub85d</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 검색 */}
+      {/* \uac80\uc0c9 */}
       <div className="relative">
         <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -193,21 +198,22 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
           className={`${I} pl-10`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="공지 검색..."
+          placeholder="\uacf5\uc9c0 \uac80\uc0c9..."
         />
       </div>
 
-      {/* 공지 목록 */}
+      {/* \uacf5\uc9c0 \ubaa9\ub85d */}
       {loading ? (
-        <div className="text-center py-12 text-slate-400">불러오는 중...</div>
+        <div className="text-center py-12 text-slate-400">\ubd88\ub7ec\uc624\ub294 \uc911...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-slate-400">{search ? "검색 결과가 없습니다" : "등록된 공지가 없습니다"}</div>
+        <div className="text-center py-12 text-slate-400">{search ? "\uac80\uc0c9 \uacb0\uacfc\uac00 \uc5c6\uc2b5\ub2c8\ub2e4" : "\ub4f1\ub85d\ub41c \uacf5\uc9c0\uac00 \uc5c6\uc2b5\ub2c8\ub2e4"}</div>
       ) : (
         <div className="space-y-3">
           {filtered.map((n) => {
             const isRead = n.readBy?.includes(userName);
             const expanded = expandedId === n.id;
-            const cm = catMeta(n.category ?? "일반");
+            const cm = catMeta(n.category ?? "\uc77c\ubc18");
+            const readCount = n.readBy?.length ?? 0;
             return (
               <div
                 key={n.id}
@@ -224,16 +230,16 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       {n.pinned && (
                         <span className={`${BADGE} bg-amber-50 text-amber-700`}>
-                          <span className="mr-1">&#128204;</span>고정
+                          <span className="mr-1">&#128204;</span>\uace0\uc815
                         </span>
                       )}
                       {n.important && (
                         <span className={`${BADGE} bg-red-50 text-red-600`}>
-                          중요
+                          \uc911\uc694
                         </span>
                       )}
                       <span className={`${BADGE} ${cm.color}`}>
-                        {n.category ?? "일반"}
+                        {n.category ?? "\uc77c\ubc18"}
                       </span>
                       {!isRead && (
                         <span className="w-2 h-2 rounded-full bg-[#3182F6] flex-shrink-0" />
@@ -243,7 +249,13 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
                     <div className="flex items-center gap-3 text-xs text-slate-400">
                       <span>{n.author}</span>
                       <span>{n.date}</span>
-                      <span>읽음 {n.readBy?.length ?? 0}명</span>
+                      <span className={`inline-flex items-center gap-1 ${readCount === teamCount && teamCount > 0 ? "text-emerald-500" : ""}`}>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        \uc77d\uc74c {readCount}/{displayTeamCount}
+                      </span>
                     </div>
                   </div>
                   <svg className={`w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ml-2 ${expanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,15 +266,35 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
                 {expanded && (
                   <div className="mt-4 pt-4 border-t border-slate-100">
                     <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
-                      {n.content ? linkify(n.content) : "(내용 없음)"}
+                      {n.content ? linkify(n.content) : "(\ub0b4\uc6a9 \uc5c6\uc74c)"}
                     </div>
+
+                    {/* Read receipt detail */}
+                    {(n.readBy?.length ?? 0) > 0 && (
+                      <div className="mt-4 pt-3 border-t border-slate-100">
+                        <p className="text-xs font-semibold text-slate-500 mb-2">
+                          \uc77d\uc740 \uc0ac\ub78c ({readCount}/{displayTeamCount})
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {n.readBy!.map((name) => (
+                            <span key={name} className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700 font-medium">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {canManage && (
                       <div className="flex gap-2 mt-4">
                         <button className={B2} onClick={(e) => { e.stopPropagation(); togglePin(n); }}>
-                          {n.pinned ? "고정 해제" : "고정"}
+                          {n.pinned ? "\uace0\uc815 \ud574\uc81c" : "\uace0\uc815"}
                         </button>
                         <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={(e) => { e.stopPropagation(); handleDelete(n.id); }}>
-                          삭제
+                          \uc0ad\uc81c
                         </button>
                       </div>
                     )}

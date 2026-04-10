@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS hq_notices (
   author TEXT NOT NULL,
   pinned BOOLEAN DEFAULT false,
   read_by TEXT[] DEFAULT '{}',
+  category TEXT DEFAULT '일반',
+  important BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -92,6 +94,9 @@ CREATE TABLE IF NOT EXISTS hq_memos (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   content TEXT NOT NULL,
   author TEXT NOT NULL,
+  color TEXT DEFAULT 'white',
+  pinned BOOLEAN DEFAULT false,
+  tags TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -110,6 +115,8 @@ CREATE TABLE IF NOT EXISTS hq_chat (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   sender TEXT NOT NULL,
   text TEXT NOT NULL,
+  reply_to JSONB,
+  reactions JSONB DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -120,6 +127,10 @@ CREATE TABLE IF NOT EXISTS hq_decisions (
   reason TEXT,
   owner TEXT,
   follow_up TEXT,
+  status TEXT DEFAULT '제안',
+  impact TEXT DEFAULT '중',
+  related_goal TEXT,
+  votes JSONB DEFAULT '{"up":[],"down":[]}',
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -383,3 +394,14 @@ CREATE INDEX IF NOT EXISTS idx_hq_board_category ON hq_board(category);
 CREATE INDEX IF NOT EXISTS idx_hq_board_comments_post ON hq_board_comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_hq_survey_responses_survey ON hq_survey_responses(survey_id);
 CREATE INDEX IF NOT EXISTS idx_hq_wiki_category ON hq_wiki(category);
+CREATE INDEX IF NOT EXISTS idx_hq_tasks_user ON hq_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_hq_goals_user ON hq_goals(user_id);
+CREATE INDEX IF NOT EXISTS idx_hq_events_date ON hq_events(date);
+CREATE INDEX IF NOT EXISTS idx_hq_task_comments_task ON hq_task_comments(task_id);
+CREATE INDEX IF NOT EXISTS idx_hq_item_comments_item ON hq_item_comments(item_id, item_type);
+CREATE INDEX IF NOT EXISTS idx_hq_chat_created ON hq_chat(created_at);
+CREATE INDEX IF NOT EXISTS idx_hq_notices_pinned ON hq_notices(pinned);
+CREATE INDEX IF NOT EXISTS idx_hq_decisions_status ON hq_decisions(status);
+CREATE INDEX IF NOT EXISTS idx_hq_memos_pinned ON hq_memos(pinned);
+CREATE INDEX IF NOT EXISTS idx_hq_approvals_status ON hq_approvals(status);
+CREATE INDEX IF NOT EXISTS idx_hq_directives_user ON hq_directives(user_id);

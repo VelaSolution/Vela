@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { HQRole, WikiArticle } from "@/app/hq/types";
 import { sb, today, I, C, L, B, B2, BADGE } from "@/app/hq/utils";
 
@@ -19,6 +19,35 @@ const CAT_COLOR: Record<string, string> = {
 };
 
 type View = "list" | "create" | "detail" | "edit";
+
+// Highlight search term helper
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} className="bg-yellow-200 text-yellow-900 rounded px-0.5">{part}</mark>
+      : part
+  );
+}
+
+// Extract headings from content
+function extractHeadings(content: string): { level: number; text: string; id: string }[] {
+  const lines = content.split("\n");
+  const headings: { level: number; text: string; id: string }[] = [];
+  for (const line of lines) {
+    const match = line.match(/^(#{1,4})\s+(.+)$/);
+    if (match) {
+      headings.push({
+        level: match[1].length,
+        text: match[2].trim(),
+        id: match[2].trim().toLowerCase().replace(/\s+/g, "-"),
+      });
+    }
+  }
+  return headings;
+}
 
 export default function WikiTab({ userId, userName, myRole, flash }: Props) {
   const [articles, setArticles] = useState<WikiArticle[]>([]);
@@ -73,7 +102,27 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
       return a.title.toLowerCase().includes(q) || a.content.toLowerCase().includes(q) || a.tags.some(t => t.toLowerCase().includes(q));
     });
 
+  // Popular articles (top 5 by views)
+  const popularArticles = useMemo(() =>
+    [...articles].sort((a, b) => b.views - a.views).slice(0, 5),
+    [articles]
+  );
+
   const selected = articles.find(a => a.id === selectedId);
+
+  // Related articles (same category, excluding current)
+  const relatedArticles = useMemo(() => {
+    if (!selected) return [];
+    return articles
+      .filter(a => a.id !== selected.id && a.category === selected.category)
+      .slice(0, 5);
+  }, [selected, articles]);
+
+  // Table of contents
+  const toc = useMemo(() => {
+    if (!selected) return [];
+    return extractHeadings(selected.content);
+  }, [selected]);
 
   const resetForm = () => { setFTitle(""); setFCategory("일반"); setFTags(""); setFContent(""); };
 
@@ -84,14 +133,13 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
 
   const openDetail = async (id: string) => {
     setSelectedId(id);
-    // Increment view count
     const s = sb();
     if (s) {
       const article = articles.find(a => a.id === id);
       if (article) {
         try {
           await s.from("hq_wiki").update({ views: (article.views ?? 0) + 1 }).eq("id", id);
-        } catch {}
+        } catch { /* ignore */ }
       }
     }
     setArticles(prev => prev.map(a => a.id === id ? { ...a, views: a.views + 1 } : a));
@@ -175,56 +223,151 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     }
   };
 
-  // ──── DETAIL VIEW ────
+  // Render content with heading anchors
+  const renderContent = (content: string) => {
+    const lines = content.split("\n");
+    return lines.map((line, i) => {
+      const headingMatch = line.match(/^(#{1,4})\s+(.+)$/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const text = headingMatch[2].trim();
+        const id = text.toLowerCase().replace(/\s+/g, "-");
+        const Tag = `h${Math.min(level + 1, 6)}` as keyof React.JSX.IntrinsicElements;
+        const sizes: Record<number, string> = { 1: "text-xl font-bold", 2: "text-lg font-bold", 3: "text-base font-semibold", 4: "text-sm font-semibold" };
+        return <Tag key={i} id={id} className={`${sizes[level] || "text-sm font-semibold"} text-slate-800 mt-4 mb-2`}>{text}</Tag>;
+      }
+      return <p key={i} className="text-sm text-slate-700 leading-relaxed">{line || "\u00A0"}</p>;
+    });
+  };
+
+  // ---- DETAIL VIEW ----
   if (view === "detail" && selected) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setView("list")} className={B2}>← 목록</button>
+          <button onClick={() => setView("list")} className={B2}>&larr; 목록</button>
         </div>
-        <div className={C}>
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`${BADGE} text-[11px] ${CAT_COLOR[selected.category] || CAT_COLOR["일반"]}`}>{selected.category}</span>
-                <span className="text-xs text-slate-400">조회 {selected.views}</span>
+        <div className="flex gap-6">
+          {/* TOC sidebar */}
+          {toc.length > 0 && (
+            <div className="w-48 shrink-0 hidden lg:block">
+              <div className={`${C} sticky top-4`}>
+                <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">목차</h4>
+                <div className="space-y-1">
+                  {toc.map((h, i) => (
+                    <a
+                      key={i}
+                      href={`#${h.id}`}
+                      className="block text-xs text-slate-500 hover:text-[#3182F6] transition-colors truncate"
+                      style={{ paddingLeft: `${(h.level - 1) * 12}px` }}
+                      onClick={e => {
+                        e.preventDefault();
+                        document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    >
+                      {h.text}
+                    </a>
+                  ))}
+                </div>
               </div>
-              <h2 className="text-xl font-bold text-slate-800">{selected.title}</h2>
-              <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                <span>작성자: {selected.author}</span>
-                <span>최종 수정: {selected.lastEditor} ({selected.updatedAt})</span>
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <button onClick={openEdit} className={B2}>편집</button>
-              <button onClick={() => deleteArticle(selected.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors">삭제</button>
-            </div>
-          </div>
-
-          {selected.tags.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap mb-4">
-              {selected.tags.map((t, i) => (
-                <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">#{t}</span>
-              ))}
             </div>
           )}
 
-          <div className="border-t border-slate-100 pt-4">
-            <div className="prose prose-sm max-w-none text-slate-700 whitespace-pre-wrap leading-relaxed">
-              {selected.content}
+          {/* Main content */}
+          <div className="flex-1 min-w-0 space-y-4">
+            <div className={C}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`${BADGE} text-[11px] ${CAT_COLOR[selected.category] || CAT_COLOR["일반"]}`}>{selected.category}</span>
+                    <span className="text-xs text-slate-400">조회 {selected.views}</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800">{selected.title}</h2>
+                  {/* Prominent last editor info */}
+                  <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-6 h-6 rounded-full bg-[#3182F6]/10 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-[#3182F6]">{(selected.lastEditor || selected.author).charAt(0)}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700">
+                        마지막 수정: {selected.lastEditor || selected.author}
+                      </p>
+                      <p className="text-[10px] text-slate-400">{selected.updatedAt} (작성자: {selected.author})</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={openEdit} className={B2}>편집</button>
+                  <button onClick={() => deleteArticle(selected.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors">삭제</button>
+                </div>
+              </div>
+
+              {selected.tags.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap mb-4">
+                  {selected.tags.map((t, i) => (
+                    <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-500">#{t}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* Mobile TOC */}
+              {toc.length > 0 && (
+                <div className="lg:hidden mb-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <h4 className="text-xs font-bold text-slate-400 mb-2">목차</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {toc.map((h, i) => (
+                      <button
+                        key={i}
+                        onClick={() => document.getElementById(h.id)?.scrollIntoView({ behavior: "smooth" })}
+                        className="text-[11px] px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-[#3182F6] hover:border-[#3182F6]/30 transition-colors"
+                      >
+                        {h.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-slate-100 pt-4">
+                <div className="prose prose-sm max-w-none">
+                  {renderContent(selected.content)}
+                </div>
+              </div>
             </div>
+
+            {/* Related articles */}
+            {relatedArticles.length > 0 && (
+              <div className={C}>
+                <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">관련 문서 ({selected.category})</h4>
+                <div className="space-y-2">
+                  {relatedArticles.map(a => (
+                    <div
+                      key={a.id}
+                      onClick={() => openDetail(a.id)}
+                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-700 truncate">{a.title}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{a.content.slice(0, 60)}</p>
+                      </div>
+                      <span className="text-[10px] text-slate-300 ml-2 shrink-0">조회 {a.views}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // ──── CREATE / EDIT VIEW ────
+  // ---- CREATE / EDIT VIEW ----
   if (view === "create" || view === "edit") {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => { setView(view === "edit" ? "detail" : "list"); resetForm(); }} className={B2}>← 뒤로</button>
+          <button onClick={() => { setView(view === "edit" ? "detail" : "list"); resetForm(); }} className={B2}>&larr; 뒤로</button>
           <h2 className="text-sm font-bold text-slate-700">{view === "edit" ? "문서 편집" : "문서 작성"}</h2>
         </div>
         <div className={C}>
@@ -246,7 +389,7 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
               </div>
             </div>
             <div>
-              <label className={L}>내용</label>
+              <label className={L}>내용 (## 으로 제목을 만들면 목차가 자동 생성됩니다)</label>
               <textarea
                 value={fContent}
                 onChange={e => setFContent(e.target.value)}
@@ -267,11 +410,11 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     );
   }
 
-  // ──── LIST VIEW ────
+  // ---- LIST VIEW ----
   return (
     <div className="flex gap-6">
       {/* Category sidebar */}
-      <div className="w-48 shrink-0 hidden sm:block">
+      <div className="w-48 shrink-0 hidden sm:block space-y-4">
         <div className={C}>
           <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">카테고리</h3>
           <div className="space-y-1">
@@ -296,6 +439,28 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
             ))}
           </div>
         </div>
+
+        {/* Popular articles */}
+        {popularArticles.length > 0 && (
+          <div className={C}>
+            <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">인기 문서</h3>
+            <div className="space-y-1.5">
+              {popularArticles.map((a, i) => (
+                <button
+                  key={a.id}
+                  onClick={() => openDetail(a.id)}
+                  className="w-full text-left flex items-start gap-2 p-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <span className="text-[10px] font-bold text-slate-300 mt-0.5">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-slate-600 truncate">{a.title}</p>
+                    <p className="text-[10px] text-slate-400">조회 {a.views}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main area */}
@@ -354,19 +519,25 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`${BADGE} text-[11px] ${CAT_COLOR[a.category] || CAT_COLOR["일반"]}`}>{a.category}</span>
-                      <h3 className="text-sm font-bold text-slate-800 truncate">{a.title}</h3>
+                      <h3 className="text-sm font-bold text-slate-800 truncate">
+                        {search ? highlightText(a.title, search) : a.title}
+                      </h3>
                     </div>
-                    <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{a.content.slice(0, 120)}</p>
+                    <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                      {search ? highlightText(a.content.slice(0, 120), search) : a.content.slice(0, 120)}
+                    </p>
                     {a.tags.length > 0 && (
                       <div className="flex gap-1 mt-2 flex-wrap">
                         {a.tags.slice(0, 5).map((t, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">#{t}</span>
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">
+                            #{search ? highlightText(t, search) : t}
+                          </span>
                         ))}
                       </div>
                     )}
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    <p className="text-xs text-slate-400">{a.author}</p>
+                    <p className="text-xs text-slate-400">{a.lastEditor || a.author}</p>
                     <p className="text-[11px] text-slate-300 mt-0.5">{a.updatedAt}</p>
                     <p className="text-[11px] text-slate-300">조회 {a.views}</p>
                   </div>

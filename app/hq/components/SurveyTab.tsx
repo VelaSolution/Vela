@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { HQRole, SurveyItem, SurveyQuestion, SurveyResponse } from "@/app/hq/types";
 import { sb, today, I, C, L, B, B2, BADGE } from "@/app/hq/utils";
 
@@ -25,6 +25,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [view, setView] = useState<View>("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [teamCount, setTeamCount] = useState(0);
 
   // Create form
   const [title, setTitle] = useState("");
@@ -42,7 +43,8 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
       const { data, error } = await s.from("hq_surveys").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       if (data) {
-        setSurveys(data.map((d: any) => ({
+        const todayStr = today();
+        const mapped = data.map((d: any) => ({
           id: d.id,
           title: d.title ?? "",
           description: d.description ?? "",
@@ -51,8 +53,24 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
           status: d.status ?? "진행중",
           questions: d.questions ?? [],
           responses: d.responses ?? 0,
-          date: d.created_at?.slice(0, 10) ?? today(),
-        })));
+          date: d.created_at?.slice(0, 10) ?? todayStr,
+        }));
+
+        // Auto-close expired surveys
+        const expiredIds: string[] = [];
+        for (const survey of mapped) {
+          if (survey.deadline < todayStr && survey.status !== "마감") {
+            survey.status = "마감";
+            expiredIds.push(survey.id);
+          }
+        }
+        if (expiredIds.length > 0) {
+          for (const id of expiredIds) {
+            await s.from("hq_surveys").update({ status: "마감" }).eq("id", id);
+          }
+        }
+
+        setSurveys(mapped);
       }
     } catch (e) {
       console.error("SurveyTab loadSurveys error:", e);
@@ -79,9 +97,19 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
     }
   };
 
+  const loadTeamCount = async () => {
+    const s = sb();
+    if (!s) return;
+    try {
+      const { count } = await s.from("hq_team").select("*", { count: "exact", head: true });
+      setTeamCount(count ?? 0);
+    } catch { /* ignore */ }
+  };
+
   useEffect(() => {
     loadSurveys();
     loadResponses();
+    loadTeamCount();
   }, []);
 
   const addQuestion = () => {
@@ -150,7 +178,6 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
     if (!selectedId) return;
     const survey = surveys.find(s => s.id === selectedId);
     if (!survey) return;
-    // Validate required
     for (const q of survey.questions) {
       const a = answers[q.id];
       if (!a || (Array.isArray(a) && a.length === 0) || (typeof a === "string" && !a.trim())) {
@@ -166,7 +193,6 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
         answers,
       });
       if (error) throw error;
-      // Update response count on survey
       await s.from("hq_surveys").update({ responses: (survey.responses ?? 0) + 1 }).eq("id", selectedId);
       await loadSurveys();
       await loadResponses();
@@ -186,30 +212,81 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
   const selected = surveys.find(s => s.id === selectedId);
   const surveyResponses = responses.filter(r => r.surveyId === selectedId);
 
-  // Bar chart helper
+  // Export CSV
+  const exportCsv = () => {
+    if (!selected) return;
+    const headers = ["응답자", "날짜", ...selected.questions.map(q => q.question)];
+    const rows = surveyResponses.map(r => {
+      const row = [r.respondent, r.date];
+      for (const q of selected.questions) {
+        const a = r.answers[q.id];
+        row.push(Array.isArray(a) ? a.join("; ") : String(a ?? ""));
+      }
+      return row;
+    });
+    const csv = "\uFEFF" + [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `설문결과_${selected.title}_${today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    flash("CSV 다운로드 완료");
+  };
+
+  // Enhanced bar chart helper
   const renderBar = (label: string, count: number, total: number) => {
     const pct = total === 0 ? 0 : Math.round((count / total) * 100);
     return (
-      <div key={label} className="mb-2">
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-slate-600">{label}</span>
-          <span className="text-slate-400">{count}표 ({pct}%)</span>
+      <div key={label} className="mb-3">
+        <div className="flex justify-between text-xs mb-1.5">
+          <span className="text-slate-600 font-medium">{label}</span>
+          <span className="text-slate-500 font-semibold">{count}표 ({pct}%)</span>
         </div>
-        <div className="w-full bg-slate-100 rounded-full h-5">
-          <div className="bg-[#3182F6] h-5 rounded-full transition-all flex items-center justify-end pr-2" style={{ width: `${Math.max(pct, 2)}%` }}>
-            {pct > 10 && <span className="text-[10px] text-white font-bold">{pct}%</span>}
+        <div className="w-full bg-slate-100 rounded-full h-6 relative overflow-hidden">
+          <div
+            className="bg-[#3182F6] h-6 rounded-full transition-all duration-500 flex items-center"
+            style={{ width: `${Math.max(pct, 2)}%` }}
+          >
+            {pct > 15 && <span className="text-[10px] text-white font-bold ml-auto pr-2">{pct}%</span>}
           </div>
+          {pct <= 15 && pct > 0 && (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">{pct}%</span>
+          )}
         </div>
       </div>
     );
   };
 
-  // ──── VIEWS ────
+  // Star display
+  const renderStars = (avg: number) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= Math.floor(avg)) {
+        stars.push(<span key={i} className="text-amber-400 text-lg">&#9733;</span>);
+      } else if (i - 0.5 <= avg) {
+        stars.push(<span key={i} className="text-amber-400 text-lg">&#9733;</span>);
+      } else {
+        stars.push(<span key={i} className="text-slate-200 text-lg">&#9733;</span>);
+      }
+    }
+    return <div className="flex items-center gap-0.5">{stars}</div>;
+  };
+
+  // Response rate
+  const responseRate = (surveyResCount: number) => {
+    if (teamCount === 0) return null;
+    const pct = Math.round((surveyResCount / teamCount) * 100);
+    return { pct, total: teamCount };
+  };
+
+  // ---- VIEWS ----
   if (view === "create") {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setView("list")} className={B2}>← 목록</button>
+          <button onClick={() => setView("list")} className={B2}>&larr; 목록</button>
           <h2 className="text-sm font-bold text-slate-700">설문 만들기</h2>
         </div>
         <div className={C}>
@@ -277,7 +354,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
                           onChange={e => updateOption(qi, oi, e.target.value)}
                           className="flex-1 text-sm rounded-lg border border-slate-200 px-3 py-1.5 bg-white focus:border-blue-400 outline-none"
                         />
-                        <button onClick={() => removeOption(qi, oi)} className="text-xs text-slate-400 hover:text-red-500">×</button>
+                        <button onClick={() => removeOption(qi, oi)} className="text-xs text-slate-400 hover:text-red-500">&times;</button>
                       </div>
                     ))}
                     <button onClick={() => addOption(qi)} className="text-xs text-[#3182F6] font-semibold hover:underline">+ 옵션 추가</button>
@@ -300,7 +377,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => setView("list")} className={B2}>← 목록</button>
+          <button onClick={() => setView("list")} className={B2}>&larr; 목록</button>
           <h2 className="text-sm font-bold text-slate-700">설문 참여</h2>
         </div>
         <div className={C}>
@@ -388,13 +465,34 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
   }
 
   if (view === "result" && selected) {
+    const rate = responseRate(surveyResponses.length);
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setView("list")} className={B2}>← 목록</button>
-          <h2 className="text-sm font-bold text-slate-700">설문 결과</h2>
-          <span className="text-xs text-slate-400">{surveyResponses.length}명 참여</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setView("list")} className={B2}>&larr; 목록</button>
+            <h2 className="text-sm font-bold text-slate-700">설문 결과</h2>
+            <span className="text-xs text-slate-400">{surveyResponses.length}명 참여</span>
+          </div>
+          <button onClick={exportCsv} className="flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 font-semibold px-4 py-2 text-xs hover:bg-emerald-100 transition-all">
+            CSV 다운로드
+          </button>
         </div>
+
+        {/* Response rate */}
+        {rate && (
+          <div className={C}>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-bold text-slate-500">응답률</h4>
+              <span className="text-sm font-bold text-[#3182F6]">{rate.pct}%</span>
+            </div>
+            <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-[#3182F6] rounded-full transition-all" style={{ width: `${rate.pct}%` }} />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">{surveyResponses.length}명 / 전체 {rate.total}명</p>
+          </div>
+        )}
+
         <div className={C}>
           <h3 className="text-lg font-bold text-slate-800 mb-1">{selected.title}</h3>
           {selected.description && <p className="text-sm text-slate-500 mb-5">{selected.description}</p>}
@@ -433,12 +531,15 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
                 )}
                 {q.type === "평점" && (() => {
                   const scores = surveyResponses.map(r => Number(r.answers[q.id]) || 0).filter(n => n > 0);
-                  const avg = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "0";
+                  const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
                   return (
                     <div>
                       <div className="flex items-center gap-3 mb-3">
-                        <span className="text-3xl font-bold text-[#3182F6]">{avg}</span>
-                        <span className="text-sm text-slate-400">/ 5.0 ({scores.length}명)</span>
+                        <span className="text-3xl font-bold text-[#3182F6]">{avg.toFixed(1)}</span>
+                        <div>
+                          {renderStars(avg)}
+                          <span className="text-xs text-slate-400">/ 5.0 ({scores.length}명)</span>
+                        </div>
                       </div>
                       {[5, 4, 3, 2, 1].map(n => {
                         const count = scores.filter(s => s === n).length;
@@ -455,7 +556,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
     );
   }
 
-  // ──── LIST VIEW ────
+  // ---- LIST VIEW ----
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -473,6 +574,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
             const hasAnswered = responses.some(r => r.surveyId === s.id && r.respondent === userName);
             const isClosed = s.deadline < today();
             const status = isClosed ? "마감" : s.status;
+            const rate = responseRate(s.responses);
             return (
               <div key={s.id} className={`${C} cursor-default`}>
                 <div className="flex items-start justify-between mb-2">
@@ -490,6 +592,7 @@ export default function SurveyTab({ userId, userName, myRole, flash }: Props) {
                     <span>{s.author}</span>
                     <span>마감: {s.deadline}</span>
                     <span>{s.responses}명 참여</span>
+                    {rate && <span className="text-[#3182F6] font-semibold">응답률 {rate.pct}%</span>}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => openResult(s.id)} className={B2 + " !text-xs !px-3 !py-1.5"}>결과</button>
