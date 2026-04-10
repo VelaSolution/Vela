@@ -223,7 +223,7 @@ export default function HQPage() {
       <meta name="theme-color" content={darkMode ? "#0F172A" : "#ffffff"} />
       <style>{`
         .vela-nav,.vela-mobile-tab{display:none!important}
-        body{padding-top:0!important;padding-top:env(safe-area-inset-top)!important}
+        body{padding-top:0!important}
         .hq-dark { background: #0F172A !important; color: #E2E8F0 !important; }
         .hq-dark .bg-white { background: #1E293B !important; }
         .hq-dark .bg-\\[\\#F7F8FA\\] { background: #0F172A !important; }
@@ -236,7 +236,7 @@ export default function HQPage() {
       `}</style>
 
       {/* ── 헤더 (compact on mobile) ───────────────────── */}
-      <header className="bg-white border-b border-slate-200/80 px-3 lg:px-6 py-2 lg:py-3 fixed top-0 left-0 right-0 z-50" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="bg-white border-b border-slate-200/80 px-3 lg:px-6 pb-2 lg:pb-3 pt-2 lg:pt-3 fixed top-0 left-0 right-0 z-50" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 lg:gap-3">
             {/* 모바일 햄버거 */}
