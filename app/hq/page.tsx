@@ -223,6 +223,7 @@ export default function HQPage() {
       <meta name="theme-color" content={darkMode ? "#0F172A" : "#ffffff"} />
       <style>{`
         .vela-nav,.vela-mobile-tab{display:none!important}
+        .hq-header{position:-webkit-sticky;position:sticky;top:0;z-index:100;height:56px;background:rgba(255,255,255,0.97);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid #E5E8EB;display:flex;align-items:center;padding:0 12px}
         .hq-dark { background: #0F172A !important; color: #E2E8F0 !important; }
         .hq-dark .bg-white { background: #1E293B !important; }
         .hq-dark .bg-\\[\\#F7F8FA\\] { background: #0F172A !important; }
@@ -235,7 +236,7 @@ export default function HQPage() {
       `}</style>
 
       {/* ── 헤더 (compact on mobile) ───────────────────── */}
-      <header style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, height:56, background:"rgba(255,255,255,0.95)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", borderBottom:"1px solid #E5E8EB", display:"flex", alignItems:"center", padding:"0 12px" }}>
+      <header className="hq-header">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 lg:gap-3">
             {/* 모바일 햄버거 */}
@@ -336,7 +337,7 @@ export default function HQPage() {
         </aside>
       </div>
 
-      <div className="flex flex-1" style={{ marginTop: 56 }}>
+      <div className="flex flex-1">
         {/* ── 데스크톱 사이드바 (독립 스크롤) ─────────── */}
         <aside className="hidden md:flex flex-col w-[240px] bg-white border-r border-slate-200/80 overflow-y-auto flex-shrink-0">
           <nav className="flex-1 px-3 py-4">
