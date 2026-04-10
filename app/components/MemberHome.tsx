@@ -9,7 +9,7 @@ import EventBanner from "@/components/EventBanner";
 import type { User } from "@supabase/supabase-js";
 
 // ── Types ──────────────────────────────────────────────────────
-type NewsItem = { title:string; summary:string; source:string; url:string; tag?:string; insight?:string };
+type NewsItem = { title:string; summary:string; source:string; url:string; tag?:string; insight?:string; date?:string };
 type IndexData = { price:string; date:string } | null;
 
 // ── Constants ──────────────────────────────────────────────────
@@ -127,6 +127,7 @@ function NewsSection({ news, loading }: { news: NewsItem[]; loading: boolean }) 
                   <div className="flex items-center gap-2 mb-1">
                     {n.tag && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TAG_COLORS[n.tag] ?? "bg-slate-100 text-slate-600"}`}>{n.tag}</span>}
                     <span className="text-[11px] text-slate-400">{n.source}</span>
+                    {n.date && <span className="text-[10px] text-slate-300">{n.date.slice(5).replace("-", "/")}</span>}
                   </div>
                   <p className="text-sm font-semibold text-slate-900 leading-snug group-hover:text-blue-600 transition">{n.title}</p>
                   <p className="text-xs text-slate-500 mt-1">{n.summary}</p>
