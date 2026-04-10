@@ -732,6 +732,7 @@ function NewsSection({ news, loading }: { news: NewsItem[]; loading: boolean }) 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-bold text-slate-900">📰 오늘의 뉴스</h2>
+          <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}</span>
           <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">AI 요약</span>
         </div>
       </div>
