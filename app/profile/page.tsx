@@ -19,6 +19,105 @@ type HistoryRow = {
 const II: Record<string,string> = { cafe:"☕",restaurant:"🍽️",bar:"🍺",finedining:"✨",gogi:"🥩" };
 type Tab = "profile"|"history"|"subscription"|"account";
 
+function TaxInvoiceForm({ userId, payments }: { userId: string | null; payments: { id: string; plan: string; amount: number; created_at: string; status: string }[] }) {
+  const [bizNo, setBizNo] = useState("");
+  const [bizName, setBizName] = useState("");
+  const [email, setEmail] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const sb = createSupabaseBrowserClient();
+    sb.from("tax_invoice_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+      .then(({ data }: { data: any[] | null }) => { if (data) setRequests(data); });
+  }, [userId, submitted]);
+
+  const handleSubmit = async () => {
+    if (!bizNo.trim() || !bizName.trim() || !email.trim()) { alert("모든 필드를 입력해주세요"); return; }
+    if (!selectedPayment) { alert("결제 건을 선택해주세요"); return; }
+    if (!/^\d{3}-\d{2}-\d{5}$/.test(bizNo)) { alert("사업자번호 형식: 000-00-00000"); return; }
+    setSubmitting(true);
+    const sb = createSupabaseBrowserClient();
+    const { error } = await sb.from("tax_invoice_requests").insert({
+      user_id: userId, biz_no: bizNo.trim(), biz_name: bizName.trim(),
+      email: email.trim(), payment_id: selectedPayment, status: "대기",
+    });
+    setSubmitting(false);
+    if (error) { alert("신청 실패: " + error.message); return; }
+    setSubmitted(true);
+    setBizNo(""); setBizName(""); setEmail(""); setSelectedPayment("");
+    alert("세금계산서 발행이 신청되었습니다. 영업일 기준 1~3일 내 발행됩니다.");
+  };
+
+  const donePayments = payments.filter(p => p.status === "done");
+
+  return (
+    <div className="space-y-4">
+      {donePayments.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-4">결제 내역이 없습니다</p>
+      ) : (
+        <>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">결제 건 선택</label>
+            <select className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+              value={selectedPayment} onChange={e => setSelectedPayment(e.target.value)}>
+              <option value="">선택하세요</option>
+              {donePayments.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.plan} 플랜 - {p.amount.toLocaleString("ko-KR")}원 ({new Date(p.created_at).toLocaleDateString("ko-KR")})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">사업자등록번호</label>
+              <input className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+                placeholder="000-00-00000" value={bizNo} onChange={e => setBizNo(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">상호명</label>
+              <input className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+                placeholder="회사명" value={bizName} onChange={e => setBizName(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">이메일 (세금계산서 수신)</label>
+            <input type="email" className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+              placeholder="tax@company.com" value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+          <button onClick={handleSubmit} disabled={submitting}
+            className="w-full rounded-xl bg-[#3182F6] text-white font-semibold px-5 py-2.5 text-sm hover:bg-[#2672DE] transition-all disabled:opacity-50">
+            {submitting ? "신청 중..." : "세금계산서 발행 신청"}
+          </button>
+        </>
+      )}
+
+      {requests.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <h4 className="text-xs font-bold text-slate-500 mb-2">발행 신청 내역</h4>
+          <div className="space-y-2">
+            {requests.map((r: any) => (
+              <div key={r.id} className="flex items-center justify-between py-2 text-xs">
+                <div>
+                  <span className="font-semibold text-slate-700">{r.biz_name}</span>
+                  <span className="text-slate-400 ml-2">{r.biz_no}</span>
+                </div>
+                <span className={`font-semibold ${r.status === "완료" ? "text-emerald-600" : r.status === "대기" ? "text-amber-600" : "text-slate-500"}`}>
+                  {r.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const [user, setUser]             = useState<User|null>(null);
   const [history, setHistory]       = useState<HistoryRow[]>([]);
@@ -416,6 +515,13 @@ export default function ProfilePage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* 세금계산서 발행 */}
+              <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-4">🧾 세금계산서 발행</h3>
+                <p className="text-xs text-slate-500 mb-4">사업자 등록번호를 입력하시면 결제 건에 대한 세금계산서를 발행해드립니다.</p>
+                <TaxInvoiceForm userId={user?.id ?? null} payments={payments} />
               </div>
 
               {/* 플랜 비교 링크 */}

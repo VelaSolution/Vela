@@ -50,12 +50,15 @@ export default function PricingPage() {
       }
 
       const toss = (window as any).TossPayments(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!);
-      const orderId = `VELA-${selectedPlan.id}-${Date.now()}`;
+      const isAnnualPay = billingCycle === "annual";
+      const amount = isAnnualPay ? (selectedPlan.annualPriceNum ?? selectedPlan.priceNum) * 12 : selectedPlan.priceNum;
+      const suffix = isAnnualPay ? "annual" : "monthly";
+      const orderId = `VELA-${selectedPlan.id}-${suffix}-${Date.now()}`;
 
       await toss.requestPayment("카드", {
-        amount: selectedPlan.price,
+        amount,
         orderId,
-        orderName: `VELA ${selectedPlan.name} 플랜`,
+        orderName: `VELA ${selectedPlan.name} 플랜 (${isAnnualPay ? "연간" : "월간"})`,
         customerName: "VELA 사용자",
         successUrl: `${window.location.origin}/payment/success`,
         failUrl: `${window.location.origin}/payment/fail`,

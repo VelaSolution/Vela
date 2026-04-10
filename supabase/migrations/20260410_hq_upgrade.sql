@@ -30,6 +30,24 @@ ALTER TABLE hq_team ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT false;
 -- ── hq_files: 보안 등급 (이미 있을 수 있음) ────────────
 ALTER TABLE hq_files ADD COLUMN IF NOT EXISTS security TEXT DEFAULT '내부용';
 
+-- ── 세금계산서 발행 요청 테이블 ─────────────────────────
+CREATE TABLE IF NOT EXISTS tax_invoice_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL,
+  biz_no TEXT NOT NULL,
+  biz_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  payment_id TEXT,
+  status TEXT DEFAULT '대기',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE tax_invoice_requests ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'auth_own' AND tablename = 'tax_invoice_requests') THEN
+    CREATE POLICY "auth_own" ON tax_invoice_requests FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
 -- ── 누락 가능한 인덱스 추가 ────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_hq_tasks_user ON hq_tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_hq_goals_user ON hq_goals(user_id);
