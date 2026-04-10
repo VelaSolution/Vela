@@ -377,18 +377,8 @@ export default function HQPage() {
 
         {/* ── 메인 콘텐츠 (독립 스크롤) ─────────────────── */}
         <main className="flex-1 min-w-0 pb-16 md:pb-0 overflow-y-auto">
-          {/* 페이지 헤더 (compact on mobile) */}
-          <div className="px-4 lg:px-8 pt-4 lg:pt-6 pb-1 lg:pb-2">
-            <div className="flex items-center gap-2 lg:gap-3">
-              <span className="text-xl lg:text-2xl">{activeTabInfo?.icon}</span>
-              <div>
-                <h1 className="text-base lg:text-xl font-bold text-slate-900">{activeTabInfo?.label}</h1>
-              </div>
-            </div>
-          </div>
-
           {/* 탭 콘텐츠 */}
-          <div className="px-4 lg:px-8 pb-10">
+          <div className="px-4 lg:px-8 pt-4 lg:pt-5 pb-10">
             {userId && tab === "dashboard" ? (
               <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
             ) : userId ? (
