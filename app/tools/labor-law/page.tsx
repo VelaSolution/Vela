@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { fmt } from "@/lib/vela";
 import ToolNav from "@/components/ToolNav";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
 
 // 2026년 기준 (확정)
 const MIN_WAGE = 10320; // 2026 최저시급
@@ -48,24 +50,37 @@ function calcEmployee(e: Employee) {
 }
 
 export default function LaborLawPage() {
-  const [employees, setEmployees] = useState<Employee[]>([
+  const defaultEmps: Employee[] = [
     { id: uid(), name: "직원 1", hourlyWage: MIN_WAGE, weeklyHours: 40, nightHours: 0, holidayHours: 0, includeInsurance: true },
-  ]);
+  ];
+
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<{ employees: Employee[] }>(
+    "vela-labor-law",
+    { employees: defaultEmps }
+  );
+
+  const [employees, setEmployees] = useState<Employee[]>(defaultEmps);
+
+  useEffect(() => {
+    if (cloudData.employees?.length > 0) setEmployees(cloudData.employees);
+  }, [cloudData]);
+
+  const saveCloud = (emps: Employee[]) => cloudUpdate({ employees: emps });
 
   const results = useMemo(() => employees.map((e) => ({ ...e, ...calcEmployee(e) })), [employees]);
   const totalMonthlyCost = results.reduce((a, r) => a + r.totalCost, 0);
 
   const updateEmployee = (id: string, field: string, value: number | string | boolean) => {
-    setEmployees((prev) => prev.map((e) => e.id === id ? { ...e, [field]: value } : e));
+    setEmployees((prev) => { const next = prev.map((e) => e.id === id ? { ...e, [field]: value } : e); saveCloud(next); return next; });
   };
 
   const addEmployee = () => {
-    setEmployees((prev) => [...prev, { id: uid(), name: `직원 ${prev.length + 1}`, hourlyWage: MIN_WAGE, weeklyHours: 40, nightHours: 0, holidayHours: 0, includeInsurance: true }]);
+    setEmployees((prev) => { const next = [...prev, { id: uid(), name: `직원 ${prev.length + 1}`, hourlyWage: MIN_WAGE, weeklyHours: 40, nightHours: 0, holidayHours: 0, includeInsurance: true }]; saveCloud(next); return next; });
   };
 
   const removeEmployee = (id: string) => {
     if (employees.length <= 1) return;
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
+    setEmployees((prev) => { const next = prev.filter((e) => e.id !== id); saveCloud(next); return next; });
   };
 
   return (
@@ -79,7 +94,10 @@ export default function LaborLawPage() {
           <div className="inline-flex items-center gap-2 bg-teal-50 text-teal-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
             <span>⚖️</span> 근로기준법 반영
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">인건비 계산기 (법정)</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">인건비 계산기 (법정)</h1>
+            <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+          </div>
           <p className="text-slate-500 text-sm">주휴수당·야간수당·4대보험을 자동 반영한 실제 인건비를 계산합니다.</p>
           <p className="text-xs text-slate-400 mt-1">2026년 최저시급 {fmt(MIN_WAGE)}원 기준</p>
           <Link href="/tools/labor" className="inline-flex items-center gap-1 text-sm text-blue-500 hover:text-blue-700 transition mt-2">
