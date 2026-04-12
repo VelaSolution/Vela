@@ -27,13 +27,11 @@ const TOOLS_HOME = [
 const NEWS_TAGS = [
   { key: "all", label: "전체", color: "bg-slate-900 text-white" },
   { key: "외식업", label: "🍽️ 외식업", color: "bg-orange-500 text-white" },
-  { key: "소상공인", label: "🏪 소상공인", color: "bg-emerald-500 text-white" },
   { key: "경제", label: "📈 경제", color: "bg-blue-500 text-white" },
 ];
 
 const TAG_COLORS: Record<string, string> = {
   "외식업": "bg-orange-100 text-orange-700",
-  "소상공인": "bg-emerald-100 text-emerald-700",
   "경제": "bg-blue-100 text-blue-700",
 };
 

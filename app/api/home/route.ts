@@ -40,8 +40,8 @@ async function getStocks() {
 
 // ── 폴백 뉴스 ─────────────────────────────────────────
 const FALLBACK_NEWS = [
-  { title: "최저임금 인상 논의 본격화", summary: "2027년 심의 시작", source: "연합뉴스", url: "https://www.yna.co.kr/search/index?query=최저임금", tag: "소상공인", insight: "인건비 비율을 미리 점검하고 스케줄을 최적화하세요" },
-  { title: "배달앱 수수료 단계적 인하 추진", summary: "소상공인 부담 완화 기대", source: "한국경제", url: "https://search.hankyung.com/search?query=배달앱+수수료", tag: "소상공인", insight: "수수료 변동을 VELA 시뮬레이터에서 미리 반영해보세요" },
+  { title: "최저임금 인상 논의 본격화", summary: "2027년 심의 시작", source: "연합뉴스", url: "https://www.yna.co.kr/search/index?query=최저임금", tag: "경제", insight: "인건비 비율을 미리 점검하고 스케줄을 최적화하세요" },
+  { title: "배달앱 수수료 단계적 인하 추진", summary: "외식업 부담 완화 기대", source: "한국경제", url: "https://search.hankyung.com/search?query=배달앱+수수료", tag: "외식업", insight: "수수료 변동을 VELA 시뮬레이터에서 미리 반영해보세요" },
   { title: "외식 물가 상승세 4개월 연속", summary: "식재료비 동반 상승", source: "머니투데이", url: "https://search.mt.co.kr/search?kwd=외식+물가", tag: "외식업", insight: "제철 식재료로 전환하면 원가를 10% 이상 낮출 수 있어요" },
   { title: "한국은행 기준금리 동결 결정", summary: "연 3.25% 유지", source: "조선비즈", url: "https://biz.chosun.com/search?query=기준금리", tag: "경제", insight: "금리 동결은 대출 부담 유지를 의미해요. 상환 계획을 점검하세요" },
   { title: "4월 소비심리지수 개선", summary: "외식 지출 증가 전망", source: "매일경제", url: "https://www.mk.co.kr/search?word=소비심리지수", tag: "경제", insight: "소비 회복기에 신메뉴를 출시하면 효과가 극대화됩니다" },
@@ -87,8 +87,8 @@ async function getNews() {
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1200,
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
-        system: `Today is ${todayKR}. Search for 6 latest Korean news articles from today or yesterday. Include a mix of: food service industry news (2), small business/self-employed news (2), AND general Korean economic news like interest rates, inflation, consumer spending, employment (2). For each article, add a "tag" field with one of: "외식업", "소상공인", "경제". Also add an "insight" field: a one-sentence practical tip for a restaurant owner based on this news (under 40 chars, in Korean). Add a "date" field with the article date in YYYY-MM-DD format. IMPORTANT: The "url" field must be the ACTUAL article URL (not the site homepage). If you cannot find the exact URL, use the site's search page with the article keyword. Respond ONLY with a JSON array: [{"title":"Korean title","summary":"Korean summary under 30 chars","source":"media name","url":"actual article URL","tag":"category","insight":"사장님 한줄 인사이트","date":"YYYY-MM-DD"}]. No markdown, no extra text.`,
-        messages: [{ role: "user", content: `${todayKR} 외식업 소상공인 경제 금리 물가 고용 최신 뉴스 6개` }],
+        system: `Today is ${todayKR}. Search for 6 latest Korean news articles from today or yesterday. Include a mix of: food service industry news (3) AND general Korean economic news like interest rates, inflation, consumer spending, employment (3). For each article, add a "tag" field with one of: "외식업", "경제". Also add an "insight" field: a one-sentence practical tip for a restaurant owner based on this news (under 40 chars, in Korean). Add a "date" field with the article date in YYYY-MM-DD format. IMPORTANT: The "url" field must be the ACTUAL article URL (not the site homepage). If you cannot find the exact URL, use the site's search page with the article keyword. Respond ONLY with a JSON array: [{"title":"Korean title","summary":"Korean summary under 30 chars","source":"media name","url":"actual article URL","tag":"category","insight":"사장님 한줄 인사이트","date":"YYYY-MM-DD"}]. No markdown, no extra text.`,
+        messages: [{ role: "user", content: `${todayKR} 외식업 경제 금리 물가 고용 최신 뉴스 6개` }],
       }),
     });
 
