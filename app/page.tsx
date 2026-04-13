@@ -496,7 +496,7 @@ export default function HomePage() {
         if (params.get("signup") === "success" && !onboarded) {
           router.replace("/onboarding");
         } else {
-          router.replace("/dashboard");
+          router.replace("/home");
         }
       }
     });

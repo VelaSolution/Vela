@@ -467,14 +467,6 @@ export default function DashboardHome() {
             );
           })()}
 
-          {/* 시장 동향 + 경영 팁 */}
-          {(w("market") || w("tips")) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {w("market") && <MarketWidget />}
-              {w("tips") && <TipsWidget />}
-            </div>
-          )}
-
           {/* 핵심 지표 4개 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
