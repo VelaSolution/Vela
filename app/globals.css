@@ -273,6 +273,10 @@ input[type="range"].vela-slider::-moz-range-thumb {
         .vela-dropdown-arrow{font-size:10px;transition:transform .2s;display:inline-block}
         .vela-dropdown:hover .vela-dropdown-arrow{transform:rotate(180deg)}
         .vela-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E8EB;border-radius:20px;padding:14px 10px 10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:520px;display:none;z-index:200;grid-template-columns:1fr 1fr;gap:4px}
+        .vela-mega-menu{min-width:900px;grid-template-columns:repeat(4,1fr);gap:0;padding:20px 16px 16px}
+        .vela-mega-col{padding:0 10px}
+        .vela-mega-col+.vela-mega-col{border-left:1px solid #F2F4F6}
+        .vela-mega-title{font-size:12px;font-weight:700;color:#3182F6;margin:0 0 8px 12px;padding-bottom:6px;letter-spacing:0.3px}
         .vela-dropdown:hover .vela-dropdown-menu{display:grid}
         .vela-dropdown-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;text-decoration:none;transition:background .15s}
         .vela-dropdown-item:hover{background:#F2F4F6}
@@ -344,6 +348,8 @@ html.dark .vela-dropdown-menu { background: #1E293B !important; border-color: #3
 html.dark .vela-dropdown-item:hover { background: #334155 !important; }
 html.dark .vela-dropdown-label { color: #F8FAFC !important; }
 html.dark .vela-dropdown-desc { color: #CBD5E1 !important; }
+html.dark .vela-mega-col+.vela-mega-col { border-left-color: #334155 !important; }
+html.dark .vela-mega-title { color: #60A5FA !important; }
 html.dark .vela-btn-dashboard { background: #334155 !important; color: #E2E8F0 !important; }
 html.dark .vela-btn-dashboard:hover { background: #475569 !important; }
 html.dark .vela-btn-logout { border-color: #334155 !important; color: #CBD5E1 !important; }
