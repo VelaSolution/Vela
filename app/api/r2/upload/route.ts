@@ -45,8 +45,9 @@ export async function POST(req: NextRequest) {
       size: file.size,
       type: file.type,
     });
-  } catch (e) {
-    console.error("R2 upload error:", e);
-    return NextResponse.json({ error: "업로드 실패" }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("R2 upload error:", msg, e);
+    return NextResponse.json({ error: "업로드 실패: " + msg }, { status: 500 });
   }
 }

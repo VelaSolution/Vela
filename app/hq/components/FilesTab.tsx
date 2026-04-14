@@ -435,8 +435,12 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
         });
         uploaded = true;
         flash("파일 업로드 완료");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.error("R2 upload failed:", err);
+        flash("R2 업로드 실패: " + (err.error || res.status));
       }
-    } catch {}
+    } catch (e) { console.error("R2 fetch error:", e); }
 
     if (!uploaded) {
       try {
