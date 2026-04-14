@@ -36,6 +36,9 @@ export const metadata: Metadata = {
     title: "VELA - 외식업 AI 경영 분석 | 매장 수익 시뮬레이터",
     description: "좌석 수, 객단가, 비용만 입력하면 AI가 수익성을 분석합니다. 30개 이상의 외식업 경영 도구를 무료로 시작하세요.",
   },
+  verification: {
+    other: { "naver-site-verification": "3b2c975d045ec02419fee6551e887b0ab4fa11ea" },
+  },
   robots: "index, follow",
   alternates: { canonical: "https://velaanalytics.com" },
   manifest: "/manifest.json",
