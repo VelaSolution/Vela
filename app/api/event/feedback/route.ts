@@ -32,13 +32,13 @@ export async function POST(req: NextRequest) {
 
     // 필수 항목 검증
     if (!nickname || !industry || !experience || !review || !improvement || !phone) {
-      return NextResponse.json({ error: "필수 항목을 모두 입력해주세요." }, { status: 400 });
+      return apiError("필수 항목을 모두 입력해주세요.", 400);
     }
     if (typeof review === "string" && review.trim().length < 50) {
-      return NextResponse.json({ error: "사용 소감을 50자 이상 작성해주세요." }, { status: 400 });
+      return apiError("사용 소감을 50자 이상 작성해주세요.", 400);
     }
     if (!Array.isArray(useful_features) || useful_features.length === 0) {
-      return NextResponse.json({ error: "유용했던 기능을 1개 이상 선택해주세요." }, { status: 400 });
+      return apiError("유용했던 기능을 1개 이상 선택해주세요.", 400);
     }
 
     // 중복 제출 방지 (로그인 사용자)
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         .eq("user_id", user_id)
         .limit(1);
       if (existing && existing.length > 0) {
-        return NextResponse.json({ error: "이미 피드백을 제출하셨습니다." }, { status: 409 });
+        return apiError("이미 피드백을 제출하셨습니다.", 409);
       }
     }
 
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error("Feedback insert error:", insertError);
-      return NextResponse.json({ error: "피드백 저장에 실패했습니다." }, { status: 500 });
+      return apiError("피드백 저장에 실패했습니다.", 500);
     }
 
     // 로그인 사용자: 스탠다드 플랜 1개월 무료 체험 활성화
@@ -92,16 +92,16 @@ export async function POST(req: NextRequest) {
       if (updateError) {
         console.error("Plan upgrade error:", updateError);
         // 플랜 업그레이드 실패해도 피드백은 저장됨 — 응답에 경고 포함
-        return NextResponse.json({
+        return apiSuccess({
           ok: true,
           warning: "피드백은 저장되었으나 플랜 활성화에 실패했습니다. 고객센터에 문의해주세요.",
         });
       }
     }
 
-    return NextResponse.json({ ok: true });
+    return apiSuccess({ ok: true });
   } catch (e) {
     console.error("Event feedback error:", e);
-    return NextResponse.json({ error: "서버 오류가 발생했습니다." }, { status: 500 });
+    return apiError("서버 오류가 발생했습니다.", 500);
   }
 }

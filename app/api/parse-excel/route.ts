@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { apiError } from "@/lib/api-error";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "edge";
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const rl = checkRateLimit(ip, { key: "parse-excel", limit: 3 });
   if (!rl.ok) return rateLimitResponse();
   const body = await req.json().catch(() => null);
-  if (!body) return new Response(JSON.stringify({ error: "입력값 누락" }), { status: 400, headers: { "Content-Type": "application/json" } });
+  if (!body) return apiError("입력값 누락", 400);
   const { csvText, fileName, industry } = body;
 
   if (!csvText || typeof csvText !== "string") {
@@ -122,14 +122,12 @@ ${safeCsvText}
   try {
     const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
     // truncated 여부를 응답에 포함 (클라이언트 경고 표시용)
-    return new Response(JSON.stringify({ ...parsed, _truncated: truncated }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    return apiSuccess({ ...parsed, _truncated: truncated });
   } catch {
     return apiError("응답 파싱에 실패했습니다.", 500);
   }
   } catch (e) {
     console.error("Parse excel error:", e);
-    return new Response(JSON.stringify({ error: "서버 오류" }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return apiError("서버 오류", 500);
   }
 }

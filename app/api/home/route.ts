@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { apiSuccess } from "@/lib/api-error";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -120,5 +120,5 @@ async function getNews() {
 
 export async function GET() {
   const [stocks, news] = await Promise.all([getStocks(), getNews()]);
-  return NextResponse.json({ stocks, news });
+  return apiSuccess({ stocks, news });
 }

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { fmt } from "@/lib/vela";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     const { secret } = await req.json();
 
     if (secret !== process.env.TOSS_SECRET_KEY) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", 401);
     }
 
     /* ── 이번 달 / 지난 달 계산 ── */
@@ -34,11 +35,11 @@ export async function POST(req: NextRequest) {
 
     if (snapErr) {
       console.error("Snapshot query error:", snapErr);
-      return NextResponse.json({ error: "DB 조회 실패", detail: snapErr.message }, { status: 500 });
+      return apiError("DB 조회 실패", 500);
     }
 
     if (!snapshots || snapshots.length === 0) {
-      return NextResponse.json({ ok: true, sent: 0, message: "발송 대상 없음" });
+      return apiSuccess({ ok: true, sent: 0, message: "발송 대상 없음" });
     }
 
     /* ── 유저별로 이번 달 / 지난 달 데이터 그룹핑 ── */
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
       .map(([id]) => id);
 
     if (targetUserIds.length === 0) {
-      return NextResponse.json({ ok: true, sent: 0, message: "이번 달 데이터가 있는 유저 없음" });
+      return apiSuccess({ ok: true, sent: 0, message: "이번 달 데이터가 있는 유저 없음" });
     }
 
     /* ── 프로필에서 이메일 조회 ── */
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     if (profErr) {
       console.error("Profile query error:", profErr);
-      return NextResponse.json({ error: "프로필 조회 실패", detail: profErr.message }, { status: 500 });
+      return apiError("프로필 조회 실패", 500);
     }
 
     /* ── 이메일 발송 ── */
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       ok: true,
       sent: sentCount,
       failed: errors.length,
@@ -149,7 +150,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("Newsletter error:", e);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError("서버 오류", 500);
   }
 }
 

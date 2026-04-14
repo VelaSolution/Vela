@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "edge";
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => null);
     if (!body?.csvText) {
-      return new Response(JSON.stringify({ error: "데이터 없음" }), { status: 400, headers: { "Content-Type": "application/json" } });
+      return apiError("데이터 없음", 400);
     }
 
     const { csvText, platform, fileName } = body;
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     const prompt = buildPrompt(safePlatform, safeCsv, fileName ?? "data", truncated);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return new Response(JSON.stringify({ error: "API 키 없음" }), { status: 500 });
+    if (!apiKey) return apiError("API 키가 설정되지 않았습니다.", 500);
 
     const abortCtrl = new AbortController();
     const timeout = setTimeout(() => abortCtrl.abort(), 30000);
@@ -125,26 +126,24 @@ export async function POST(req: NextRequest) {
       });
     } catch {
       clearTimeout(timeout);
-      return new Response(JSON.stringify({ error: "AI 서비스 연결 실패" }), { status: 502 });
+      return apiError("AI 서비스 연결 실패", 502);
     } finally {
       clearTimeout(timeout);
     }
 
-    if (!response.ok) return new Response(JSON.stringify({ error: "AI 분석 실패" }), { status: 500 });
+    if (!response.ok) return apiError("AI 분석 실패", 500);
 
     const data = await response.json();
     const text = data.content?.[0]?.text ?? "";
 
     try {
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-      return new Response(JSON.stringify({ ...parsed, _platform: safePlatform, _truncated: truncated }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiSuccess({ ...parsed, _platform: safePlatform, _truncated: truncated });
     } catch {
-      return new Response(JSON.stringify({ error: "응답 파싱 실패" }), { status: 500 });
+      return apiError("응답 파싱 실패", 500);
     }
   } catch (e) {
     console.error("Sales connect error:", e);
-    return new Response(JSON.stringify({ error: "서버 오류" }), { status: 500, headers: { "Content-Type": "application/json" } });
+    return apiError("서버 오류", 500);
   }
 }

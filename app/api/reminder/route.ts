@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { secret } = await req.json();
     if (!secret || secret !== process.env.TOSS_SECRET_KEY) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", 401);
     }
 
     const now = new Date();
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
       .select("id, email, full_name, store_name");
 
     if (!profiles) {
-      return NextResponse.json({ ok: true, sent: 0, message: "프로필 없음" });
+      return apiSuccess({ ok: true, sent: 0, message: "프로필 없음" });
     }
 
     // 이번 달 데이터 미입력 유저 필터링
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (targets.length === 0) {
-      return NextResponse.json({ ok: true, sent: 0, message: "모든 유저가 데이터를 입력했습니다" });
+      return apiSuccess({ ok: true, sent: 0, message: "모든 유저가 데이터를 입력했습니다" });
     }
 
     let sentCount = 0;
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return apiSuccess({
       ok: true,
       sent: sentCount,
       skipped: usersWithData.size,
@@ -117,6 +118,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (e) {
     console.error("Reminder error:", e);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError("서버 오류", 500);
   }
 }

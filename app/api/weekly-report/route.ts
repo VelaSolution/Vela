@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
 
     const { secret } = await req.json();
     if (!secret || secret !== process.env.TOSS_SECRET_KEY) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiError("Unauthorized", 401);
     }
 
     const now = new Date();
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       .from("profiles")
       .select("id, email, full_name, store_name, plan");
 
-    if (!profiles) return NextResponse.json({ ok: true, sent: 0 });
+    if (!profiles) return apiSuccess({ ok: true, sent: 0 });
 
     let sentCount = 0;
     const errors: string[] = [];
@@ -99,9 +100,9 @@ export async function POST(req: NextRequest) {
       else errors.push(profile.email);
     }
 
-    return NextResponse.json({ ok: true, sent: sentCount, failed: errors.length });
+    return apiSuccess({ ok: true, sent: sentCount, failed: errors.length });
   } catch (e) {
     console.error("Weekly report error:", e);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError("서버 오류", 500);
   }
 }

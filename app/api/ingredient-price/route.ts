@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
+import { apiSuccess } from "@/lib/api-error";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
     categories.map((cat) => [cat, prices.filter((p) => p.category === cat)])
   );
 
-  return NextResponse.json({
+  return apiSuccess({
     source: kamisKey ? "kamis" : "manual",
     updatedAt: new Date().toISOString().slice(0, 10),
     totalItems: prices.length,

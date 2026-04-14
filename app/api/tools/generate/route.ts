@@ -1,6 +1,6 @@
 // app/api/tools/generate/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { apiError } from "@/lib/api-error";
+import { NextRequest } from "next/server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "edge";
@@ -90,6 +90,6 @@ export async function POST(req: NextRequest) {
   const data = await response.json();
   const text = data.content?.[0]?.text ?? "";
 
-  return NextResponse.json({ text });
+  return apiSuccess({ text });
 }
 

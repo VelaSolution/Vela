@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { r2, R2_BUCKET } from "@/lib/r2";
 
 async function getUser(req: NextRequest) {
@@ -15,10 +16,10 @@ async function getUser(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await getUser(req);
-    if (!user) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+    if (!user) return apiError("인증 필요", 401);
 
     const { key } = await req.json();
-    if (!key) return NextResponse.json({ error: "키 없음" }, { status: 400 });
+    if (!key) return apiError("키 없음", 400);
 
     await r2.send(
       new DeleteObjectCommand({
@@ -27,9 +28,9 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    return NextResponse.json({ ok: true });
+    return apiSuccess({ ok: true });
   } catch (e) {
     console.error("R2 delete error:", e);
-    return NextResponse.json({ error: "삭제 실패" }, { status: 500 });
+    return apiError("삭제 실패", 500);
   }
 }

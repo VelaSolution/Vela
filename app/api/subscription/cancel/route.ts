@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiError, apiSuccess } from "@/lib/api-error";
 import { createSupabaseServerClient, supabaseAdmin } from "@/lib/supabase-server";
 
 export async function POST(_req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "인증 필요" }, { status: 401 });
+    if (!user) return apiError("인증 필요", 401);
 
     // 플랜을 free로 변경
     const { error: profileError } = await supabaseAdmin
@@ -14,7 +15,7 @@ export async function POST(_req: NextRequest) {
       .eq("id", user.id);
 
     if (profileError) {
-      return NextResponse.json({ error: "구독 해지 실패" }, { status: 500 });
+      return apiError("구독 해지 실패", 500);
     }
 
     // 해지 이메일 알림 (관리자에게)
@@ -32,8 +33,8 @@ export async function POST(_req: NextRequest) {
       }).catch(() => {});
     }
 
-    return NextResponse.json({ ok: true });
+    return apiSuccess({ ok: true });
   } catch {
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError("서버 오류", 500);
   }
 }

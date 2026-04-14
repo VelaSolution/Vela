@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 const ALLOWED_DOMAINS = [
   "pub-8fd7d785db83458b8cf8e3a4747b3370.r2.dev",
@@ -7,16 +8,16 @@ const ALLOWED_DOMAINS = [
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
-  if (!url) return NextResponse.json({ error: "URL 필요" }, { status: 400 });
+  if (!url) return apiError("URL 필요", 400);
 
   // SSRF 방지: 허용된 도메인만
   try {
     const parsed = new URL(url);
     if (!ALLOWED_DOMAINS.some(d => parsed.hostname.endsWith(d))) {
-      return NextResponse.json({ error: "허용되지 않은 도메인" }, { status: 403 });
+      return apiError("허용되지 않은 도메인", 403);
     }
   } catch {
-    return NextResponse.json({ error: "잘못된 URL" }, { status: 400 });
+    return apiError("잘못된 URL", 400);
   }
 
   try {
@@ -31,6 +32,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch {
-    return NextResponse.json({ error: "파일 로드 실패" }, { status: 500 });
+    return apiError("파일 로드 실패", 500);
   }
 }
