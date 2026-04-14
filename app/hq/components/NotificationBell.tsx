@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import type { HQRole } from "@/app/hq/types";
 import { sb, today, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
 
@@ -17,6 +18,23 @@ interface Notification {
   time: string;
   tab: string;
 }
+
+/* ── Supabase row interfaces ── */
+interface ApprovalRow { id: string; title: string; date: string; }
+interface NoticeRow { id: string; title: string; date: string; read_by?: string[]; }
+interface TaskRow { id: string; title: string; deadline: string; status: string; }
+interface LeaveRow { id: string; type: string; status: string; date: string; }
+interface ChatRow { id: string; sender: string; text: string; created_at: string; }
+interface DmRow { id: string; sender: string; text: string; created_at: string; receiver?: string; }
+interface FeedbackRow { id: string; title: string; author: string; date: string; }
+interface ReportRow { id: string; title: string; status: string; date: string; author: string; }
+interface BoardRow { id: string; title: string; author: string; date: string; }
+interface SurveyRow { id: string; title: string; author: string; date: string; status: string; }
+
+interface SupabaseQueryResult<T> { data: T[] | null; error: unknown; }
+
+/* ── Realtime payload row (minimal shape for .new) ── */
+interface RealtimeNewRow { sender?: string; author?: string; receiver?: string; }
 
 const LS_KEY = "hq_read_notifications";
 
@@ -78,28 +96,28 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
 
     // 전체 쿼리를 병렬 실행
     const [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10] = await Promise.all([
-      s.from("hq_approvals").select("id, title, date").eq("status", "대기").eq("approver", userName).then((res: any) => res.data).catch(() => null),
-      s.from("hq_notices").select("id, title, date, read_by").order("date", { ascending: false }).limit(20).then((res: any) => res.data).catch(() => null),
-      s.from("hq_tasks").select("id, title, deadline, status").eq("deadline", todayStr).eq("user_id", userId).then((res: any) => res.data).catch(() => null),
-      s.from("hq_leave").select("id, type, status, date").eq("requester", userName).in("status", ["승인", "반려"]).then((res: any) => res.data).catch(() => null),
-      s.from("hq_chat").select("id, sender, text, created_at").neq("sender", userName).order("created_at", { ascending: false }).limit(10).then((res: any) => res.data).catch(() => null),
-      s.from("hq_dm").select("id, sender, text, created_at").eq("receiver", userName).order("created_at", { ascending: false }).limit(10).then((res: any) => res.data).catch(() => null),
-      s.from("hq_feedback").select("id, title, author, date").order("date", { ascending: false }).limit(10).then((res: any) => res.data).catch(() => null),
-      s.from("hq_reports").select("id, title, status, date, author").eq("status", "submitted").order("date", { ascending: false }).limit(10).then((res: any) => res.data).catch(() => null),
-      s.from("hq_board").select("id, title, author, date").order("date", { ascending: false }).limit(10).then((res: any) => res.data).catch(() => null),
-      s.from("hq_surveys").select("id, title, author, date, status").eq("status", "진행중").order("date", { ascending: false }).limit(5).then((res: any) => res.data).catch(() => null),
+      s.from("hq_approvals").select("id, title, date").eq("status", "대기").eq("approver", userName).then((res: SupabaseQueryResult<ApprovalRow>) => res.data).catch(() => null),
+      s.from("hq_notices").select("id, title, date, read_by").order("date", { ascending: false }).limit(20).then((res: SupabaseQueryResult<NoticeRow>) => res.data).catch(() => null),
+      s.from("hq_tasks").select("id, title, deadline, status").eq("deadline", todayStr).eq("user_id", userId).then((res: SupabaseQueryResult<TaskRow>) => res.data).catch(() => null),
+      s.from("hq_leave").select("id, type, status, date").eq("requester", userName).in("status", ["승인", "반려"]).then((res: SupabaseQueryResult<LeaveRow>) => res.data).catch(() => null),
+      s.from("hq_chat").select("id, sender, text, created_at").neq("sender", userName).order("created_at", { ascending: false }).limit(10).then((res: SupabaseQueryResult<ChatRow>) => res.data).catch(() => null),
+      s.from("hq_dm").select("id, sender, text, created_at").eq("receiver", userName).order("created_at", { ascending: false }).limit(10).then((res: SupabaseQueryResult<DmRow>) => res.data).catch(() => null),
+      s.from("hq_feedback").select("id, title, author, date").order("date", { ascending: false }).limit(10).then((res: SupabaseQueryResult<FeedbackRow>) => res.data).catch(() => null),
+      s.from("hq_reports").select("id, title, status, date, author").eq("status", "submitted").order("date", { ascending: false }).limit(10).then((res: SupabaseQueryResult<ReportRow>) => res.data).catch(() => null),
+      s.from("hq_board").select("id, title, author, date").order("date", { ascending: false }).limit(10).then((res: SupabaseQueryResult<BoardRow>) => res.data).catch(() => null),
+      s.from("hq_surveys").select("id, title, author, date, status").eq("status", "진행중").order("date", { ascending: false }).limit(5).then((res: SupabaseQueryResult<SurveyRow>) => res.data).catch(() => null),
     ]);
 
-    if (r1) for (const a of r1 as any[]) items.push({ id: `approval-${a.id}`, icon: "📋", title: `결재 대기: ${a.title}`, time: a.date, tab: "approval" });
-    if (r2) for (const n of r2 as any[]) { if (!(n.read_by ?? []).includes(userName)) items.push({ id: `notice-${n.id}`, icon: "📢", title: `새 공지: ${n.title}`, time: n.date, tab: "notice" }); }
-    if (r3) for (const t of r3 as any[]) { if (t.status !== "completed" && t.status !== "failed") items.push({ id: `task-${t.id}`, icon: "⏰", title: `오늘 마감: ${t.title}`, time: todayStr, tab: "task" }); }
-    if (r4) for (const l of r4 as any[]) items.push({ id: `leave-${l.id}`, icon: "🏖️", title: `휴가 ${l.status === "승인" ? "승인됨" : "반려됨"}: ${l.type}`, time: l.date, tab: "leave" });
-    if (r5) for (const c of r5 as any[]) items.push({ id: `chat-${c.id}`, icon: "💬", title: `${displayName(c.sender)}: ${(c.text as string).slice(0, 30)}`, time: c.created_at, tab: "chat" });
-    if (r6) for (const d of r6 as any[]) items.push({ id: `dm-${d.id}`, icon: "✉️", title: `DM ${displayName(d.sender)}: ${(d.text as string).slice(0, 30)}`, time: d.created_at, tab: "chat" });
-    if (r7) for (const f of r7 as any[]) { if (f.author !== userName) items.push({ id: `feedback-${f.id}`, icon: "🐛", title: `피드백: ${f.title}`, time: f.date, tab: "feedback" }); }
-    if (r8) for (const r of r8 as any[]) { if (r.author !== userName) items.push({ id: `report-${r.id}`, icon: "📄", title: `보고서 제출: ${r.title}`, time: r.date, tab: "report" }); }
-    if (r9) for (const b of r9 as any[]) { if (b.author !== userName) items.push({ id: `board-${b.id}`, icon: "💬", title: `게시판: ${b.title}`, time: b.date, tab: "board" }); }
-    if (r10) for (const sv of r10 as any[]) { if (sv.author !== userName) items.push({ id: `survey-${sv.id}`, icon: "📊", title: `설문 참여: ${sv.title}`, time: sv.date, tab: "survey" }); }
+    if (r1) for (const a of r1) items.push({ id: `approval-${a.id}`, icon: "📋", title: `결재 대기: ${a.title}`, time: a.date, tab: "approval" });
+    if (r2) for (const n of r2) { if (!(n.read_by ?? []).includes(userName)) items.push({ id: `notice-${n.id}`, icon: "📢", title: `새 공지: ${n.title}`, time: n.date, tab: "notice" }); }
+    if (r3) for (const t of r3) { if (t.status !== "completed" && t.status !== "failed") items.push({ id: `task-${t.id}`, icon: "⏰", title: `오늘 마감: ${t.title}`, time: todayStr, tab: "task" }); }
+    if (r4) for (const l of r4) items.push({ id: `leave-${l.id}`, icon: "🏖️", title: `휴가 ${l.status === "승인" ? "승인됨" : "반려됨"}: ${l.type}`, time: l.date, tab: "leave" });
+    if (r5) for (const c of r5) items.push({ id: `chat-${c.id}`, icon: "💬", title: `${displayName(c.sender)}: ${c.text.slice(0, 30)}`, time: c.created_at, tab: "chat" });
+    if (r6) for (const d of r6) items.push({ id: `dm-${d.id}`, icon: "✉️", title: `DM ${displayName(d.sender)}: ${d.text.slice(0, 30)}`, time: d.created_at, tab: "chat" });
+    if (r7) for (const f of r7) { if (f.author !== userName) items.push({ id: `feedback-${f.id}`, icon: "🐛", title: `피드백: ${f.title}`, time: f.date, tab: "feedback" }); }
+    if (r8) for (const r of r8) { if (r.author !== userName) items.push({ id: `report-${r.id}`, icon: "📄", title: `보고서 제출: ${r.title}`, time: r.date, tab: "report" }); }
+    if (r9) for (const b of r9) { if (b.author !== userName) items.push({ id: `board-${b.id}`, icon: "💬", title: `게시판: ${b.title}`, time: b.date, tab: "board" }); }
+    if (r10) for (const sv of r10) { if (sv.author !== userName) items.push({ id: `survey-${sv.id}`, icon: "📊", title: `설문 참여: ${sv.title}`, time: sv.date, tab: "survey" }); }
 
     items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     setNotifications(items);
@@ -108,7 +126,7 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
   // Load read IDs from localStorage
   useEffect(() => { setReadIds(getReadIds()); }, []);
 
-  // Fetch on mount + auto-refresh every 30s
+  // Fetch on mount + auto-refresh every 60s
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000);
@@ -119,27 +137,29 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
   useEffect(() => {
     const s = sb();
     if (!s) return;
-    const withPush = (title: string) => (payload: any) => {
+    const withPush = (title: string) => (payload: RealtimePostgresChangesPayload<RealtimeNewRow>) => {
       fetchNotifications();
-      const sender = payload.new?.sender || payload.new?.author || "";
+      const newRow = payload.new as RealtimeNewRow | undefined;
+      const sender = newRow?.sender || newRow?.author || "";
       if (sender && sender !== userName) {
         sendBrowserNotification("VELA HQ", `${title}: ${sender}`);
       }
     };
     const channel = s
       .channel("hq_notifications")
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_chat" }, withPush("새 팀 채팅"))
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_dm" }, (payload: any) => {
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_chat" } as Record<string, string>, withPush("새 팀 채팅"))
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_dm" } as Record<string, string>, (payload: RealtimePostgresChangesPayload<RealtimeNewRow>) => {
         fetchNotifications();
-        if (payload.new?.receiver === userName) {
-          sendBrowserNotification("VELA HQ", `DM: ${payload.new.sender}`);
+        const newRow = payload.new as RealtimeNewRow | undefined;
+        if (newRow?.receiver === userName) {
+          sendBrowserNotification("VELA HQ", `DM: ${newRow?.sender ?? ""}`);
         }
       })
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_approvals" }, withPush("새 결재 요청"))
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_notices" }, withPush("새 공지"))
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_feedback" }, withPush("새 피드백"))
-      .on("postgres_changes" as any, { event: "INSERT", schema: "public", table: "hq_board" }, withPush("새 게시글"))
-      .on("postgres_changes" as any, { event: "UPDATE", schema: "public", table: "hq_leave" }, () => fetchNotifications())
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_approvals" } as Record<string, string>, withPush("새 결재 요청"))
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_notices" } as Record<string, string>, withPush("새 공지"))
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_feedback" } as Record<string, string>, withPush("새 피드백"))
+      .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_board" } as Record<string, string>, withPush("새 게시글"))
+      .on("postgres_changes" as "system", { event: "UPDATE", schema: "public", table: "hq_leave" } as Record<string, string>, () => fetchNotifications())
       .subscribe();
     return () => { s.removeChannel(channel); };
   }, [fetchNotifications]);
