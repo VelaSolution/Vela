@@ -1,6 +1,8 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import UpgradeModal from "@/components/UpgradeModal";
+import { usePlan } from "@/lib/usePlan";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import {
@@ -10,11 +12,13 @@ import {
 } from "recharts";
 import {
   INDUSTRY_CONFIG, INDUSTRY_BENCHMARK, sanitizeFullForm, calcResult, calcSimulation,
-  calcStrategies, calcAnalysis, calcReverse, saveHistory, loadHistory, deleteHistory,
+  calcStrategies, calcAnalysis, saveHistory, loadHistory, deleteHistory,
   fmt, pct,
   type FullForm, type HistoryRecord,
 } from "@/lib/vela";
 import VelaChat from "@/components/VelaChat";
+import KakaoShare from "@/components/KakaoShare";
+import EventBanner from "@/components/EventBanner";
 
 const CHART_COLORS = ["#0f172a", "#334155", "#64748b", "#94a3b8", "#cbd5e1"];
 type Briefing = { currentStatus: string; mainIssue: string; topAction: string; actionHint: string };
@@ -23,7 +27,7 @@ type Briefing = { currentStatus: string; mainIssue: string; topAction: string; a
 type GuideItem = { title: string; items: { action: string; detail: string }[] };
 
 function buildGuides(form: FullForm, result: ReturnType<typeof calcResult>): GuideItem[] {
-  const config = INDUSTRY_CONFIG[form.industry];
+  const _config = INDUSTRY_CONFIG[form.industry];
   return [
     {
       title: "객단가를 높이는 방법",
@@ -108,7 +112,7 @@ function StrategyGuideSection({
   const guides = useMemo(() => buildGuides(form, result), [form, result]);
 
   return (
-    <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-5">
         <h2 className="text-xl font-bold text-slate-900">전략 가이드</h2>
         <p className="mt-1 text-sm text-slate-500">
@@ -174,17 +178,20 @@ const CATEGORY_STYLE: Record<string, string> = {
 };
 
 function AIStrategySection({
-  form, result, strategies,
+  form, result, strategies, plan,
 }: {
   form: FullForm;
   result: ReturnType<typeof calcResult>;
   strategies: ReturnType<typeof calcStrategies>;
+  plan: string;
 }) {
   const [aiStrategies, setAiStrategies] = useState<AIStrategy[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const fetchStrategies = async () => {
+    if (plan === "free") { setShowUpgrade(true); return; }
     setLoading(true);
     setError("");
     try {
@@ -205,12 +212,19 @@ function AIStrategySection({
   };
 
   return (
-    <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        title="AI 전략 추천은 유료 기능이에요"
+        description="AI가 매장 상황에 맞는 맞춤 전략을 제안합니다. 스탠다드 플랜으로 업그레이드하면 무제한 이용 가능합니다."
+      />
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">AI 추천 전략</h2>
           <p className="mt-1 text-sm text-slate-500">
             수치 시뮬레이션 외에 AI가 운영 방식·마케팅·메뉴 관점에서 새로운 전략을 제안합니다.
+            {plan === "free" && <span className="ml-2 text-blue-500 font-semibold">(유료 전용)</span>}
           </p>
         </div>
         <div className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">VELA AI</div>
@@ -292,10 +306,10 @@ function SummaryCard({ title, value, sub, highlight }: { title: string; value: s
   const bg = highlight === "good" ? "bg-emerald-50 ring-emerald-200" : highlight === "bad" ? "bg-red-50 ring-red-200" : highlight === "info" ? "bg-blue-50 ring-blue-200" : "bg-white ring-slate-200";
   const tc = highlight === "good" ? "text-emerald-700" : highlight === "bad" ? "text-red-700" : highlight === "info" ? "text-blue-700" : "text-slate-900";
   return (
-    <div className={`rounded-3xl p-5 shadow-sm ring-1 ${bg}`}>
-      <p className="text-sm text-slate-500">{title}</p>
-      <p className={`mt-2 text-2xl font-bold tracking-tight ${tc}`}>{value}</p>
-      {sub && <p className="mt-2 text-xs text-slate-400">{sub}</p>}
+    <div className={`rounded-3xl p-4 shadow-sm ring-1 ${bg}`}>
+      <p className="text-xs text-slate-500">{title}</p>
+      <p className={`mt-1.5 text-lg font-bold tracking-tight ${tc}`}>{value}</p>
+      {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
     </div>
   );
 }
@@ -327,31 +341,75 @@ function TagBadge({ label }: { label: string }) {
 }
 
 // ─── AI 브리핑 ─────────────────────────────────────────────────
-function AIBriefingSection({ form, result }: { form: FullForm; result: ReturnType<typeof calcResult> }) {
+const BRIEFING_KEY = "vela-briefing-usage";
+const FREE_BRIEFING_LIMIT = 3;
+
+function getBriefingUsage(): { count: number; month: string } {
+  if (typeof window === "undefined") return { count: 0, month: "" };
+  try {
+    const raw = localStorage.getItem(BRIEFING_KEY);
+    if (!raw) return { count: 0, month: "" };
+    return JSON.parse(raw);
+  } catch { return { count: 0, month: "" }; }
+}
+
+function incrementBriefingUsage() {
+  const now = new Date();
+  const month = `${now.getFullYear()}-${now.getMonth() + 1}`;
+  const usage = getBriefingUsage();
+  const count = usage.month === month ? usage.count + 1 : 1;
+  localStorage.setItem(BRIEFING_KEY, JSON.stringify({ count, month }));
+}
+
+function AIBriefingSection({ form, result, plan }: { form: FullForm; result: ReturnType<typeof calcResult>; plan: string }) {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
+  const usage = getBriefingUsage();
+  const usedThisMonth = usage.month === currentMonth ? usage.count : 0;
+  const isLimited = plan === "free" && usedThisMonth >= FREE_BRIEFING_LIMIT;
+  const remaining = FREE_BRIEFING_LIMIT - usedThisMonth;
 
   const fetchBriefing = async () => {
+    if (isLimited) { setShowUpgrade(true); return; }
     setLoading(true); setError("");
     try {
       const res = await fetch("/api/briefing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ form, result }) });
       if (!res.ok) throw new Error("API 오류");
       setBriefing(await res.json());
+      if (plan === "free") incrementBriefingUsage();
     } catch (e) { setError("AI 분석 중 오류가 발생했습니다. 다시 시도해주세요."); console.error(e); }
     finally { setLoading(false); }
   };
 
   return (
-    <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">AI 브리핑</h2>
-          <p className="mt-1 text-sm text-slate-500">현재 수치를 기반으로 AI가 실시간 경영 조언을 생성합니다.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            현재 수치를 기반으로 AI가 실시간 경영 조언을 생성합니다.
+            {plan === "free" && <span className="ml-2 text-blue-500 font-semibold">(월 {remaining > 0 ? `${remaining}회 남음` : "한도 소진"})</span>}
+          </p>
         </div>
         <div className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">VELA AI</div>
       </div>
-      {!briefing && !loading && (
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        title="AI 브리핑 한도를 다 사용했어요"
+        description="무료 플랜은 월 10회까지 AI 브리핑을 생성할 수 있어요. 스탠다드 플랜으로 업그레이드하면 무제한으로 이용 가능합니다."
+      />
+      {isLimited && !briefing && (
+        <button onClick={() => setShowUpgrade(true)} className="w-full rounded-2xl bg-slate-100 py-4 text-sm font-semibold text-slate-500 transition hover:bg-slate-200">
+          이번 달 무료 한도 소진 · 업그레이드하기
+        </button>
+      )}
+      {!isLimited && !briefing && !loading && (
         <button onClick={fetchBriefing} className="w-full rounded-2xl bg-slate-900 py-4 text-sm font-semibold text-white transition hover:bg-slate-700">AI 브리핑 생성하기</button>
       )}
       {loading && (
@@ -377,7 +435,42 @@ function AIBriefingSection({ form, result }: { form: FullForm; result: ReturnTyp
               </div>
             ))}
           </div>
-          <button onClick={fetchBriefing} className="mt-4 w-full rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">다시 생성하기</button>
+          <div className="mt-4 flex gap-3">
+            <button onClick={fetchBriefing} className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">다시 생성하기</button>
+            <button onClick={() => {
+              const w = window.open("", "_blank");
+              if (!w) return;
+              const config = INDUSTRY_CONFIG[form.industry];
+              w.document.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>VELA AI 브리핑 리포트</title>
+              <style>
+                body{font-family:'Apple SD Gothic Neo',sans-serif;max-width:700px;margin:40px auto;padding:0 24px;color:#333}
+                h1{font-size:22px;color:#3182F6;margin-bottom:4px}
+                .sub{color:#888;font-size:13px;margin-bottom:32px}
+                .card{background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:16px}
+                .card h3{font-size:14px;font-weight:700;margin:0 0 8px;color:#1e293b}
+                .card p{font-size:13px;line-height:1.7;margin:0;color:#475569}
+                .summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}
+                .stat{background:#f1f5f9;border-radius:8px;padding:12px;text-align:center}
+                .stat .label{font-size:11px;color:#94a3b8}
+                .stat .value{font-size:16px;font-weight:700;margin-top:4px}
+                .footer{text-align:center;margin-top:40px;color:#aaa;font-size:11px}
+                @media print{body{margin:20px}}
+              </style></head><body>
+              <h1>VELA AI 브리핑 리포트</h1>
+              <p class="sub">${config.label} · ${new Date().toLocaleDateString("ko-KR")} 생성</p>
+              <div class="summary">
+                <div class="stat"><div class="label">월 매출</div><div class="value">${fmt(result.totalSales)}원</div></div>
+                <div class="stat"><div class="label">순이익</div><div class="value">${fmt(result.netProfit)}원</div></div>
+                <div class="stat"><div class="label">순이익률</div><div class="value">${pct(result.netMargin)}</div></div>
+              </div>
+              ${[{t:"현재 상태",b:briefing.currentStatus},{t:"핵심 문제",b:briefing.mainIssue},{t:"최우선 전략",b:briefing.topAction},{t:"실행 힌트",b:briefing.actionHint}]
+                .map(({t,b})=>`<div class="card"><h3>${t.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</h3><p>${(b||"").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p></div>`).join("")}
+              <p class="footer">VELA — velaanalytics.com</p>
+              </body></html>`);
+              w.document.close();
+              setTimeout(() => w.print(), 300);
+            }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">PDF 저장</button>
+          </div>
         </>
       )}
     </section>
@@ -402,7 +495,7 @@ function HistorySection() {
   const profitDiff = prev ? latest.result.profit - prev.result.profit : null;
 
   return (
-    <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">월별 추이</h2>
@@ -466,6 +559,7 @@ function ResultContent() {
   const [cloudSaveTitle, setCloudSaveTitle] = useState("");
   const [cloudSaving, setCloudSaving] = useState(false);
   const autoSavedRef = React.useRef(false);
+  const { plan } = usePlan();
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -489,17 +583,34 @@ function ResultContent() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // 자동 클라우드 저장 (로그인 시 시뮬레이션 실행마다 자동 저장)
+  // 무료: 최대 3개, 스탠다드/프로: 무제한
+  const FREE_HISTORY_LIMIT = 3;
   useEffect(() => {
     if (!userId || autoSavedRef.current) return;
     autoSavedRef.current = true;
     const supabase = createSupabaseBrowserClient();
-    const now = new Date();
-    const label = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} (자동저장)`;
-    supabase.from("simulation_history").insert({
-      user_id: userId, label, form,
-      result: { totalSales: result.totalSales, profit: result.profit, netProfit: result.netProfit, netMargin: result.netMargin, bep: result.bep, recoveryMonthsActual: result.recoveryMonthsActual, cogsRate: form.cogsRate, laborRate: result.laborCost > 0 ? Math.round((result.laborCost / result.totalSales) * 100) : 0 },
-    }).then(() => {});
-  }, [userId, form, result]);
+
+    // 무료 플랜이면 저장 개수 확인
+    if (plan === "free") {
+      supabase.from("simulation_history").select("id").eq("user_id", userId)
+        .then(({ data: rows }: { data: { id: string }[] | null }) => {
+          if ((rows?.length ?? 0) >= FREE_HISTORY_LIMIT) return;
+          const now = new Date();
+          const label = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} (자동저장)`;
+          supabase.from("simulation_history").insert({
+            user_id: userId, label, form,
+            result: { totalSales: result.totalSales, profit: result.profit, netProfit: result.netProfit, netMargin: result.netMargin, bep: result.bep, recoveryMonthsActual: result.recoveryMonthsActual, cogsRate: form.cogsRate, laborRate: result.laborCost > 0 ? Math.round((result.laborCost / result.totalSales) * 100) : 0 },
+          }).then(() => {});
+        });
+    } else {
+      const now = new Date();
+      const label = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} (자동저장)`;
+      supabase.from("simulation_history").insert({
+        user_id: userId, label, form,
+        result: { totalSales: result.totalSales, profit: result.profit, netProfit: result.netProfit, netMargin: result.netMargin, bep: result.bep, recoveryMonthsActual: result.recoveryMonthsActual, cogsRate: form.cogsRate, laborRate: result.laborCost > 0 ? Math.round((result.laborCost / result.totalSales) * 100) : 0 },
+      }).then(() => {});
+    }
+  }, [userId, form, result, plan]);
 
   const saveToCloud = async (title?: string) => {
     if (!userId) { router.push("/login"); return; }
@@ -537,17 +648,17 @@ function ResultContent() {
       nickname: nick,
       industry: form.industry,
       title: shareTitle.trim(),
-      total_sales: result.totalSales,
-      profit: result.profit,
-      net_profit: result.netProfit,
-      net_margin: result.netMargin,
-      cogs_ratio: form.cogsRate,
+      total_sales: Math.round(result.totalSales),
+      profit: Math.round(result.profit),
+      net_profit: Math.round(result.netProfit),
+      net_margin: Math.round(result.netMargin),
+      cogs_ratio: Math.round(form.cogsRate),
       labor_ratio: result.laborCost > 0 ? Math.round((result.laborCost / result.totalSales) * 100) : 0,
-      bep: result.bep,
+      bep: Math.round(result.bep),
       memo: shareMemo.trim(),
     });
     setSharing(false);
-    if (error) { alert("공유 실패. 다시 시도해주세요."); return; }
+    if (error) { alert("공유 실패: " + error.message); console.error("Share error:", error); return; }
     setShareMsg("커뮤니티에 공유됐어요! 🎉");
     setShowShareModal(false);
     setShareTitle(""); setShareMemo("");
@@ -567,13 +678,13 @@ function ResultContent() {
   }, [result, form, isProfit]);
 
   return (
-    <div className="min-h-screen bg-slate-50 print:bg-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 print:bg-white">
       
       <main className="px-4 py-6 md:px-8 print:px-0">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-6">
 
         {/* 헤더 */}
-        <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200 print:rounded-none print:shadow-none">
+        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 print:rounded-none print:shadow-none">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="mb-2 flex items-center gap-2">
@@ -588,23 +699,36 @@ function ResultContent() {
               {isProfit ? "현재 흑자 구조입니다" : "현재 적자 구조입니다"}
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3 print:hidden">
-            <button onClick={() => router.push("/simulator")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
-            <button onClick={() => window.print()} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
-            <button onClick={() => navigator.clipboard.writeText(window.location.href).catch(console.error)} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 공유</button>
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
+            <button onClick={() => router.push("/simulator")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
+            <button onClick={() => window.print()} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
+            <button onClick={() => navigator.clipboard.writeText(window.location.href).then(() => setSaveMsg("링크 복사됨!")).catch(console.error)} className="w-full rounded-2xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 복사</button>
+            <KakaoShare title={`[VELA] ${config.label} 수익 분석`} description={`월매출 ${fmt(result.totalSales)}원 / 순이익 ${fmt(result.netProfit)}원 (순이익률 ${pct(result.netMargin)})`} buttonText="카카오톡 공유" className="w-full rounded-2xl bg-yellow-400 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-300" />
+            <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
               👥 커뮤니티에 공유
             </button>
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-700">
+            <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white hover:bg-violet-500">
+              🏆 성적표 공유
+            </button>
+            <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700">
               {userId ? "☁️ 클라우드 저장" : "🔒 로그인 후 저장"}
             </button>
-            {saveMsg && <span className="self-center text-sm font-medium text-emerald-600">{saveMsg}</span>}
-            {shareMsg && <span className="self-center text-sm font-medium text-emerald-600">{shareMsg}</span>}
             {userId && (
-              <button onClick={() => router.push("/profile")} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <button onClick={() => router.push("/profile")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                 대시보드 →
               </button>
             )}
+          </div>
+          {(saveMsg || shareMsg) && (
+            <div className="mt-2 print:hidden">
+              {saveMsg && <span className="text-sm font-medium text-emerald-600">{saveMsg}</span>}
+              {shareMsg && <span className="ml-2 text-sm font-medium text-emerald-600">{shareMsg}</span>}
+            </div>
+          )}
+
+          {/* 이벤트 배너 */}
+          <div className="mt-6 print:hidden">
+            <EventBanner />
           </div>
 
           {/* 클라우드 저장 모달 */}
@@ -680,7 +804,7 @@ function ResultContent() {
         </section>
 
         {/* 핵심 요약 — 6개 */}
-        <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           <SummaryCard title="월 총 매출" value={`${fmt(result.totalSales)}원`} sub={`홀 ${fmt(result.hallSales)} · 배달 ${fmt(result.deliveryNetSales)}`} />
           <SummaryCard title="세전 순이익" value={`${fmt(result.profit)}원`} sub={`순이익률 ${pct(result.netMargin)}`} highlight={isProfit ? "good" : "bad"} />
           <SummaryCard title="세후 실수령" value={`${fmt(result.netProfit)}원`} sub={`세금 ${fmt(result.incomeTax + result.vatBurden)}원 차감`} highlight={result.netProfit >= 0 ? "good" : "bad"} />
@@ -689,6 +813,39 @@ function ResultContent() {
           <SummaryCard title="투자금 회수" value={result.recoveryMonthsActual === 999 ? "불가" : `${result.recoveryMonthsActual}개월`}
             sub={`목표 ${form.recoveryMonths}개월`} highlight={result.recoveryMonthsActual <= form.recoveryMonths ? "good" : result.recoveryMonthsActual === 999 ? "bad" : "info"} />
         </section>
+
+        {/* 손익분기 D-day */}
+        {result.bepGap < 0 && (
+          <section className="rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 p-6 ring-1 ring-amber-200">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-amber-900">손익분기 달성까지</h2>
+                <p className="text-sm text-amber-700 mt-1">
+                  월 매출을 <span className="font-bold">{fmt(Math.abs(result.bepGap))}원</span> 더 올려야 합니다
+                </p>
+                <p className="text-xs text-amber-600 mt-2">
+                  {(() => {
+                    const gap = Math.abs(result.bepGap);
+                    const dailyExtra = Math.ceil(gap / ((form.weekdayDays + form.weekendDays) * 4.3));
+                    const extraCustomers = Math.ceil(dailyExtra / form.avgSpend);
+                    return `일 평균 ${fmt(dailyExtra)}원 추가 매출 필요 (고객 약 ${extraCustomers}명)`;
+                  })()}
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="text-5xl font-black text-amber-600">
+                  D-{(() => {
+                    const monthlyGap = Math.abs(result.bepGap);
+                    const trend = result.totalSales * 0.03;
+                    if (trend <= 0) return "∞";
+                    return Math.ceil(monthlyGap / trend);
+                  })()}
+                </div>
+                <p className="text-xs text-amber-500 mt-1">월 3% 성장 가정</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 업종 평균 벤치마크 */}
         {(() => {
@@ -700,7 +857,7 @@ function ResultContent() {
             { label: "순이익률", mine: result.netMargin, avg: bench.netMargin, lowerBetter: false },
           ];
           return (
-            <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">업종 평균 비교</h2>
@@ -774,7 +931,7 @@ function ResultContent() {
           ].filter(i => i.value > 0);
           const total = items.reduce((s, i) => s + i.value, 0);
           return (
-            <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <h2 className="mb-1 text-xl font-bold text-slate-900">비용 구조</h2>
               <p className="mb-5 text-sm text-slate-500">월 총 비용 {fmt(total)}원의 구성</p>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
@@ -817,7 +974,7 @@ function ResultContent() {
           const simResult = useMemo(() => calcResult({ ...form, ...sensitivity }), [sensitivity]);
           const profitDiff = simResult.profit - result.profit;
           return (
-            <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               <div className="mb-5">
                 <h2 className="text-xl font-bold text-slate-900">민감도 분석</h2>
                 <p className="mt-1 text-sm text-slate-500">슬라이더를 조절해 수익 변화를 즉시 확인하세요.</p>
@@ -882,8 +1039,72 @@ function ResultContent() {
           );
         })()}
 
+        {/* A vs B 시나리오 비교 */}
+        {(() => {
+          const [scenarioA, setScenarioA] = React.useState({ avgSpend: form.avgSpend, turnover: form.turnover, cogsRate: form.cogsRate });
+          const [scenarioB, setScenarioB] = React.useState({ avgSpend: Math.round(form.avgSpend * 1.15), turnover: Math.round((form.turnover + 0.5) * 10) / 10, cogsRate: Math.round((form.cogsRate - 3) * 10) / 10 });
+          const resultA = useMemo(() => calcResult({ ...form, ...scenarioA }), [scenarioA]);
+          const resultB = useMemo(() => calcResult({ ...form, ...scenarioB }), [scenarioB]);
+          const fields = [
+            { label: "월 매출", a: resultA.totalSales, b: resultB.totalSales },
+            { label: "세전 순이익", a: resultA.profit, b: resultB.profit },
+            { label: "세후 실수령", a: resultA.netProfit, b: resultB.netProfit },
+            { label: "순이익률", a: resultA.netMargin, b: resultB.netMargin, isPct: true },
+          ];
+          const SliderGroup = ({ values, onChange, label }: { values: typeof scenarioA; onChange: (v: typeof scenarioA) => void; label: string }) => (
+            <div>
+              <p className="text-sm font-bold text-slate-700 mb-3">{label}</p>
+              {[
+                { key: "avgSpend" as const, lbl: "객단가", suffix: "원", step: 100, min: Math.round(form.avgSpend * 0.5), max: Math.round(form.avgSpend * 2) },
+                { key: "turnover" as const, lbl: "회전율", suffix: "회", step: 0.1, min: 0.1, max: config.maxTurnover },
+                { key: "cogsRate" as const, lbl: "원가율", suffix: "%", step: 0.5, min: 5, max: 70 },
+              ].map(({ key, lbl, suffix, step, min, max }) => (
+                <div key={key} className="mb-2">
+                  <div className="flex justify-between text-xs mb-1"><span className="text-slate-500">{lbl}</span><span className="font-bold text-slate-800">{values[key]}{suffix}</span></div>
+                  <input type="range" min={min} max={max} step={step} value={values[key]} onChange={(e) => onChange({ ...values, [key]: Number(e.target.value) })} className="w-full accent-slate-900" style={{ height: 4 }} />
+                </div>
+              ))}
+            </div>
+          );
+          return (
+            <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <div className="mb-5">
+                <h2 className="text-xl font-bold text-slate-900">A vs B 시나리오 비교</h2>
+                <p className="mt-1 text-sm text-slate-500">두 가지 시나리오를 나란히 비교해 더 나은 선택을 찾으세요.</p>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-2 mb-6">
+                <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-200">
+                  <SliderGroup values={scenarioA} onChange={setScenarioA} label="시나리오 A (현재)" />
+                </div>
+                <div className="rounded-2xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+                  <SliderGroup values={scenarioB} onChange={setScenarioB} label="시나리오 B (변경안)" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {fields.map(({ label, a, b, isPct }) => {
+                  const diff = b - a;
+                  const better = isPct ? b > a : b > a;
+                  return (
+                    <div key={label} className="rounded-2xl bg-slate-50 p-4 text-center">
+                      <p className="text-xs text-slate-400 mb-2">{label}</p>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-sm font-bold text-blue-600">{isPct ? pct(a) : fmt(a)}</span>
+                        <span className="text-[10px] text-slate-300">vs</span>
+                        <span className="text-sm font-bold text-emerald-600">{isPct ? pct(b) : fmt(b)}</span>
+                      </div>
+                      <p className={`text-xs font-semibold mt-1.5 ${better ? "text-emerald-500" : "text-red-400"}`}>
+                        {better ? "▲" : "▼"} {isPct ? `${Math.abs(diff).toFixed(1)}%p` : `${fmt(Math.abs(diff))}원`}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
+
         {/* 운영 진단 */}
-        <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4">
             <h2 className="text-xl font-bold text-slate-900">운영 진단</h2>
             <p className="mt-1 text-sm text-slate-500">{config.label} 기준으로 해당하는 문제를 모두 표시합니다.</p>
@@ -893,12 +1114,12 @@ function ResultContent() {
           </div>
         </section>
 
-        {/* AI 브리핑 */}
-        <AIBriefingSection form={form} result={result} />
+        {/* AI 브리핑 — 무료: 월3회, 유료: 무제한 */}
+        <AIBriefingSection form={form} result={result} plan={plan} />
 
         {/* 비용 상세 + 추천 전략 */}
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-900">비용 상세</h2>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <InfoBox title="인건비 (4대보험 포함)" value={`${fmt(result.laborCost + result.insuranceCost)}원`} sub={`비율 ${pct(result.laborRatio)}`} tone={result.laborRatio < config.laborWarnRate ? "good" : "bad"} />
@@ -918,7 +1139,7 @@ function ResultContent() {
             </div>
           </div>
 
-          <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-900">추천 전략</h2>
             <p className="mt-1 text-sm text-slate-500">단일·복합 시나리오 순이익 개선 효과 순입니다.</p>
             <div className="mt-5 space-y-3">
@@ -939,12 +1160,12 @@ function ResultContent() {
           </div>
         </section>
 
-        {/* AI 추천 전략 */}
-        <AIStrategySection form={form} result={result} strategies={strategies} />
+        {/* AI 추천 전략 — 유료 전용 */}
+        <AIStrategySection form={form} result={result} strategies={strategies} plan={plan} />
 
         {/* 초기비용 & 부채 현황 */}
         {result.totalInitialCost > 0 && (
-          <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-900">초기비용 & 투자 회수 현황</h2>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <InfoBox title="총 초기 투자비" value={`${fmt(result.totalInitialCost)}원`} sub="보증금 포함" />
@@ -988,7 +1209,7 @@ function ResultContent() {
 
         {/* 차트 */}
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-900 mb-4">매출 대비 구성비</h2>
             {!isProfit && <p className="mb-2 text-xs text-red-500">적자 상태로 순이익 슬라이스는 표시되지 않습니다.</p>}
             <div className="h-80">
@@ -1003,7 +1224,7 @@ function ResultContent() {
             </div>
           </div>
 
-          <div className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="text-xl font-bold text-slate-900 mb-1">객단가 변화 시뮬레이션</h2>
             <p className="mb-4 text-sm text-slate-500">{config.label} 기준 +{Math.round(config.simPctMin * 100)}%~+{Math.round(config.simPctMax * 100)}% 범위</p>
             <div className="h-80">
@@ -1028,7 +1249,7 @@ function ResultContent() {
         {/* 전략 가이드 — 지표별 실행 전략 아코디언 */}
         <StrategyGuideSection form={form} result={result} />
 
-        <section className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-slate-200 print:hidden">
+        <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 print:hidden">
           <button onClick={() => router.push("/simulator")} className="w-full rounded-2xl border border-slate-200 px-5 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 수치 다시 입력하기</button>
         </section>
       </div>

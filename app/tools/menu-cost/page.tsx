@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
+import SimDataPicker from "@/components/SimDataPicker";
+import CollapsibleTip from "@/components/CollapsibleTip";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
+import type { SimulatorSnapshot } from "@/lib/useSimulatorData";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,10 +36,6 @@ function uid() {
 function num(v: string) {
   const n = Number(v.replace(/,/g, ""));
   return isNaN(n) ? 0 : n;
-}
-
-function fmt(v: number) {
-  return v.toLocaleString("ko-KR");
 }
 
 function calcMenu(item: MenuItem) {
@@ -117,13 +118,38 @@ function MenuCard({
   item,
   onUpdate,
   onDelete,
+  onSave,
 }: {
   item: MenuItem;
   onUpdate: (id: string, updated: Partial<MenuItem>) => void;
   onDelete: (id: string) => void;
+  onSave: (item: MenuItem) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [saving, setSaving] = useState<"idle" | "saving" | "done" | "error" | "noname" | "noprice">("idle");
   const { price, costTotal, profit, costRatio, profitRatio } = calcMenu(item);
+
+  async function handleSave() {
+    if (!item.name.trim()) {
+      setSaving("noname");
+      setTimeout(() => setSaving("idle"), 2000);
+      return;
+    }
+    if (price <= 0) {
+      setSaving("noprice");
+      setTimeout(() => setSaving("idle"), 2000);
+      return;
+    }
+    setSaving("saving");
+    try {
+      await onSave(item);
+      setSaving("done");
+    } catch (err) {
+      console.error("Menu save error:", err);
+      setSaving("error");
+    }
+    setTimeout(() => setSaving("idle"), 2500);
+  }
 
   const addIngredient = () => {
     onUpdate(item.id, {
@@ -200,6 +226,24 @@ function MenuCard({
         </div>
 
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          <button
+            onClick={handleSave}
+            disabled={saving === "saving"}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+              saving === "done" ? "bg-emerald-100 text-emerald-600" :
+              saving === "error" || saving === "noname" || saving === "noprice" ? "bg-red-100 text-red-500" :
+              saving === "saving" ? "bg-slate-100 text-slate-400" :
+              price > 0 && item.name.trim() ? "bg-blue-50 text-blue-500 hover:bg-blue-100" : "bg-slate-50 text-slate-300"
+            }`}
+            title={price <= 0 ? "판매가를 입력해주세요" : "이 메뉴 저장"}
+          >
+            {saving === "saving" ? "저장 중..." :
+             saving === "done" ? "✓ 저장됨" :
+             saving === "noname" ? "메뉴명 입력" :
+             saving === "noprice" ? "판매가 입력" :
+             saving === "error" ? "저장 실패" :
+             "💾 저장"}
+          </button>
           <button
             onClick={() => setExpanded((v) => !v)}
             className="p-2 rounded-xl hover:bg-slate-100 transition text-slate-400"
@@ -500,40 +544,77 @@ const INDUSTRY_INFO: Record<IndustryKey, { label: string; emoji: string; color: 
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+type MenuCostCloudData = { industry: IndustryKey; menus: MenuItem[] };
+const MENU_COST_DEFAULT: MenuCostCloudData = { industry: "cafe", menus: INDUSTRY_PRESETS["cafe"] };
+
 export default function MenuCostPage() {
   const [industry, setIndustry] = useState<IndustryKey>("cafe");
   const [menus, setMenus] = useState<MenuItem[]>(INDUSTRY_PRESETS["cafe"]);
   const [filterCategory, setFilterCategory] = useState("전체");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
 
-  async function saveAllMenus() {
-    setSaveStatus("saving");
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<MenuCostCloudData>("vela-menu-cost", MENU_COST_DEFAULT);
+
+  // Load from cloud on mount
+  useEffect(() => {
+    if (cloudData.menus && cloudData.menus.length > 0) {
+      setMenus(cloudData.menus);
+    }
+    if (cloudData.industry) {
+      setIndustry(cloudData.industry);
+    }
+  }, [cloudData]);
+
+  const simFields = (sim: SimulatorSnapshot) => [
+    { key: "industry", label: "업종", value: sim.industry, rawValue: sim.industry },
+    { key: "avgSpend", label: "객단가 (가격 참고)", value: `${fmt(sim.avgSpend)}원`, rawValue: sim.avgSpend },
+  ];
+  const applySimSelected = (selected: Record<string, number | string>) => {
+    if (selected.industry && selected.industry in INDUSTRY_PRESETS) {
+      changeIndustry(selected.industry as IndustryKey);
+    }
+  };
+
+  function buildMenuRow(m: MenuItem, userId: string) {
+    const totalCost = m.ingredients.reduce((s, i) => s + (parseInt(i.cost) || 0), 0);
+    const sellPrice = num(m.price);
+    return {
+      user_id: userId,
+      name: m.name,
+      category: m.category,
+      industry,
+      price: sellPrice,
+      cost: totalCost,
+      note: "",
+    };
+  }
+
+  async function getAuthUser() {
     const supabase = createSupabaseBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       window.location.href = "/login?next=/tools/menu-cost";
-      return;
+      return null;
     }
+    return { supabase, user };
+  }
+
+  async function saveOneMenu(m: MenuItem) {
+    const auth = await getAuthUser();
+    if (!auth) throw new Error("로그인이 필요합니다.");
+    const row = buildMenuRow(m, auth.user.id);
+    const { error } = await auth.supabase.from("menu_costs").insert(row);
+    if (error) throw error;
+  }
+
+  async function saveAllMenus() {
+    setSaveStatus("saving");
+    const auth = await getAuthUser();
+    if (!auth) return;
 
     const toSave = menus
-      .filter(m => num(m.price) > 0)
-      .map(m => {
-        const totalCost = m.ingredients.reduce((s, i) => s + (parseInt(i.cost) || 0), 0);
-        const sellPrice = num(m.price);
-        const cogsRate = sellPrice > 0 ? (totalCost / sellPrice) * 100 : 0;
-        return {
-          user_id: user.id,
-          name: m.name,
-          category: m.category,
-          industry,
-          sell_price: sellPrice,
-          cost: totalCost,
-          cogs_rate: parseFloat(cogsRate.toFixed(2)),
-          margin: sellPrice - totalCost,
-          ingredients: m.ingredients.map(i => ({ name: i.name, cost: parseInt(i.cost) || 0 })),
-          memo: "",
-        };
-      });
+      .filter(m => num(m.price) > 0 && m.name.trim())
+      .map(m => buildMenuRow(m, auth.user.id));
 
     if (toSave.length === 0) {
       setSaveStatus("error");
@@ -541,7 +622,7 @@ export default function MenuCostPage() {
       return;
     }
 
-    const { error } = await supabase.from("menu_costs").upsert(toSave);
+    const { error } = await auth.supabase.from("menu_costs").insert(toSave);
     if (error) {
       setSaveStatus("error");
     } else {
@@ -552,35 +633,49 @@ export default function MenuCostPage() {
 
   function changeIndustry(key: IndustryKey) {
     setIndustry(key);
-    setMenus(INDUSTRY_PRESETS[key].map(m => ({
+    const newMenus = INDUSTRY_PRESETS[key].map(m => ({
       ...m,
       id: uid(),
       ingredients: m.ingredients.map(i => ({ ...i, id: uid() })),
-    })));
+    }));
+    setMenus(newMenus);
     setFilterCategory("전체");
+    cloudUpdate({ industry: key, menus: newMenus });
   }
   const [sortBy, setSortBy] = useState<"default" | "costRatio" | "profit">("default");
 
   const addMenu = useCallback(() => {
-    setMenus((prev) => [
-      ...prev,
-      {
-        id: uid(),
-        name: "",
-        price: "",
-        category: "음료",
-        ingredients: [{ id: uid(), name: "", cost: "" }],
-      },
-    ]);
-  }, []);
+    setMenus((prev) => {
+      const next = [
+        ...prev,
+        {
+          id: uid(),
+          name: "",
+          price: "",
+          category: "음료",
+          ingredients: [{ id: uid(), name: "", cost: "" }],
+        },
+      ];
+      cloudUpdate({ industry, menus: next });
+      return next;
+    });
+  }, [industry, cloudUpdate]);
 
   const updateMenu = useCallback((id: string, updated: Partial<MenuItem>) => {
-    setMenus((prev) => prev.map((m) => (m.id === id ? { ...m, ...updated } : m)));
-  }, []);
+    setMenus((prev) => {
+      const next = prev.map((m) => (m.id === id ? { ...m, ...updated } : m));
+      cloudUpdate({ industry, menus: next });
+      return next;
+    });
+  }, [industry, cloudUpdate]);
 
   const deleteMenu = useCallback((id: string) => {
-    setMenus((prev) => prev.filter((m) => m.id !== id));
-  }, []);
+    setMenus((prev) => {
+      const next = prev.filter((m) => m.id !== id);
+      cloudUpdate({ industry, menus: next });
+      return next;
+    });
+  }, [industry, cloudUpdate]);
 
   // 집계
   const allCalc = menus.map((m) => ({ item: m, calc: calcMenu(m) }));
@@ -611,14 +706,11 @@ export default function MenuCostPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box}
-        body{font-family:'Pretendard',-apple-system,sans-serif}
       `}</style>
 
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           {/* 상단 헤더 */}
           <div className="flex items-center justify-between gap-3 mb-8 mt-4">
@@ -639,9 +731,9 @@ export default function MenuCostPage() {
                   "bg-slate-900 text-white hover:bg-slate-700"
                 }`}>
                 {saveStatus === "saving" ? "저장 중..." :
-                 saveStatus === "done" ? "✓ 저장 완료" :
-                 saveStatus === "error" ? "판매가 입력 필요" :
-                 "💾 현황 저장"}
+                 saveStatus === "done" ? "✓ 전체 저장 완료" :
+                 saveStatus === "error" ? "저장할 메뉴 없음" :
+                 "💾 전체 저장"}
               </button>
             </div>
           </div>
@@ -650,12 +742,16 @@ export default function MenuCostPage() {
             <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               <span>🧮</span> 원가 계산기
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
-              메뉴별 원가 계산기
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
+                메뉴별 원가 계산기
+              </h1>
+              <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+            </div>
             <p className="text-slate-500 text-sm">
               메뉴별 식재료 원가를 입력하면 원가율과 건당 순이익을 자동으로 계산합니다.
             </p>
+            <SimDataPicker fields={simFields} onApply={applySimSelected} />
           </div>
 
           {/* 업종 선택 탭 */}
@@ -674,9 +770,6 @@ export default function MenuCostPage() {
                     boxShadow: active ? `0 0 0 1px ${info.color}` : "none",
                   }}
                 >
-                  {key === "gogi" && (
-                    <span className="absolute -top-2 -right-1 text-xs bg-red-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-none">이중</span>
-                  )}
                   <span className="text-xl">{info.emoji}</span>
                   <span
                     className="text-xs font-bold"
@@ -795,6 +888,7 @@ export default function MenuCostPage() {
                 item={item}
                 onUpdate={updateMenu}
                 onDelete={deleteMenu}
+                onSave={saveOneMenu}
               />
             ))}
           </div>
@@ -877,9 +971,26 @@ export default function MenuCostPage() {
           )}
 
           {/* 하단 팁 */}
-          <div className="mt-8 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 원가율이 높은 메뉴는 식재료 공급처 변경, 레시피 조정, 또는 판매가 인상을 검토해 보세요.
+          <CollapsibleTip className="mt-8">
+            원가율이 높은 메뉴는 식재료 공급처 변경, 레시피 조정, 또는 판매가 인상을 검토해 보세요.
             배달 채널에서는 포장재·배달비까지 원가에 포함해야 실제 마진을 정확히 파악할 수 있습니다.
+          </CollapsibleTip>
+
+          {/* 관련 도구 추천 */}
+          <div className="mt-8 rounded-3xl bg-slate-50 p-5">
+            <h3 className="text-sm font-bold text-slate-900 mb-3">📌 관련 도구</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { emoji: "👥", label: "인건비 스케줄러", href: "/tools/labor" },
+                { emoji: "🧾", label: "세금 계산기", href: "/tools/tax" },
+                { emoji: "📄", label: "손익계산서 PDF", href: "/tools/pl-report" },
+              ].map(t => (
+                <Link key={t.href} href={t.href} className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white hover:bg-blue-50 transition text-center">
+                  <span className="text-xl">{t.emoji}</span>
+                  <span className="text-xs text-slate-600">{t.label}</span>
+                </Link>
+              ))}
+            </div>
           </div>
 
         </div>

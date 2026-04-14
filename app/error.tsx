@@ -1,49 +1,39 @@
 "use client";
 
-// app/error.tsx - Next.js 전역 에러 바운더리
-
-import { useEffect } from "react";
 import Link from "next/link";
+import { captureError } from "@/lib/sentry";
 
-export default function Error({
+export default function RootError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error("Page error:", error);
-  }, [error]);
+  captureError(error);
 
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <div className="text-6xl mb-6">⚠️</div>
-        <h1 className="text-2xl font-extrabold text-slate-900 mb-3">
-          오류가 발생했어요
-        </h1>
-        <p className="text-slate-500 text-sm mb-8 leading-relaxed">
-          일시적인 오류입니다. 다시 시도하거나<br />
-          문제가 계속되면 문의해주세요.
+    <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 flex items-center justify-center">
+      <div className="mx-auto max-w-md text-center">
+        <div className="text-5xl mb-4">😵</div>
+        <h2 className="text-xl font-extrabold text-slate-900 mb-2">문제가 발생했어요</h2>
+        <p className="text-sm text-slate-500 mb-6">
+          페이지를 불러오는 중 오류가 발생했습니다. 다시 시도하거나 홈으로 돌아가주세요.
         </p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="rounded-2xl bg-slate-900 px-6 py-3 text-sm font-bold text-white hover:bg-slate-700 transition"
+            className="rounded-xl bg-slate-900 text-white font-semibold px-5 py-2.5 text-sm hover:bg-slate-800 transition"
           >
             다시 시도
           </button>
           <Link
             href="/"
-            className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+            className="rounded-xl bg-white ring-1 ring-slate-200 text-slate-700 font-semibold px-5 py-2.5 text-sm hover:bg-slate-50 transition"
           >
             홈으로
           </Link>
         </div>
-        {error.digest && (
-          <p className="mt-6 text-xs text-slate-300">오류 코드: {error.digest}</p>
-        )}
       </div>
     </main>
   );

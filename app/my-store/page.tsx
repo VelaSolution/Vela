@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import NavBar from "@/components/NavBar";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, LineChart, Line, ReferenceLine,
 } from "recharts";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 /* ── 타입 ─────────────────────────────────────────── */
 type Snapshot = {
@@ -29,14 +29,13 @@ type MenuCost = {
   id: string;
   name: string;
   category: string;
-  sell_price: number;
+  price: number;
   cost: number;
-  cogs_rate: number;
+  cost_rate: number;
   margin: number;
 };
 
 /* ── 유틸 ─────────────────────────────────────────── */
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 const fmtM = (n: number) => {
   if (Math.abs(n) >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
   if (Math.abs(n) >= 10_000) return `${(n / 10_000).toFixed(0)}만`;
@@ -48,12 +47,12 @@ const monthLabel = (m: string) => {
 };
 
 /* ── 커스텀 툴팁 ──────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-lg px-4 py-3 text-xs">
       <p className="font-bold text-slate-700 mb-1">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
           {p.name}: {fmt(p.value)}원
         </p>
@@ -88,7 +87,7 @@ export default function MyStorePage() {
           .from("menu_costs")
           .select("*")
           .eq("user_id", user.id)
-          .order("cogs_rate", { ascending: true }),
+          .order("cost_rate", { ascending: true }),
       ]);
 
       setSnapshots(snaps ?? []);
@@ -105,7 +104,7 @@ export default function MyStorePage() {
   const latestProfit = latest
     ? (latest.profit ?? latest.monthly_sales - latest.rent - latest.labor_cost - latest.food_cost - latest.utilities - latest.marketing - latest.etc)
     : 0;
-  const momChange = latest && prev
+  const momChange = latest && prev && prev.monthly_sales > 0
     ? ((latest.monthly_sales - prev.monthly_sales) / prev.monthly_sales * 100)
     : 0;
 
@@ -124,21 +123,20 @@ export default function MyStorePage() {
   });
 
   const avgCogsRate = menus.length > 0
-    ? menus.reduce((s, m) => s + m.cogs_rate, 0) / menus.length : 0;
+    ? menus.reduce((s, m) => s + m.cost_rate, 0) / menus.length : 0;
   const categories = ["전체", ...Array.from(new Set(menus.map(m => m.category)))];
   const filteredMenus = menuCategory === "전체"
     ? menus : menus.filter(m => m.category === menuCategory);
 
   if (loading) return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin" />
     </main>
   );
 
   return (
     <>
-      <NavBar />
-      <main className="min-h-screen bg-slate-50 px-4 pt-20 pb-12 md:px-8">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 pt-20 pb-12 md:px-8">
         <div className="mx-auto max-w-5xl space-y-6">
 
           {/* ── 헤더 ── */}
@@ -187,10 +185,10 @@ export default function MyStorePage() {
                 {
                   label: "등록된 메뉴",
                   value: `${menus.length}개`,
-                  sub: menus.filter(m => m.cogs_rate > 50).length > 0
-                    ? `원가 위험 ${menus.filter(m => m.cogs_rate > 50).length}개`
+                  sub: menus.filter(m => m.cost_rate > 50).length > 0
+                    ? `원가 위험 ${menus.filter(m => m.cost_rate > 50).length}개`
                     : "전 메뉴 양호",
-                  good: menus.filter(m => m.cogs_rate > 50).length === 0,
+                  good: menus.filter(m => m.cost_rate > 50).length === 0,
                   emoji: "📋",
                 },
               ].map(card => (
@@ -225,7 +223,7 @@ export default function MyStorePage() {
                 <div className="flex gap-1.5">
                   {(["sales", "profit", "cost"] as const).map(tab => (
                     <button key={tab} onClick={() => setActiveChart(tab)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      className={`px-3 py-2.5 rounded-xl text-xs font-semibold transition ${
                         activeChart === tab
                           ? "bg-slate-900 text-white"
                           : "bg-slate-100 text-slate-500 hover:bg-slate-200"
@@ -310,7 +308,7 @@ export default function MyStorePage() {
                 <div className="flex gap-1.5 flex-wrap mb-4">
                   {categories.map(cat => (
                     <button key={cat} onClick={() => setMenuCategory(cat)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+                      className={`px-3 py-2.5 rounded-full text-xs font-semibold transition ${
                         menuCategory === cat ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                       }`}>
                       {cat}
@@ -326,17 +324,17 @@ export default function MyStorePage() {
                       <div className="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            menu.cogs_rate <= 35 ? "bg-emerald-400" :
-                            menu.cogs_rate <= 50 ? "bg-amber-400" : "bg-red-400"
+                            menu.cost_rate <= 35 ? "bg-emerald-400" :
+                            menu.cost_rate <= 50 ? "bg-amber-400" : "bg-red-400"
                           }`}
-                          style={{ width: `${Math.min(menu.cogs_rate * 1.5, 100)}%` }}
+                          style={{ width: `${Math.min(menu.cost_rate * 1.5, 100)}%` }}
                         />
                       </div>
                       <div className="text-right flex-shrink-0 w-28">
                         <span className={`text-xs font-bold ${
-                          menu.cogs_rate <= 35 ? "text-emerald-600" :
-                          menu.cogs_rate <= 50 ? "text-amber-500" : "text-red-500"
-                        }`}>{menu.cogs_rate.toFixed(1)}%</span>
+                          menu.cost_rate <= 35 ? "text-emerald-600" :
+                          menu.cost_rate <= 50 ? "text-amber-500" : "text-red-500"
+                        }`}>{menu.cost_rate.toFixed(1)}%</span>
                         <span className="text-xs text-slate-400 ml-2">+{fmt(menu.margin)}원</span>
                       </div>
                     </div>

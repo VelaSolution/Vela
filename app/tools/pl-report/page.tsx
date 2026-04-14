@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import PlanGate from "@/components/PlanGate";
+import CollapsibleTip from "@/components/CollapsibleTip";
+import { fmt } from "@/lib/vela";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
+
+type SimHistory = { id: string; label: string; form: Record<string, number | string>; result: Record<string, number> };
+type MonthSnap = { month: string; monthly_sales: number; rent: number; labor_cost: number; utilities: number; marketing: number; etc: number; cogs_rate: number; profit: number; industry: string };
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 function pct(v: number, total: number) { return total > 0 ? ((v / total) * 100).toFixed(1) : "0.0"; }
 
 type FormData = {
@@ -52,7 +59,7 @@ const DEFAULT: FormData = {
   taxRate: "3.3",
 };
 
-const INDUSTRIES = ["카페", "일반 음식점", "술집/바", "파인다이닝", "기타"];
+const INDUSTRIES = ["카페", "일반 음식점", "고깃집", "술집/바", "파인다이닝", "기타"];
 
 function InputRow({ label, value, onChange, suffix = "원", hint }: {
   label: string; value: string; onChange: (v: string) => void; suffix?: string; hint?: string;
@@ -75,10 +82,87 @@ function InputRow({ label, value, onChange, suffix = "원", hint }: {
   );
 }
 
+const IND_MAP: Record<string, string> = { cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집" };
+
 export default function PLReportPage() {
   const [form, setForm] = useState<FormData>(DEFAULT);
+  const [simList, setSimList] = useState<SimHistory[]>([]);
+  const [monthList, setMonthList] = useState<MonthSnap[]>([]);
 
-  const set = (key: keyof FormData) => (v: string) => setForm(prev => ({ ...prev, [key]: v }));
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<{ form: FormData }>("vela-pl-report", { form: DEFAULT });
+
+  // Load from cloud on mount
+  useEffect(() => {
+    if (cloudData.form && cloudData.form.hallSales) {
+      setForm(cloudData.form);
+    }
+  }, [cloudData]);
+
+  // Save to cloud on change
+  useEffect(() => {
+    cloudUpdate({ form });
+  }, [form, cloudUpdate]);
+
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
+      if (!user) return;
+      sb.from("simulation_history").select("id,label,form,result")
+        .eq("user_id", user.id).order("created_at", { ascending: false }).limit(10)
+        .then(({ data }: { data: SimHistory[] | null }) => { if (data) setSimList(data); });
+      sb.from("monthly_snapshots").select("*")
+        .eq("user_id", user.id).order("month", { ascending: false }).limit(12)
+        .then(({ data }: { data: MonthSnap[] | null }) => { if (data) setMonthList(data); });
+    });
+  }, []);
+
+  const loadFromSim = (sim: SimHistory) => {
+    const f = sim.form;
+    const r = sim.result;
+    const totalSales = Number(r.totalSales ?? 0);
+    const deliverySales = Number(f.deliverySales ?? 0);
+    setForm({
+      ...DEFAULT,
+      storeName: String(sim.label),
+      industry: IND_MAP[String(f.industry)] ?? "카페",
+      hallSales: String(totalSales - deliverySales),
+      deliverySales: String(deliverySales),
+      cogsRate: String(f.cogsRate ?? 30),
+      rent: String(f.rent ?? 0),
+      laborCost: String(f.labor ?? 0),
+      utilities: String(Number(f.utilities ?? 0) + Number(f.telecom ?? 0)),
+      marketing: String(f.marketing ?? 0),
+      cardFee: String(f.cardFeeRate ?? 1.5),
+      deliveryFee: String(f.deliveryAppRate ?? 12),
+      etc: String(Number(f.supplies ?? 0) + Number(f.maintenance ?? 0) + Number(f.etc ?? 0)),
+      loanPayment: f.loanEnabled ? String(Math.round(Number(f.loanAmount ?? 0) * (Number(f.loanInterestRate ?? 0) / 100 / 12) + Number(f.loanAmount ?? 0) / Number(f.loanTermMonths ?? 60))) : "0",
+      taxRate: String(f.incomeTaxRate ?? 3.3),
+    });
+  };
+
+  const loadFromMonth = (snap: MonthSnap) => {
+    setForm({
+      ...DEFAULT,
+      industry: IND_MAP[snap.industry] ?? "카페",
+      month: snap.month,
+      hallSales: String(snap.monthly_sales),
+      deliverySales: "0",
+      cogsRate: String(snap.cogs_rate ?? 30),
+      rent: String(snap.rent ?? 0),
+      laborCost: String(snap.labor_cost ?? 0),
+      utilities: String(snap.utilities ?? 0),
+      marketing: String(snap.marketing ?? 0),
+      etc: String(snap.etc ?? 0),
+    });
+  };
+
+  const set = (key: keyof FormData) => (v: string) => {
+    if (key === "industry" && v === "고깃집") {
+      setForm(prev => ({ ...prev, [key]: v, cogsRate: prev.cogsRate === "30" ? "42" : prev.cogsRate }));
+    } else {
+      setForm(prev => ({ ...prev, [key]: v }));
+    }
+  };
 
   // ─── 계산 ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +189,7 @@ export default function PLReportPage() {
   const ebt = operatingProfit - loanPayment;
   const tax = Math.max(0, ebt * (num(form.taxRate) / 100));
   const netProfit = ebt - tax;
-  const cashFlow = netProfit; // simplified
+  const _cashFlow = netProfit; // simplified
 
   const profitColor = netProfit >= 0 ? "#059669" : "#EF4444";
 
@@ -120,8 +204,6 @@ export default function PLReportPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-        body{font-family:'Pretendard',-apple-system,sans-serif}
         @media print {
           .no-print{display:none!important}
           .print-page{background:white!important;padding:40px!important;max-width:100%!important}
@@ -129,10 +211,9 @@ export default function PLReportPage() {
           .print-shadow{box-shadow:none!important;border:1px solid #e5e7eb!important}
         }
       `}</style>
-      <div className="no-print"><NavBar /></div>
       <ToolNav />
-
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <PlanGate>
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-5xl">
           {/* 헤더 */}
           <div className="no-print flex items-center gap-3 mb-8 mt-4">
@@ -143,13 +224,57 @@ export default function PLReportPage() {
             <div className="inline-flex items-center gap-2 bg-purple-50 text-purple-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               <span>📄</span> 손익계산서
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">손익계산서 PDF 출력</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">손익계산서 PDF 출력</h1>
+              <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+            </div>
             <p className="text-slate-500 text-sm">수익 데이터를 입력하면 정식 손익계산서 형식으로 PDF 출력이 가능합니다.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 입력 패널 */}
             <div className="no-print space-y-4">
+              {/* 데이터 불러오기 */}
+              {(simList.length > 0 || monthList.length > 0) && (
+                <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
+                  <h2 className="font-bold text-slate-900 mb-3">📂 데이터 불러오기</h2>
+                  <p className="text-xs text-slate-500 mb-4">저장된 데이터를 선택하면 자동으로 입력됩니다.</p>
+                  {simList.length > 0 && (
+                    <div className="mb-3">
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">시뮬레이터 기록</label>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => { const s = simList.find((x) => x.id === e.target.value); if (s) loadFromSim(s); }}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-purple-400"
+                      >
+                        <option value="" disabled>시뮬레이션 결과 선택...</option>
+                        {simList.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.label} — 매출 {fmt(Number(s.result.totalSales ?? 0))}원
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {monthList.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">월별 매출 기록</label>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => { const m = monthList.find((x) => x.month === e.target.value); if (m) loadFromMonth(m); }}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-purple-400"
+                      >
+                        <option value="" disabled>월별 매출 선택...</option>
+                        {monthList.map((m) => (
+                          <option key={m.month} value={m.month}>
+                            {m.month} — 매출 {fmt(m.monthly_sales)}원 / 순이익 {fmt(m.profit)}원
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* 기본 정보 */}
               <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-6">
                 <h2 className="font-bold text-slate-900 mb-4">기본 정보</h2>
@@ -328,11 +453,12 @@ export default function PLReportPage() {
             </div>
           </div>
 
-          <div className="no-print mt-6 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 출력 시 브라우저 인쇄 대화상자에서 &ldquo;PDF로 저장&rdquo;을 선택하세요. 배경 그래픽 옵션을 켜면 색상이 더 잘 표현됩니다.
-          </div>
+          <CollapsibleTip className="no-print mt-6">
+            출력 시 브라우저 인쇄 대화상자에서 &ldquo;PDF로 저장&rdquo;을 선택하세요. 배경 그래픽 옵션을 켜면 색상이 더 잘 표현됩니다.
+          </CollapsibleTip>
         </div>
       </main>
+      </PlanGate>
     </>
   );
 }

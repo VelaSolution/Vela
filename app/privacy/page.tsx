@@ -4,9 +4,7 @@ export default function PrivacyPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Pretendard',-apple-system,sans-serif;background:#F9FAFB;color:#191F28;line-height:1.7}
         .wrap{max-width:760px;margin:0 auto;padding:120px 24px 80px}
         .back{display:inline-flex;align-items:center;gap:8px;color:#6B7684;font-size:14px;text-decoration:none;margin-bottom:40px;transition:color .15s}
         .back:hover{color:#191F28}
@@ -37,6 +35,7 @@ export default function PrivacyPage() {
 
         <div className="sec">
           <h2 className="h2">1. 수집하는 개인정보</h2>
+          <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr><th>구분</th><th>수집 항목</th><th>수집 방법</th></tr>
@@ -49,6 +48,7 @@ export default function PrivacyPage() {
               <tr><td>결제</td><td>결제 수단 정보 (카드사에서 처리)</td><td>결제 시 입력</td></tr>
             </tbody>
           </table>
+          </div>
           <p className="p">민감 정보(주민등록번호 등)는 수집하지 않습니다.</p>
         </div>
 
@@ -66,6 +66,7 @@ export default function PrivacyPage() {
 
         <div className="sec">
           <h2 className="h2">3. 개인정보 보관 기간</h2>
+          <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr><th>보관 항목</th><th>보관 기간</th><th>근거</th></tr>
@@ -77,6 +78,7 @@ export default function PrivacyPage() {
               <tr><td>불만·분쟁 기록</td><td>3년</td><td>전자상거래법</td></tr>
             </tbody>
           </table>
+          </div>
           <p className="p">보관 기간이 경과하거나 처리 목적이 달성된 개인정보는 지체 없이 파기합니다.</p>
         </div>
 
@@ -91,6 +93,7 @@ export default function PrivacyPage() {
 
         <div className="sec">
           <h2 className="h2">5. 위탁 처리</h2>
+          <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr><th>수탁업체</th><th>위탁 업무</th></tr>
@@ -101,11 +104,24 @@ export default function PrivacyPage() {
               <tr><td>Anthropic PBC</td><td>AI 분석 처리</td></tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="sec">
           <h2 className="h2">6. 쿠키 및 자동 수집</h2>
-          <p className="p">서비스는 로그인 상태 유지 및 사용자 경험 개선을 위해 쿠키를 사용합니다. 브라우저 설정에서 쿠키를 거부할 수 있으나, 일부 서비스 이용이 제한될 수 있습니다.</p>
+          <p className="p">서비스는 로그인 상태 유지 및 이용 분석을 위해 쿠키를 사용합니다.</p>
+          <p className="p"><strong>쿠키 사용 목적:</strong></p>
+          <ul className="ul">
+            <li>로그인 유지</li>
+            <li>이용 분석 (서비스 개선 목적)</li>
+          </ul>
+          <p className="p"><strong>브라우저별 쿠키 거부 방법:</strong></p>
+          <ul className="ul">
+            <li><strong>Chrome:</strong> 설정 → 개인정보 및 보안 → 쿠키 및 기타 사이트 데이터 → 모든 쿠키 차단</li>
+            <li><strong>Safari:</strong> 환경설정 → 개인정보 보호 → 모든 쿠키 차단</li>
+            <li><strong>Firefox:</strong> 설정 → 개인정보 및 보안 → 사용자 지정 → 쿠키 체크</li>
+          </ul>
+          <p className="p">쿠키를 거부할 경우 로그인 유지 등 일부 서비스 이용이 제한될 수 있습니다.</p>
         </div>
 
         <div className="sec">
@@ -133,7 +149,33 @@ export default function PrivacyPage() {
         </div>
 
         <div className="sec">
-          <h2 className="h2">9. 방침 변경</h2>
+          <h2 className="h2">9. 데이터 국외 이전</h2>
+          <p className="p">서비스 제공을 위해 아래와 같이 개인정보가 국외로 이전됩니다.</p>
+          <div className="overflow-x-auto">
+          <table className="table">
+            <thead>
+              <tr><th>이전받는 자</th><th>이전 항목</th><th>이전 목적</th><th>보유 기간</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Vercel Inc. (미국)</td><td>서비스 이용 기록, 접속 로그</td><td>서비스 호스팅 및 제공</td><td>서비스 이용 계약 기간</td></tr>
+              <tr><td>Anthropic PBC (미국)</td><td>시뮬레이션 입력 데이터 (비식별)</td><td>AI 분석 처리</td><td>분석 완료 즉시 삭제</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">10. 데이터 침해 통보</h2>
+          <p className="p">개인정보 유출 사고가 발생한 경우, 회사는 다음과 같이 조치합니다.</p>
+          <ul className="ul">
+            <li>유출 사실을 인지한 즉시 지체 없이 이메일 및 서비스 공지를 통해 해당 회원에게 통보</li>
+            <li>한국인터넷진흥원(KISA)에 신고</li>
+            <li>통보 내용: 유출된 개인정보 항목, 유출 시점과 경위, 피해 최소화를 위한 조치 방법, 회사의 대응 조치 및 피해 구제 절차</li>
+          </ul>
+        </div>
+
+        <div className="sec">
+          <h2 className="h2">11. 방침 변경</h2>
           <p className="p">개인정보처리방침이 변경되는 경우 서비스 내 공지를 통해 안내합니다. 변경 사항은 공지 후 7일이 경과한 시점부터 효력이 발생합니다.</p>
         </div>
       </div>

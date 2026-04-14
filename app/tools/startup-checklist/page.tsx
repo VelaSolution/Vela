@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
+import CollapsibleTip from "@/components/CollapsibleTip";
 
 type CheckItem = {
   id: string;
@@ -160,34 +162,49 @@ const INDUSTRIES = [
   { id: "gogi", label: "고깃집", emoji: "🥩" },
 ];
 
+type StartupChecklistData = {
+  industry: string;
+  checked: Record<string, boolean>;
+  memos: Record<string, string>;
+};
+
+const defaultChecklistData: StartupChecklistData = {
+  industry: "cafe",
+  checked: {},
+  memos: {},
+};
+
 export default function StartupChecklistPage() {
-  const [industry, setIndustry] = useState("cafe");
-  const [phases, setPhases] = useState(() => buildState(PHASES_BASE, "cafe"));
+  const { data: savedData, update: updateSavedData, status, userId } = useCloudSync<StartupChecklistData>("vela-startup-checklist", defaultChecklistData);
+
+  const industry = savedData.industry || "cafe";
+  const checkedMap = savedData.checked || {};
+  const memoMap = savedData.memos || {};
+
+  const phases = buildState(PHASES_BASE, industry).map(phase => ({
+    ...phase,
+    items: phase.items.map(item => ({ ...item, done: !!checkedMap[item.id] })),
+  }));
+
   const [expandedPhase, setExpandedPhase] = useState<string | null>("planning");
-  const [memoMap, setMemoMap] = useState<Record<string, string>>({});
   const [openMemo, setOpenMemo] = useState<string | null>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  const _printRef = useRef<HTMLDivElement>(null);
 
-  const changeIndustry = (ind: string) => {
-    setIndustry(ind);
-    setPhases(buildState(PHASES_BASE, ind));
-  };
+  const changeIndustry = useCallback((ind: string) => {
+    updateSavedData({ ...savedData, industry: ind, checked: {}, memos: {} });
+  }, [savedData, updateSavedData]);
 
-  const updateMemo = (itemId: string, value: string) => {
-    setMemoMap(prev => ({ ...prev, [itemId]: value }));
-  };
+  const updateMemo = useCallback((itemId: string, value: string) => {
+    updateSavedData({ ...savedData, memos: { ...memoMap, [itemId]: value } });
+  }, [savedData, memoMap, updateSavedData]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  const toggleItem = (phaseId: string, itemId: string) => {
-    setPhases(prev => prev.map(p =>
-      p.id === phaseId
-        ? { ...p, items: p.items.map(i => i.id === itemId ? { ...i, done: !i.done } : i) }
-        : p
-    ));
-  };
+  const toggleItem = useCallback((_phaseId: string, itemId: string) => {
+    updateSavedData({ ...savedData, checked: { ...checkedMap, [itemId]: !checkedMap[itemId] } });
+  }, [savedData, checkedMap, updateSavedData]);
 
   const totalItems = phases.flatMap(p => p.items).length;
   const doneItems = phases.flatMap(p => p.items).filter(i => i.done).length;
@@ -198,8 +215,6 @@ export default function StartupChecklistPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-        body{font-family:'Pretendard',-apple-system,sans-serif}
         @media print {
           .no-print { display: none !important; }
           nav, aside { display: none !important; }
@@ -210,9 +225,8 @@ export default function StartupChecklistPage() {
           @page { margin: 15mm; size: A4; }
         }
       `}</style>
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
@@ -223,7 +237,10 @@ export default function StartupChecklistPage() {
               <div className="inline-flex items-center gap-2 bg-cyan-50 text-cyan-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
                 <span>✅</span> 창업 체크리스트
               </div>
-              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">창업 체크리스트</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">창업 체크리스트</h1>
+                <CloudSyncBadge status={status} userId={userId} />
+              </div>
               <p className="text-slate-500 text-sm">업종별 인허가·준비사항을 단계별로 확인하세요.</p>
             </div>
             <button
@@ -386,9 +403,9 @@ export default function StartupChecklistPage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 체크 상태는 브라우저 새로고침 시 초기화됩니다. 진행 상황은 별도로 저장해두시길 권장합니다. 인허가 요건은 지자체별로 상이할 수 있으니 관할 구청에서 최종 확인하세요.
-          </div>
+          <CollapsibleTip className="mt-6">
+            체크 상태는 브라우저 새로고침 시 초기화됩니다. 진행 상황은 별도로 저장해두시길 권장합니다. 인허가 요건은 지자체별로 상이할 수 있으니 관할 구청에서 최종 확인하세요.
+          </CollapsibleTip>
         </div>
       </main>
     </>

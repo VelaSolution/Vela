@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import PlanGate from "@/components/PlanGate";
+import CollapsibleTip from "@/components/CollapsibleTip";
 import { useSimulatorData } from "@/lib/useSimulatorData";
+import { fmt } from "@/lib/vela";
 
 type ReplyTone = "apologetic" | "grateful" | "professional" | "friendly";
 type Platform = "naver" | "kakao" | "google" | "baemin";
@@ -37,7 +39,7 @@ const INDUSTRY_LABEL: Record<string, string> = {
 
 export default function ReviewReplyPage() {
   const simData = useSimulatorData();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -58,7 +60,6 @@ export default function ReviewReplyPage() {
   }, [simData]);
 
   const currentPlatform = PLATFORMS.find(p => p.id === platform)!;
-  const fmt = (n: number) => n.toLocaleString("ko-KR");
 
   async function generate() {
     if (!review.trim()) return;
@@ -121,9 +122,9 @@ ${review}
 
   return (
     <>
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <PlanGate>
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
@@ -297,11 +298,12 @@ ${review}
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 부정적인 리뷰일수록 빠른 답변이 중요합니다. AI 초안을 기반으로 실제 상황에 맞게 수정한 뒤 게시하세요. 리뷰어의 이름을 언급하면 더 개인적인 느낌을 줄 수 있습니다.
-          </div>
+          <CollapsibleTip className="mt-6">
+            부정적인 리뷰일수록 빠른 답변이 중요합니다. AI 초안을 기반으로 실제 상황에 맞게 수정한 뒤 게시하세요. 리뷰어의 이름을 언급하면 더 개인적인 느낌을 줄 수 있습니다.
+          </CollapsibleTip>
         </div>
       </main>
+      </PlanGate>
     </>
   );
 }

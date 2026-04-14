@@ -1,9 +1,13 @@
 import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(ip, { key: "chat", limit: 10 });
+  if (!rl.ok) return rateLimitResponse();
   const body = await req.json();
   const { messages, context } = body;
 
@@ -21,9 +25,16 @@ export async function POST(req: NextRequest) {
 
   // 익명 상담 전용 프롬프트
   const anonymousPrompt = `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다.
-외식업 사장님의 고민에 공감하며 실용적이고 구체적인 조언을 제공하세요.
+외식업 사장님의 익명 고민 상담에 답변합니다.
 업종: ${industryLabels[context?.industry ?? ""] ?? "외식업"}
-따뜻하고 전문적으로 답변하되, 4~6문장 이내로 간결하게 유지하세요.
+
+답변 규칙:
+1. 먼저 사장님의 상황에 공감하는 문장으로 시작하세요.
+2. 문제의 핵심 원인을 짚어주세요.
+3. 실행 가능한 구체적 해결책을 2~3가지 제안하세요.
+4. 격려와 응원으로 마무리하세요.
+5. 답변은 반드시 완결된 문장으로 끝내세요. 중간에 끊기지 않도록 하세요.
+
 수치가 없어도 일반적인 경영 원칙과 실무 경험을 바탕으로 도움이 되는 답변을 해주세요.`;
 
   const deliveryConstraint = context?.form?.deliveryPreference === "impossible"
@@ -69,7 +80,7 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: context?.isAnonymousConsult ? 2048 : 1024,
       system: systemPrompt,
       stream: true,
       messages: messages

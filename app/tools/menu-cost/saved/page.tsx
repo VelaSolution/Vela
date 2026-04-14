@@ -4,25 +4,23 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
+import EmptyState from "@/components/EmptyState";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
 
 type MenuItem = {
   id: string;
   name: string;
   category: string;
   industry: string;
-  sell_price: number;
+  price: number;
   cost: number;
-  cogs_rate: number;
+  cost_rate: number;
   margin: number;
-  ingredients: { name: string; amount: string; cost: number }[];
-  memo: string;
+  note: string;
   created_at: string;
 };
-
-const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   "음료": { bg: "bg-blue-50", text: "text-blue-600" },
@@ -40,7 +38,7 @@ export default function MenuCostSavedPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [sortBy, setSortBy] = useState<"cogs_rate" | "margin" | "sell_price" | "created_at">("created_at");
+  const [sortBy, setSortBy] = useState<"cost_rate" | "margin" | "price" | "created_at">("created_at");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -74,19 +72,19 @@ export default function MenuCostSavedPage() {
     .filter(m => selectedCategory === "전체" || m.category === selectedCategory)
     .filter(m => m.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
-      if (sortBy === "cogs_rate") return a.cogs_rate - b.cogs_rate;
+      if (sortBy === "cost_rate") return a.cost_rate - b.cost_rate;
       if (sortBy === "margin") return b.margin - a.margin;
-      if (sortBy === "sell_price") return b.sell_price - a.sell_price;
+      if (sortBy === "price") return b.price - a.price;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
   // 통계
   const avgCogsRate = menus.length > 0
-    ? menus.reduce((s, m) => s + m.cogs_rate, 0) / menus.length : 0;
+    ? menus.reduce((s, m) => s + m.cost_rate, 0) / menus.length : 0;
   const bestMargin = menus.length > 0
     ? menus.reduce((best, m) => m.margin > best.margin ? m : best, menus[0]) : null;
   const worstCogsRate = menus.length > 0
-    ? menus.reduce((worst, m) => m.cogs_rate > worst.cogs_rate ? m : worst, menus[0]) : null;
+    ? menus.reduce((worst, m) => m.cost_rate > worst.cost_rate ? m : worst, menus[0]) : null;
 
   if (loading) return (
     <main className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -96,9 +94,8 @@ export default function MenuCostSavedPage() {
 
   return (
     <>
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-4xl">
 
           <div className="flex items-center justify-between mt-6 mb-6">
@@ -116,14 +113,14 @@ export default function MenuCostSavedPage() {
           </div>
 
           {menus.length === 0 ? (
-            <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 p-16 text-center">
-              <div className="text-5xl mb-4">🧮</div>
-              <h2 className="text-lg font-bold text-slate-900 mb-2">아직 저장된 메뉴가 없어요</h2>
-              <p className="text-slate-500 text-sm mb-6">원가 계산기에서 메뉴를 계산하고 저장해보세요.</p>
-              <Link href="/tools/menu-cost"
-                className="inline-block rounded-2xl bg-slate-900 px-8 py-3.5 text-sm font-bold text-white hover:bg-slate-700 transition">
-                원가 계산하러 가기 →
-              </Link>
+            <div className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+              <EmptyState
+                icon="🧮"
+                title="저장된 메뉴가 없어요"
+                description="메뉴 원가 계산기에서 메뉴를 저장해보세요"
+                action={() => router.push("/tools/menu-cost")}
+                actionLabel="원가 계산하러 가기"
+              />
             </div>
           ) : (
             <>
@@ -147,7 +144,7 @@ export default function MenuCostSavedPage() {
                   <p className="text-xs text-slate-400 mb-1">원가율 높은 메뉴</p>
                   <p className="text-sm font-bold text-slate-900 truncate">{worstCogsRate?.name ?? "-"}</p>
                   <p className="text-xs text-red-500 mt-0.5 font-semibold">
-                    {worstCogsRate ? `${worstCogsRate.cogs_rate.toFixed(1)}%` : "-"}
+                    {worstCogsRate ? `${worstCogsRate.cost_rate.toFixed(1)}%` : "-"}
                   </p>
                 </div>
               </div>
@@ -174,9 +171,9 @@ export default function MenuCostSavedPage() {
                   <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-slate-400">
                     <option value="created_at">최근 순</option>
-                    <option value="cogs_rate">원가율 낮은 순</option>
+                    <option value="cost_rate">원가율 낮은 순</option>
                     <option value="margin">마진 높은 순</option>
-                    <option value="sell_price">판매가 높은 순</option>
+                    <option value="price">판매가 높은 순</option>
                   </select>
                 </div>
               </div>
@@ -197,8 +194,8 @@ export default function MenuCostSavedPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filtered.map(menu => {
                       const catStyle = CATEGORY_COLORS[menu.category] ?? CATEGORY_COLORS["기타"];
-                      const isGood = menu.cogs_rate <= 35;
-                      const isBad = menu.cogs_rate > 50;
+                      const isGood = menu.cost_rate <= 35;
+                      const isBad = menu.cost_rate > 50;
                       return (
                         <>
                           <tr key={menu.id}
@@ -212,11 +209,11 @@ export default function MenuCostSavedPage() {
                                 <span className="font-semibold text-slate-900">{menu.name}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-right text-slate-600">{fmt(menu.sell_price)}원</td>
+                            <td className="px-4 py-3.5 text-right text-slate-600">{fmt(menu.price)}원</td>
                             <td className="px-4 py-3.5 text-right text-slate-600">{fmt(menu.cost)}원</td>
                             <td className="px-4 py-3.5 text-right">
                               <span className={`font-bold ${isGood ? "text-emerald-600" : isBad ? "text-red-500" : "text-amber-500"}`}>
-                                {menu.cogs_rate.toFixed(1)}%
+                                {menu.cost_rate.toFixed(1)}%
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-right font-semibold text-emerald-600">
@@ -237,22 +234,10 @@ export default function MenuCostSavedPage() {
                             <tr key={`${menu.id}-detail`} className="bg-slate-50">
                               <td colSpan={6} className="px-5 py-4">
                                 <div className="flex gap-6 flex-wrap">
-                                  {menu.ingredients?.length > 0 && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">재료 구성</p>
-                                      <div className="flex flex-wrap gap-2">
-                                        {menu.ingredients.map((ing, i) => (
-                                          <span key={i} className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600">
-                                            {ing.name} {ing.amount} — {fmt(ing.cost)}원
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {menu.memo && (
+                                  {menu.note && (
                                     <div>
                                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">메모</p>
-                                      <p className="text-sm text-slate-600">{menu.memo}</p>
+                                      <p className="text-sm text-slate-600">{menu.note}</p>
                                     </div>
                                   )}
                                   <div className="ml-auto text-right">
@@ -292,16 +277,16 @@ export default function MenuCostSavedPage() {
                         <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              menu.cogs_rate <= 35 ? "bg-emerald-400" :
-                              menu.cogs_rate <= 50 ? "bg-amber-400" : "bg-red-400"
+                              menu.cost_rate <= 35 ? "bg-emerald-400" :
+                              menu.cost_rate <= 50 ? "bg-amber-400" : "bg-red-400"
                             }`}
-                            style={{ width: `${Math.min(menu.cogs_rate * 1.5, 100)}%` }}
+                            style={{ width: `${Math.min(menu.cost_rate * 1.5, 100)}%` }}
                           />
                         </div>
                         <span className={`text-xs font-bold w-12 text-right flex-shrink-0 ${
-                          menu.cogs_rate <= 35 ? "text-emerald-600" :
-                          menu.cogs_rate <= 50 ? "text-amber-500" : "text-red-500"
-                        }`}>{menu.cogs_rate.toFixed(1)}%</span>
+                          menu.cost_rate <= 35 ? "text-emerald-600" :
+                          menu.cost_rate <= 50 ? "text-amber-500" : "text-red-500"
+                        }`}>{menu.cost_rate.toFixed(1)}%</span>
                       </div>
                     ))}
                   </div>

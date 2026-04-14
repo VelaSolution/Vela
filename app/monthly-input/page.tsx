@@ -3,12 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { saveQuickData, applyQuickToSimulator } from "@/lib/quickStore";
+import { fmt } from "@/lib/vela";
 
 function num(v: string) { return Number(v.replace(/,/g, "")) || 0; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 const INDUSTRY_OPTIONS = [
   { id: "cafe", label: "☕ 카페" },
@@ -62,7 +61,7 @@ export default function MonthlyInputPage() {
         .select("*")
         .eq("user_id", user.id)
         .eq("month", targetMonth)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setIndustry(data.industry ?? "restaurant");
@@ -99,7 +98,7 @@ export default function MonthlyInputPage() {
   const profit = sales - totalCost;
   const netMargin = sales > 0 ? (profit / sales) * 100 : 0;
   const laborRatio = sales > 0 ? (num(values.laborCost ?? "") / sales) * 100 : 0;
-  const cogsRatio = sales > 0 ? (cogs / sales) * 100 : 0;
+  const _cogsRatio = sales > 0 ? (cogs / sales) * 100 : 0;
 
   async function handleSave() {
     if (!sales) return;
@@ -163,17 +162,14 @@ export default function MonthlyInputPage() {
   }
 
   if (loading) return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
       <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin" />
     </main>
   );
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-        body{font-family:'Pretendard',-apple-system,sans-serif}`}</style>
-      <NavBar />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center gap-3 mt-4 mb-6">
             <Link href="/dashboard" className="text-sm text-slate-400 hover:text-slate-700 transition">← 월별 현황</Link>
@@ -184,7 +180,7 @@ export default function MonthlyInputPage() {
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               📅 월별 입력
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">매장 현황 입력</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">매장 현황 입력</h1>
             <p className="text-slate-500 text-sm">월별 데이터를 저장하면 트렌드 분석이 가능합니다.</p>
           </div>
 

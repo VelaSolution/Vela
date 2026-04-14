@@ -1,17 +1,32 @@
 import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
-  const { form, result } = await req.json();
+  try {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(ip, { key: "briefing", limit: 5 });
+  if (!rl.ok) return rateLimitResponse();
+  const body = await req.json().catch(() => null);
+  if (!body?.form || !body?.result) {
+    return new Response(JSON.stringify({ error: "입력값이 올바르지 않습니다." }), { status: 400 });
+  }
+  const { form, result } = body;
 
   const industryLabels: Record<string, string> = {
-    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝",
+    cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
   const label = industryLabels[form.industry] ?? "음식점";
 
-  const prompt = `당신은 외식업 전문 경영 컨설턴트입니다. 아래 매장 수치를 분석해 실용적인 조언을 제공하세요.
+  const deliveryConstraint = form.deliveryPreference === "impossible"
+    ? "\n⚠️ 중요 제약: 이 매장은 배달 운영 의사가 없습니다. 배달 관련 전략(배달앱 입점, 배달 채널 추가 등)은 절대 제안하지 마세요."
+    : "";
+
+  const prompt = `당신은 외식업 전문 경영 컨설턴트입니다. 아래 매장 수치를 보고 "오늘의 경영 브리핑"을 작성하세요.
+브리핑은 대표가 아침에 30초 만에 읽고 판단할 수 있도록 간결하고 핵심적이어야 합니다.
+AI 전략 추천과는 다릅니다 — 브리핑은 "현재 상태 진단 + 가장 급한 것 1개"에 집중하세요.${deliveryConstraint}
 
 [기본 정보]
 업종: ${label} / ${form.businessType === "new" ? "창업 예정" : "현재 운영 중"}
@@ -43,10 +58,10 @@ export async function POST(req: NextRequest) {
 
 다음 4가지를 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트 절대 금지:
 {
-  "currentStatus": "현재 상태 2~3문장. 세후 실수령과 현금흐름 중심으로.",
-  "mainIssue": "가장 시급한 문제 2~3문장. 투자 회수 포함 구체적 수치로.",
-  "topAction": "최우선 실행 전략 2~3문장. 현실적이고 구체적으로.",
-  "actionHint": "당장 이번 주 실행 가능한 액션 1~2가지. 짧고 명확하게."
+  "currentStatus": "현재 상태를 1~2문장으로 요약. 흑자/적자, 현금흐름 위주. 숫자 포함.",
+  "mainIssue": "지금 가장 급한 문제 1가지만. 구체적 수치로. 1~2문장.",
+  "topAction": "오늘 당장 할 수 있는 액션 1가지. 10글자 이내로 짧게.",
+  "actionHint": "이번 주 체크할 것 1가지. 10글자 이내."
 }`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -72,5 +87,9 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json" } });
   } catch {
     return apiError("응답 파싱에 실패했습니다.", 500);
+  }
+  } catch (e) {
+    console.error("Briefing error:", e);
+    return new Response(JSON.stringify({ error: "서버 오류" }), { status: 500 });
   }
 }

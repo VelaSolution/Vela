@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
+import { fmt } from "@/lib/vela";
+import CollapsibleTip from "@/components/CollapsibleTip";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,7 +31,6 @@ type Employee = {
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 function calcHours(shift: Shift): number {
   if (!shift.enabled || !shift.start || !shift.end) return 0;
@@ -68,7 +70,7 @@ function makeEmployee(name = "", role = "홀 서빙"): Employee {
     acc[d] = { ...DEFAULT_SHIFT };
     return acc;
   }, {} as Record<DayKey, Shift>);
-  return { id: uid(), name, role, hourlyWage: "10030", schedule, isFullTime: false };
+  return { id: uid(), name, role, hourlyWage: "10320", schedule, isFullTime: false };
 }
 
 const ROLES = ["홀 서빙", "주방", "바리스타", "매니저", "카운터", "배달", "기타"];
@@ -177,7 +179,7 @@ function EmployeeCard({
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">원</span>
             </div>
-            <span className="text-xs text-slate-400">2025 최저시급: 10,030원</span>
+            <span className="text-xs text-slate-400">2026 최저시급: 10,320원</span>
           </div>
 
           {/* 스케줄 */}
@@ -260,20 +262,39 @@ function EmployeeCard({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LaborSchedulerPage() {
-  const [employees, setEmployees] = useState<Employee[]>([
+  const defaultEmployees: Employee[] = [
     (() => { const e = makeEmployee("김민준", "바리스타"); e.schedule.mon.enabled = true; e.schedule.tue.enabled = true; e.schedule.wed.enabled = true; e.schedule.thu.enabled = true; e.schedule.fri.enabled = true; e.schedule.mon.start = "09:00"; e.schedule.mon.end = "18:00"; e.schedule.tue.start = "09:00"; e.schedule.tue.end = "18:00"; e.schedule.wed.start = "09:00"; e.schedule.wed.end = "18:00"; e.schedule.thu.start = "09:00"; e.schedule.thu.end = "18:00"; e.schedule.fri.start = "09:00"; e.schedule.fri.end = "18:00"; return e; })(),
     (() => { const e = makeEmployee("이서연", "홀 서빙"); e.schedule.sat.enabled = true; e.schedule.sun.enabled = true; e.schedule.sat.start = "11:00"; e.schedule.sat.end = "21:00"; e.schedule.sun.start = "11:00"; e.schedule.sun.end = "21:00"; return e; })(),
-  ]);
+  ];
 
-  const [insuranceRate, setInsuranceRate] = useState("9.4"); // 4대보험 사업주 부담 약 9.4%
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<{ employees: Employee[]; insuranceRate: string }>(
+    "vela-labor-scheduler",
+    { employees: defaultEmployees, insuranceRate: "9.4" }
+  );
 
-  const addEmployee = useCallback(() => setEmployees(prev => [...prev, makeEmployee()]), []);
+  const [employees, setEmployees] = useState<Employee[]>(defaultEmployees);
+  const [insuranceRate, setInsuranceRate] = useState("9.4");
+
+  // 클라우드 데이터 로드 시 반영
+  useEffect(() => {
+    if (cloudData.employees?.length > 0) setEmployees(cloudData.employees);
+    if (cloudData.insuranceRate) setInsuranceRate(cloudData.insuranceRate);
+  }, [cloudData]);
+
+  // 변경 시 클라우드 저장
+  const saveToCloud = useCallback((emps: Employee[], rate: string) => {
+    cloudUpdate({ employees: emps, insuranceRate: rate });
+  }, [cloudUpdate]);
+
+  const addEmployee = useCallback(() => {
+    setEmployees(prev => { const next = [...prev, makeEmployee()]; saveToCloud(next, insuranceRate); return next; });
+  }, [insuranceRate, saveToCloud]);
   const updateEmployee = useCallback((id: string, updated: Partial<Employee>) => {
-    setEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updated } : e));
-  }, []);
+    setEmployees(prev => { const next = prev.map(e => e.id === id ? { ...e, ...updated } : e); saveToCloud(next, insuranceRate); return next; });
+  }, [insuranceRate, saveToCloud]);
   const deleteEmployee = useCallback((id: string) => {
-    setEmployees(prev => prev.filter(e => e.id !== id));
-  }, []);
+    setEmployees(prev => { const next = prev.filter(e => e.id !== id); saveToCloud(next, insuranceRate); return next; });
+  }, [insuranceRate, saveToCloud]);
 
   const totalMonthlyWage = employees.reduce((s, e) => s + calcMonthlyWage(e), 0);
   const insuranceCost = totalMonthlyWage * (num(insuranceRate) / 100);
@@ -283,13 +304,10 @@ export default function LaborSchedulerPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-        body{font-family:'Pretendard',-apple-system,sans-serif}
         input[type='time']::-webkit-calendar-picker-indicator{opacity:.4;cursor:pointer}
       `}</style>
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
@@ -299,8 +317,14 @@ export default function LaborSchedulerPage() {
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               <span>👥</span> 인건비 스케줄러
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">인건비 스케줄러</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">인건비 스케줄러</h1>
+              <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+            </div>
             <p className="text-slate-500 text-sm">직원별 시급과 근무 시간을 설정하면 주간·월간 인건비를 자동 계산합니다.</p>
+            <Link href="/tools/labor-law" className="inline-flex items-center gap-1 text-sm text-blue-500 hover:text-blue-700 transition mt-2">
+              법정 인건비 계산하기 →
+            </Link>
           </div>
 
           {/* 요약 */}
@@ -377,9 +401,9 @@ export default function LaborSchedulerPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 주휴수당은 주 15시간 이상 근무 시 발생합니다. 4대보험 요율은 연도·급여 구간별로 다를 수 있으니 정확한 계산은 4대보험 정보연계센터를 참고하세요.
-          </div>
+          <CollapsibleTip className="mt-4">
+            주휴수당은 주 15시간 이상 근무 시 발생합니다. 4대보험 요율은 연도·급여 구간별로 다를 수 있으니 정확한 계산은 4대보험 정보연계센터를 참고하세요.
+          </CollapsibleTip>
         </div>
       </main>
     </>

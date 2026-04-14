@@ -4,9 +4,7 @@ export default function TermsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Pretendard',-apple-system,sans-serif;background:#F9FAFB;color:#191F28;line-height:1.7}
         .terms-wrap{max-width:760px;margin:0 auto;padding:120px 24px 80px}
         .terms-back{display:inline-flex;align-items:center;gap:8px;color:#6B7684;font-size:14px;text-decoration:none;margin-bottom:40px;transition:color .15s}
         .terms-back:hover{color:#191F28}
@@ -81,6 +79,22 @@ export default function TermsPage() {
             <li>구독은 언제든지 해지할 수 있으며, 해지 시 당월 말까지 유료 기능을 이용할 수 있습니다.</li>
             <li>이미 결제된 금액은 원칙적으로 환불되지 않으나, 서비스 오류로 인한 경우 관련 법령에 따라 처리합니다.</li>
           </ul>
+          <p className="terms-p"><strong>③ 서비스 제공 시기:</strong> 유료 서비스는 결제 완료 즉시 이용 가능합니다.</p>
+          <p className="terms-p"><strong>④ 청약철회:</strong></p>
+          <ul className="terms-list">
+            <li>결제일로부터 7일 이내 청약철회 가능, 미이용 시 전액 환불</li>
+            <li>이용한 경우 이용일수 차감 후 환불</li>
+            <li>7일 경과 시 환불 불가, 해지 시 남은 기간 계속 이용</li>
+            <li>회사 귀책사유 시 전액 환불 또는 기간 연장</li>
+            <li>환불 요청: mnhyuk@velaanalytics.com, 영업일 3일 이내 처리</li>
+          </ul>
+          <p className="terms-p"><strong>⑤ 결제 방법:</strong> 신용카드/체크카드, 기타 회사가 정하는 수단</p>
+          <p className="terms-p"><strong>⑥ 자동 결제 및 해지:</strong></p>
+          <ul className="terms-list">
+            <li>매월 자동 갱신</li>
+            <li>언제든 해지 가능, 위약금 없음</li>
+            <li>해지 후 결제 기간 동안 유료 기능 유지</li>
+          </ul>
         </div>
 
         <div className="terms-section">
@@ -116,6 +130,15 @@ export default function TermsPage() {
         <div className="terms-section">
           <h2 className="terms-h2">제10조 (준거법 및 관할)</h2>
           <p className="terms-p">본 약관은 대한민국 법률에 따라 규율됩니다. 서비스 이용과 관련한 분쟁이 발생할 경우 회사의 본점 소재지를 관할하는 법원을 합의 관할 법원으로 합니다.</p>
+        </div>
+
+        <div className="terms-section">
+          <h2 className="terms-h2">제11조 (분쟁 해결)</h2>
+          <ul className="terms-list">
+            <li><strong>① 상호 협의 원칙:</strong> 서비스 이용과 관련한 분쟁은 회사와 회원 간 상호 협의하여 해결합니다.</li>
+            <li><strong>② 분쟁 조정:</strong> 협의가 이루어지지 않을 경우 한국소비자원(1372), 전자거래분쟁조정위원회, 대한상사중재원을 통해 분쟁 조정을 신청할 수 있습니다.</li>
+            <li><strong>③ 소송:</strong> 소송이 제기될 경우 민사소송법에 따른 관할법원을 전속 관할 법원으로 합니다.</li>
+          </ul>
         </div>
 
         <div className="terms-section">

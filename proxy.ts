@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 // 로그인 필수 경로 (개인 데이터 관련만)
+// 로그인 필수 (개인 데이터 관련)
 const PROTECTED_PATHS = [
   "/profile",
   "/dashboard",
   "/monthly-input",
   "/my-store",
+  "/payment",
+  "/stores",
+  "/team",
 ];
 
 // 관리자만 접근 가능

@@ -2,56 +2,13 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
+import { PLANS as PLAN_DATA } from "@/lib/plans";
+
 const PLANS = [
-  {
-    id: "free", name: "무료", price: 0, unit: "원/월",
-    desc: "혼자 운영하는 소규모 매장에 적합",
-    color: "#6B7684",
-    features: [
-      { text: "수익 시뮬레이터 (무제한)", included: true },
-      { text: "월 3회 AI 브리핑", included: true },
-      { text: "기본 차트 및 분석", included: true },
-      { text: "링크 공유", included: true },
-      { text: "AI 전략 추천", included: false },
-      { text: "POS 파일 분석", included: false },
-      { text: "히스토리 12개월", included: false },
-      { text: "팀 멤버 초대", included: false },
-    ],
-  },
-  {
-    id: "standard", name: "스탠다드", price: 9900, unit: "원/월",
-    desc: "성장하는 매장을 위한 핵심 기능 모음",
-    color: "#3182F6",
-    popular: true,
-    features: [
-      { text: "수익 시뮬레이터 (무제한)", included: true },
-      { text: "무제한 AI 브리핑", included: true },
-      { text: "기본 차트 및 분석", included: true },
-      { text: "링크 공유", included: true },
-      { text: "AI 전략 추천 (무제한)", included: true },
-      { text: "POS 파일 분석", included: true },
-      { text: "히스토리 12개월", included: true },
-      { text: "팀 멤버 초대", included: false },
-    ],
-  },
-  {
-    id: "pro", name: "프로", price: 29900, unit: "원/월",
-    desc: "다점포·프랜차이즈 운영자를 위한 플랜",
-    color: "#6366F1",
-    features: [
-      { text: "수익 시뮬레이터 (무제한)", included: true },
-      { text: "무제한 AI 브리핑", included: true },
-      { text: "기본 차트 및 분석", included: true },
-      { text: "링크 공유", included: true },
-      { text: "AI 전략 추천 (무제한)", included: true },
-      { text: "POS 파일 분석", included: true },
-      { text: "히스토리 무제한", included: true },
-      { text: "팀 멤버 초대 (무제한)", included: true },
-    ],
-  },
+  { ...PLAN_DATA[0], name: "무료", price: 0, color: "#6B7684" },
+  { ...PLAN_DATA[1], name: "스탠다드", price: 9900, color: "#3182F6", popular: true },
 ];
 
 export default function PricingPage() {
@@ -60,6 +17,7 @@ export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState<typeof PLANS[0] | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [payLoading, setPayLoading] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -92,12 +50,15 @@ export default function PricingPage() {
       }
 
       const toss = (window as any).TossPayments(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!);
-      const orderId = `VELA-${selectedPlan.id}-${Date.now()}`;
+      const isAnnualPay = billingCycle === "annual";
+      const amount = isAnnualPay ? (selectedPlan.annualPriceNum ?? selectedPlan.priceNum) * 12 : selectedPlan.priceNum;
+      const suffix = isAnnualPay ? "annual" : "monthly";
+      const orderId = `VELA-${selectedPlan.id}-${suffix}-${Date.now()}`;
 
       await toss.requestPayment("카드", {
-        amount: selectedPlan.price,
+        amount,
         orderId,
-        orderName: `VELA ${selectedPlan.name} 플랜`,
+        orderName: `VELA ${selectedPlan.name} 플랜 (${isAnnualPay ? "연간" : "월간"})`,
         customerName: "VELA 사용자",
         successUrl: `${window.location.origin}/payment/success`,
         failUrl: `${window.location.origin}/payment/fail`,
@@ -113,16 +74,14 @@ export default function PricingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        body{font-family:'Pretendard',-apple-system,sans-serif;background:#F9FAFB;color:#191F28;line-height:1.6}
         .pricing-page{min-height:100vh;padding:120px 24px 80px}
         .pricing-inner{max-width:1000px;margin:0 auto}
         .pricing-header{text-align:center;margin-bottom:60px}
         .pricing-tag{display:inline-block;background:#EBF3FF;color:#3182F6;font-size:13px;font-weight:600;padding:5px 14px;border-radius:100px;margin-bottom:16px}
         .pricing-title{font-size:clamp(32px,4vw,52px);font-weight:800;letter-spacing:-0.02em;color:#191F28;margin-bottom:12px}
         .pricing-subtitle{font-size:17px;color:#6B7684}
-        .plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+        .plans-grid{display:grid;grid-template-columns:repeat(2,minmax(0,360px));gap:20px;justify-content:center}
         .plan-card{background:#fff;border:2px solid #E5E8EB;border-radius:24px;padding:36px 28px;position:relative;transition:border-color .2s,transform .2s}
         .plan-card:hover{transform:translateY(-4px)}
         .plan-card.popular{border-color:#3182F6}
@@ -133,7 +92,7 @@ export default function PricingPage() {
         .plan-desc{font-size:14px;color:#6B7684;margin:12px 0 24px;line-height:1.6}
         .plan-btn{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:600;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;transition:all .15s;margin-bottom:28px}
         .plan-btn-blue{background:#3182F6;color:#fff}
-        .plan-btn-blue:hover{background:#1B64DA}
+        .plan-btn-blue:hover{background:#2563EB}
         .plan-btn-gray{background:#F2F4F6;color:#333D4B}
         .plan-btn-gray:hover{background:#E5E8EB}
         .plan-btn-indigo{background:#6366F1;color:#fff}
@@ -161,7 +120,7 @@ export default function PricingPage() {
         .modal-plan-price span{font-size:15px;font-weight:500;color:#9EA6B3}
         .modal-notice{background:#EBF3FF;border-radius:12px;padding:16px;font-size:13px;color:#3182F6;line-height:1.6;margin-bottom:24px}
         .modal-btn{width:100%;padding:16px;border-radius:12px;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:'Pretendard',sans-serif;background:#3182F6;color:#fff;transition:background .15s}
-        .modal-btn:hover{background:#1B64DA}
+        .modal-btn:hover{background:#2563EB}
         @media(max-width:768px){.plans-grid{grid-template-columns:1fr}}
       `}</style>
 
@@ -200,24 +159,41 @@ export default function PricingPage() {
           <div className="pricing-header">
             <span className="pricing-tag">요금제</span>
             <h1 className="pricing-title">합리적인 가격으로<br />시작하세요</h1>
-            <p className="pricing-subtitle">매장 규모에 맞는 플랜을 선택하세요. 언제든 변경 가능합니다.</p>
+            <p className="pricing-subtitle">매장 규모에 맞는 플랜을 선택하세요.</p>
+          </div>
+
+          {/* 월간/연간 토글 */}
+          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"12px",marginBottom:"40px"}}>
+            <span style={{fontSize:"15px",fontWeight:billingCycle==="monthly"?700:500,color:billingCycle==="monthly"?"#191F28":"#9EA6B3",cursor:"pointer"}} onClick={()=>setBillingCycle("monthly")}>월간</span>
+            <button onClick={()=>setBillingCycle(prev=>prev==="monthly"?"annual":"monthly")}
+              style={{width:"52px",height:"28px",borderRadius:"100px",border:"none",cursor:"pointer",position:"relative",background:billingCycle==="annual"?"#3182F6":"#E5E8EB",transition:"background .2s",padding:0}}>
+              <span style={{position:"absolute",top:"3px",left:billingCycle==="annual"?"27px":"3px",width:"22px",height:"22px",borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.15)"}}/>
+            </button>
+            <span style={{fontSize:"15px",fontWeight:billingCycle==="annual"?700:500,color:billingCycle==="annual"?"#191F28":"#9EA6B3",cursor:"pointer"}} onClick={()=>setBillingCycle("annual")}>연간</span>
+            {billingCycle==="annual" && <span style={{background:"#ECFDF5",color:"#059669",fontSize:"12px",fontWeight:700,padding:"4px 10px",borderRadius:"100px"}}>20% 할인</span>}
           </div>
 
           <div className="plans-grid">
-            {PLANS.map((plan) => (
+            {PLANS.map((plan) => {
+              const isAnnual = billingCycle === "annual";
+              const displayPrice = plan.price === 0 ? 0 : (isAnnual ? (plan as any).annualPriceNum ?? plan.price : plan.price);
+              const displayPriceStr = plan.price === 0 ? "무료" : displayPrice.toLocaleString("ko-KR");
+              const unitStr = plan.price === 0 ? "" : (isAnnual ? "원/월 (연간 결제)" : "원/월");
+              return (
               <div key={plan.id} className={`plan-card${plan.popular ? " popular" : ""}`}>
                 {plan.popular && <div className="popular-badge">가장 인기</div>}
                 <div className="plan-name">{plan.name}</div>
                 <div className="plan-price">
-                  {plan.price === 0 ? "무료" : plan.price.toLocaleString("ko-KR")}
-                  {plan.price > 0 && <span>원/월</span>}
+                  {displayPriceStr}
+                  {plan.price > 0 && <span>{unitStr}</span>}
+                  {plan.price > 0 && isAnnual && <div style={{marginTop:"6px"}}><span style={{background:"#ECFDF5",color:"#059669",fontSize:"12px",fontWeight:700,padding:"3px 10px",borderRadius:"100px"}}>20% 할인</span></div>}
                 </div>
                 <div className="plan-desc">{plan.desc}</div>
                 <button
                   className={`plan-btn ${plan.id === "standard" ? "plan-btn-blue" : plan.id === "pro" ? "plan-btn-indigo" : "plan-btn-gray"}`}
                   onClick={() => handleSelect(plan)}
                 >
-                  {plan.id === "free" ? "무료로 시작" : plan.id === "standard" ? "스탠다드 시작" : "프로 시작"}
+                  {plan.id === "free" ? "무료로 시작하기" : plan.id === "standard" ? "스탠다드 시작하기" : "프로 시작하기"}
                 </button>
                 <ul className="plan-features">
                   {plan.features.map((f) => (
@@ -230,8 +206,12 @@ export default function PricingPage() {
                   ))}
                 </ul>
               </div>
-            ))}
+              );
+            })}
           </div>
+
+          {/* 해지 안내 */}
+          <p style={{textAlign:"center",marginTop:"24px",fontSize:"14px",color:"#9EA6B3"}}>언제든 해지 가능 · 위약금 없음</p>
 
           <div className="faq-section">
             <div className="faq-title">자주 묻는 질문</div>
@@ -239,9 +219,8 @@ export default function PricingPage() {
               {[
                 { q: "무료 플랜에서 유료로 전환하면 데이터가 유지되나요?", a: "네, 기존에 저장한 시뮬레이션 데이터는 모두 유지됩니다. 플랜 변경 후 추가 기능이 즉시 활성화됩니다." },
                 { q: "언제든지 구독을 취소할 수 있나요?", a: "네, 구독은 언제든 취소 가능합니다. 취소 후에도 결제된 기간 동안은 유료 기능을 계속 사용하실 수 있습니다." },
-                { q: "결제는 어떤 방법으로 가능한가요?", a: "신용카드, 체크카드, 카카오페이, 네이버페이 등 다양한 결제 방법을 지원할 예정입니다. (결제 시스템 준비 중)" },
-                { q: "세금계산서 발행이 가능한가요?", a: "사업자 회원의 경우 세금계산서 발행이 가능합니다. 결제 시스템 오픈 후 마이페이지에서 신청하실 수 있습니다." },
-                { q: "팀 플랜은 어떻게 사용하나요?", a: "프로 플랜에서 팀 멤버를 초대하면 같은 매장 데이터를 공유하며 함께 분석할 수 있습니다. 초대받은 멤버는 별도 요금이 없습니다." },
+                { q: "결제는 어떤 방법으로 가능한가요?", a: "신용카드, 체크카드 등 토스페이먼츠를 통한 다양한 결제 방법을 지원합니다." },
+                { q: "세금계산서 발행이 가능한가요?", a: "사업자 회원의 경우 세금계산서 발행이 가능합니다. 마이페이지에서 신청하실 수 있습니다." },
               ].map((faq) => (
                 <div key={faq.q} className="faq-item">
                   <div className="faq-q">Q. {faq.q}</div>

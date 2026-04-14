@@ -13,6 +13,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+.dark {
+  --background: #0F172A;
+  --foreground: #E2E8F0;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #F9FAFB;
@@ -23,12 +28,225 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* ── 미디어 오버플로 방지 ─────────────────────────── */
+img, video, svg { max-width: 100%; height: auto; }
+
+/* ── 모바일 포커스 스타일 ─────────────────────────── */
+input:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(49,130,246,0.3);
+}
+
+/* ── Capacitor 앱 모드 ────────────────────────────── */
+html.capacitor-app {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+html.capacitor-app body {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+html.capacitor-app main {
+  overflow-x: hidden !important;
+}
+html.capacitor-app input, html.capacitor-app textarea, html.capacitor-app select {
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+}
+html.capacitor-app .vela-nav {
+  padding-top: env(safe-area-inset-top) !important;
+  height: calc(52px + env(safe-area-inset-top)) !important;
+  align-items: flex-end !important;
+}
+html.capacitor-app .vela-nav-inner {
+  height: 52px;
+  align-items: center;
+}
+/* 앱에서 NavBar 축소로 인한 상단 패딩 보정 */
+html.capacitor-app .pt-20 { padding-top: 72px !important; }
+/* 앱에서 NavBar 로고 크기 보호 */
+html.capacitor-app .vela-nav-logo { font-size: 20px !important; }
+/* 앱에서 NavBar 드롭다운/링크 숨기기 — 하단 탭바로 대체 */
+html.capacitor-app .vela-nav-links { display: none !important; }
+html.capacitor-app .vela-nav-actions { display: none !important; }
+html.capacitor-app .vela-hamburger { display: none !important; }
+/* 앱에서 body 상단 패딩 */
+html.capacitor-app body { padding-top: calc(52px + env(safe-area-inset-top)) !important; }
+/* 앱에서 ToolNav 하단 탭바 safe area */
+html.capacitor-app nav.fixed.bottom-0 {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}
+/* 앱에서 모바일 하단 버튼 safe area */
+html.capacitor-app .safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}
+/* 앱에서 PWA 설치 프롬프트 숨기기 */
+html.capacitor-app .InstallPrompt { display: none !important; }
+/* 앱에서 상단/하단 바 절대 고정 — 스크롤 영향 없음 */
+html.capacitor-app .vela-nav {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+html.capacitor-app nav.fixed.bottom-0 {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 100 !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+/* 앱에서 전체 화면 스크롤 영역 */
+html.capacitor-app {
+  height: 100%;
+  overflow: hidden;
+  overflow-x: hidden !important;
+}
+html.capacitor-app body {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+  padding-bottom: calc(56px + env(safe-area-inset-bottom) + 20px) !important;
+}
+/* 앱에서 다크모드 비활성화 — 항상 라이트 */
+html.capacitor-app.dark { --background: #F9FAFB !important; --foreground: #171717 !important; }
+html.capacitor-app.dark, html.capacitor-app.dark body { background: #F9FAFB !important; color: #171717 !important; }
+html.capacitor-app.dark .bg-white { background-color: #fff !important; }
+html.capacitor-app.dark .bg-slate-50 { background-color: #F9FAFB !important; }
+html.capacitor-app.dark .text-slate-900 { color: #191F28 !important; }
+html.capacitor-app.dark .text-slate-700 { color: #4B5563 !important; }
+html.capacitor-app.dark .text-slate-500 { color: #4E5968 !important; }
+html.capacitor-app.dark .text-slate-400 { color: #6B7684 !important; }
+html.capacitor-app.dark .border-slate-200 { border-color: #E5E8EB !important; }
+html.capacitor-app.dark .ring-slate-200 { --tw-ring-color: #E5E8EB !important; }
+html.capacitor-app.dark input, html.capacitor-app.dark textarea, html.capacitor-app.dark select {
+  background-color: #F9FAFB !important; color: #191F28 !important; border-color: #E5E8EB !important;
+}
+html.capacitor-app.dark .vela-nav { background: rgba(255,255,255,0.95) !important; border-bottom-color: #E5E8EB !important; }
+html.capacitor-app.dark .vela-nav-logo { color: #191F28 !important; }
+html.capacitor-app.dark nav.fixed.bottom-0 { background-color: #fff !important; border-top-color: #E5E8EB !important; }
+/* ── 앱 전용 — 최소한의 오버라이드만 ─────────────── */
+
+/* 햄버거/모바일 메뉴 숨기기 */
+html.capacitor-app .vela-hamburger { display: none !important; }
+html.capacitor-app .vela-mobile-menu { display: none !important; }
+
+/* 입력 필드 — iOS 확대 방지 */
+html.capacitor-app input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+html.capacitor-app textarea,
+html.capacitor-app select {
+  font-size: 16px !important;
+}
+
+/* 하단 여백 */
+html.capacitor-app main { padding-bottom: 100px !important; }
+
+/* 시뮬레이터 데스크탑 미리보기 숨기기 */
+html.capacitor-app .hidden.lg\:block.relative { display: none !important; }
+
+/* ── 슬라이더 ─────────────────────────────────────── */
+input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; background: #E5E8EB; border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #3182F6; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; }
+
+/* ── 모바일 최적화 (max-width: 768px) ─────────────── */
+@media (max-width: 768px) {
+  /* 전체 폰트 크기 약간 줄이기 */
+  html { font-size: 15px; -webkit-text-size-adjust: 100%; }
+
+  /* 한국어 텍스트 줄바꿈 최적화 */
+  body { word-break: keep-all; }
+
+  /* 모든 요소 좌우 오버플로 방지 */
+  *, *::before, *::after { max-width: 100vw; }
+
+  /* NavBar 높이 축소 */
+  .vela-nav { height: 56px !important; }
+  .vela-nav-logo { font-size: 18px !important; }
+
+  /* body 상단 패딩 NavBar에 맞춤 */
+  body { padding-top: 56px !important; }
+
+  /* 컨텐츠 영역 패딩 최적화 */
+  main { padding-left: 12px !important; padding-right: 12px !important; }
+  .px-4 { padding-left: 12px !important; padding-right: 12px !important; }
+
+  /* 하단 탭바 공간 확보 */
+  .pb-16, .pb-20 { padding-bottom: 100px !important; }
+
+  /* 입력 필드 — iOS 확대 방지 */
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  textarea, select {
+    font-size: 16px !important;
+  }
+
+  /* 모바일에서 데스크탑 사이드바 숨기기 */
+  aside.hidden.md\:flex { display: none !important; }
+
+  /* 스크롤바 숨기기 */
+  ::-webkit-scrollbar { display: none; }
+
+  /* 좌우 스크롤 방지 */
+  html, body { overflow-x: hidden !important; max-width: 100vw !important; }
+
+  /* 하단 여백 */
+  main { padding-bottom: 100px !important; }
+}
+
+/* ── 라이트 모드 가독성 강화 ───────────────────────── */
+.text-slate-400 { color: #6B7684 !important; }
+.text-slate-500 { color: #4E5968 !important; }
+.text-gray-400 { color: #6B7684 !important; }
+.text-gray-500 { color: #4E5968 !important; }
+
+/* ── 슬라이더 커스텀 ───────────────────────────────── */
+input[type="range"].vela-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #E5E8EB;
+  outline: none;
+}
+input[type="range"].vela-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3182F6;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+input[type="range"].vela-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #3182F6;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
 }
 
 /* ── NavBar ──────────────────────────────────────────── */
                 .vela-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid #E5E8EB;display:flex;align-items:center;font-family:var(--font-geist-sans),'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
-        .vela-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;width:100%;display:flex;align-items:center;justify-content:space-between}
+        .vela-nav-inner{max-width:1152px;margin:0 auto;padding:0 32px;width:100%;display:flex;align-items:center;justify-content:space-between}
         .vela-nav-logo{font-size:20px;font-weight:800;color:#191F28;text-decoration:none;letter-spacing:-0.02em;font-family:inherit}
         .vela-nav-logo span{color:#3182F6}
         .vela-nav-links{display:flex;align-items:center;gap:28px}
@@ -42,7 +260,7 @@ body {
         .vela-btn-logout{background:none;border:1px solid #E5E8EB;color:#6B7684;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;line-height:1}
         .vela-btn-logout:hover{border-color:#333D4B;color:#191F28}
         .vela-btn-start{background:#3182F6;color:#fff;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;font-family:inherit;line-height:1}
-        .vela-btn-start:hover{background:#1B64DA}
+        .vela-btn-start:hover{background:#2563EB}
         .vela-user-name{font-size:14px;font-weight:600;color:#333D4B;text-decoration:none;cursor:pointer;font-family:inherit}
         .vela-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
         .vela-hamburger span{display:block;width:22px;height:2px;background:#333D4B;border-radius:2px;transition:all .2s}
@@ -55,6 +273,10 @@ body {
         .vela-dropdown-arrow{font-size:10px;transition:transform .2s;display:inline-block}
         .vela-dropdown:hover .vela-dropdown-arrow{transform:rotate(180deg)}
         .vela-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E8EB;border-radius:20px;padding:14px 10px 10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:520px;display:none;z-index:200;grid-template-columns:1fr 1fr;gap:4px}
+        .vela-mega-menu{min-width:900px;grid-template-columns:repeat(4,1fr);gap:0;padding:20px 16px 16px}
+        .vela-mega-col{padding:0 10px}
+        .vela-mega-col+.vela-mega-col{border-left:1px solid #F2F4F6}
+        .vela-mega-title{font-size:12px;font-weight:700;color:#3182F6;margin:0 0 8px 12px;padding-bottom:6px;letter-spacing:0.3px}
         .vela-dropdown:hover .vela-dropdown-menu{display:grid}
         .vela-dropdown-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;text-decoration:none;transition:background .15s}
         .vela-dropdown-item:hover{background:#F2F4F6}
@@ -62,19 +284,226 @@ body {
         .vela-dropdown-label{font-size:13px;font-weight:600;color:#191F28;margin:0 0 2px;font-family:inherit}
         .vela-dropdown-desc{font-size:11px;color:#9EA6B3;margin:0;font-family:inherit}
         @media(max-width:768px){.vela-nav-links,.vela-nav-actions{display:none}.vela-hamburger{display:flex}}
+        @media(min-width:769px) and (max-width:1024px){
+          .vela-nav-links{gap:16px !important}
+          .vela-nav-links a{font-size:13px !important}
+          .vela-nav-actions{gap:6px !important}
+          .vela-user-name{font-size:14px !important;font-weight:700 !important;color:#191F28 !important}
+          .vela-btn-dashboard,.vela-btn-logout,.vela-btn-start{font-size:12px !important;padding:6px 10px !important}
+        }
 
-/* ── 페이지 전환 애니메이션 ─────────────────────────────── */
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-main,
-.min-h-screen {
-  animation: pageIn 0.18s ease-out;
+/* ── ToolNav slide-up animation ────────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
 /* 페이지 로딩 중 배경 유지 */
-html, body {
-  background: #F9FAFB !important;
+html, body, #__next {
+  min-height: 100vh;
+  background: var(--background);
 }
+
+/* ── Dark Mode — WCAG AA 대비 확보 ─────────────────── */
+html.dark, html.dark body {
+  background: #0F172A !important;
+  color: #E2E8F0 !important;
+}
+
+html.dark .bg-white { background-color: #1E293B !important; }
+html.dark .bg-slate-50 { background-color: #0F172A !important; }
+html.dark .bg-slate-100 { background-color: #253348 !important; }
+html.dark .bg-gray-50 { background-color: #0F172A !important; }
+html.dark .bg-gray-100 { background-color: #253348 !important; }
+
+/* 텍스트: 모든 단계를 한 칸씩 밝게 */
+html.dark .text-slate-900 { color: #F8FAFC !important; }
+html.dark .text-slate-800 { color: #F1F5F9 !important; }
+html.dark .text-slate-700 { color: #E2E8F0 !important; }
+html.dark .text-slate-600 { color: #CBD5E1 !important; }
+html.dark .text-gray-900 { color: #F8FAFC !important; }
+html.dark .text-gray-800 { color: #F1F5F9 !important; }
+html.dark .text-gray-700 { color: #E2E8F0 !important; }
+html.dark .text-gray-600 { color: #CBD5E1 !important; }
+
+html.dark .border-slate-200 { border-color: #334155 !important; }
+html.dark .border-slate-300 { border-color: #334155 !important; }
+html.dark .border-gray-200 { border-color: #334155 !important; }
+html.dark .border-gray-300 { border-color: #334155 !important; }
+html.dark .ring-slate-200 { --tw-ring-color: #334155 !important; }
+
+html.dark input, html.dark textarea, html.dark select {
+  background-color: #1E293B !important;
+  color: #E2E8F0 !important;
+  border-color: #334155 !important;
+}
+
+html.dark .vela-nav { background: rgba(15, 23, 42, 0.92) !important; border-bottom-color: #334155 !important; }
+html.dark .vela-nav-logo { color: #F1F5F9 !important; }
+html.dark .vela-nav-links a { color: #CBD5E1 !important; }
+html.dark .vela-nav-links a:hover { color: #F8FAFC !important; }
+html.dark .vela-dropdown-btn { color: #CBD5E1 !important; }
+html.dark .vela-dropdown-btn:hover { color: #F8FAFC !important; }
+html.dark .vela-dropdown-menu { background: #1E293B !important; border-color: #334155 !important; }
+html.dark .vela-dropdown-item:hover { background: #334155 !important; }
+html.dark .vela-dropdown-label { color: #F8FAFC !important; }
+html.dark .vela-dropdown-desc { color: #CBD5E1 !important; }
+html.dark .vela-mega-col+.vela-mega-col { border-left-color: #334155 !important; }
+html.dark .vela-mega-title { color: #60A5FA !important; }
+html.dark .vela-btn-dashboard { background: #334155 !important; color: #E2E8F0 !important; }
+html.dark .vela-btn-dashboard:hover { background: #475569 !important; }
+html.dark .vela-btn-logout { border-color: #334155 !important; color: #CBD5E1 !important; }
+html.dark .vela-btn-logout:hover { border-color: #F1F5F9 !important; color: #F8FAFC !important; }
+html.dark .vela-btn-login { color: #CBD5E1 !important; }
+html.dark .vela-btn-login:hover { color: #F8FAFC !important; }
+html.dark .vela-user-name { color: #E2E8F0 !important; }
+html.dark .vela-mobile-menu { background: #1E293B !important; border-bottom-color: #334155 !important; }
+html.dark .vela-mobile-link { color: #E2E8F0 !important; border-bottom-color: #334155 !important; }
+html.dark .vela-hamburger span { background: #E2E8F0 !important; }
+
+/* Dark mode: 보조 텍스트 — WCAG AA 4.5:1 이상 확보 */
+html.dark .text-slate-500 { color: #E2E8F0 !important; }
+html.dark .text-slate-400 { color: #CBD5E1 !important; }
+html.dark .text-gray-500 { color: #E2E8F0 !important; }
+html.dark .text-gray-400 { color: #CBD5E1 !important; }
+
+/* Dark mode: border extras */
+html.dark .border-slate-100 { border-color: #1E293B !important; }
+html.dark .border-gray-100 { border-color: #1E293B !important; }
+html.dark .divide-slate-200 > * + * { border-color: #334155 !important; }
+html.dark .divide-gray-200 > * + * { border-color: #334155 !important; }
+
+/* Dark mode: ring overrides */
+html.dark .ring-slate-900\/5 { --tw-ring-color: rgba(148,163,184,0.1) !important; }
+
+/* Dark mode: shadow adjustments */
+html.dark .shadow-sm, html.dark .shadow, html.dark .shadow-md, html.dark .shadow-lg {
+  --tw-shadow-color: rgba(0,0,0,0.4) !important;
+}
+
+/* Dark mode: badge / chip colors */
+html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.15) !important; }
+html.dark .bg-green-50 { background-color: rgba(34,197,94,0.15) !important; }
+html.dark .bg-red-50 { background-color: rgba(239,68,68,0.15) !important; }
+html.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.15) !important; }
+html.dark .bg-purple-50 { background-color: rgba(168,85,247,0.15) !important; }
+html.dark .bg-orange-50 { background-color: rgba(249,115,22,0.15) !important; }
+
+html.dark .text-blue-700 { color: #93C5FD !important; }
+html.dark .text-green-700 { color: #86EFAC !important; }
+html.dark .text-red-700 { color: #FCA5A5 !important; }
+html.dark .text-yellow-700 { color: #FDE047 !important; }
+html.dark .text-purple-700 { color: #D8B4FE !important; }
+html.dark .text-orange-700 { color: #FDBA74 !important; }
+
+/* Dark mode: slider */
+html.dark input[type="range"].vela-slider { background: #334155; }
+html.dark input[type="range"].vela-slider::-webkit-slider-thumb { border-color: #1E293B; }
+html.dark input[type="range"].vela-slider::-moz-range-thumb { border-color: #1E293B; }
+
+/* Dark mode: focus rings */
+html.dark input:focus, html.dark textarea:focus, html.dark select:focus {
+  border-color: #3182F6 !important;
+  outline-color: #3182F6 !important;
+}
+
+/* Dark mode: placeholder text */
+html.dark input::placeholder, html.dark textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Dark mode: scrollbar */
+html.dark ::-webkit-scrollbar { background: #0F172A; }
+html.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+/* Dark mode: page background override */
+html.dark, html.dark body, html.dark #__next {
+  background: #0F172A !important;
+}
+
+/* Dark mode: language button */
+html.dark .vela-nav-lang { color: #94A3B8 !important; border-color: #334155 !important; }
+
+/* Dark mode: tool page badge colors */
+html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.15) !important; }
+html.dark .bg-violet-50 { background-color: rgba(139,92,246,0.15) !important; }
+html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.15) !important; }
+html.dark .bg-teal-50 { background-color: rgba(20,184,166,0.15) !important; }
+html.dark .bg-rose-50 { background-color: rgba(244,63,94,0.15) !important; }
+html.dark .bg-pink-50 { background-color: rgba(236,72,153,0.15) !important; }
+html.dark .bg-cyan-50 { background-color: rgba(6,182,212,0.15) !important; }
+
+/* Dark mode: tool page gradient backgrounds */
+html.dark .bg-gradient-to-b { background-image: none !important; background-color: #0F172A !important; }
+html.dark .bg-gradient-to-br { background-image: none !important; }
+html.dark .bg-gradient-to-r { background-image: none !important; }
+
+/* Dark mode: card ring */
+html.dark .ring-1 { --tw-ring-color: #334155 !important; }
+html.dark .ring-blue-200 { --tw-ring-color: rgba(59,130,246,0.3) !important; }
+html.dark .ring-blue-300 { --tw-ring-color: rgba(59,130,246,0.4) !important; }
+
+/* Dark mode: tab/badge buttons that use slate-900 bg + white text */
+html.dark button.bg-slate-900 { background-color: #E2E8F0 !important; color: #0F172A !important; }
+html.dark a.bg-slate-900 { background-color: #E2E8F0 !important; color: #0F172A !important; }
+
+/* Dark mode: ToolNav mobile tab bar */
+html.dark nav.fixed.bottom-0 { background-color: #1E293B !important; border-top-color: #334155 !important; }
+html.dark .shadow-\[0_-2px_10px_rgba\(0\,0\,0\,0\.05\)\] { box-shadow: 0 -2px 10px rgba(0,0,0,0.3) !important; }
+
+/* Dark mode: ToolNav desktop sidebar */
+html.dark aside.fixed { background-color: #1E293B !important; }
+
+/* Dark mode: tool page specific */
+html.dark .bg-slate-50\.bg-slate-50 { background-color: #0F172A !important; }
+html.dark .rounded-3xl.bg-white { background-color: #1E293B !important; }
+
+/* Dark mode: active tab inversion fix */
+html.dark button.bg-slate-900 { background-color: #F1F5F9 !important; color: #0F172A !important; }
+
+/* Dark mode: loading skeleton */
+html.dark .animate-pulse { opacity: 0.3; }
+
+/* Dark mode: search input in tools hub */
+html.dark .bg-white\/80 { background-color: rgba(30,41,59,0.8) !important; }
+
+/* Dark mode: page background force */
+html.dark .from-slate-50, html.dark .via-white, html.dark .to-slate-50 {
+  --tw-gradient-from: #0F172A !important;
+  --tw-gradient-to: #0F172A !important;
+  --tw-gradient-stops: #0F172A !important;
+}
+
+/* Dark mode: hover card effects */
+html.dark .hover\:shadow-lg:hover { --tw-shadow-color: rgba(0,0,0,0.5) !important; }
+html.dark .hover\:shadow-slate-200\/50:hover { --tw-shadow-color: rgba(0,0,0,0.3) !important; }
+
+/* Dark mode: SimDataPicker */
+html.dark .bg-blue-50.ring-1.ring-blue-200 { background-color: rgba(59,130,246,0.1) !important; }
+
+/* Dark mode: MonthlyTipCard */
+html.dark .from-blue-50.to-indigo-50 { background: rgba(59,130,246,0.1) !important; }
+
+/* Dark mode: theme toggle button */
+.vela-theme-toggle {
+  background: none;
+  border: 1px solid #E5E8EB;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+.vela-theme-toggle:hover { border-color: #333D4B; }
+html.dark .vela-theme-toggle { border-color: #334155 !important; }
+html.dark .vela-theme-toggle:hover { border-color: #94A3B8 !important; }
+
+/* HQ 페이지: NavBar/MobileTabBar 즉시 숨김 (hydration 전) */
+html.is-hq .vela-nav,
+html.is-hq .vela-mobile-tab { display: none !important; }
+html.is-hq body { padding-top: 0 !important; }

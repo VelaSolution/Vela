@@ -1,11 +1,23 @@
 import { STORAGE_KEYS, getStorageItem, setStorageItem } from "./storage";
 
-export type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining";
+export type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining" | "gogi";
+
+export const INDUSTRY_LABELS: Record<string, string> = {
+  cafe: "카페",
+  restaurant: "일반 음식점",
+  bar: "술집/바",
+  finedining: "파인다이닝",
+  gogi: "고깃집",
+};
 
 // ─── 폼 상태 ────────────────────────────────────────────────────
 
 // 1단계: 매출 정보
 export type Step1Form = {
+  storeName: string;
+  storeLocation: string;
+  openTime: string;
+  closeTime: string;
   industry: IndustryKey;
   seats: number;
   avgSpend: number;
@@ -104,6 +116,7 @@ export const INDUSTRY_BENCHMARK: Record<IndustryKey, IndustryBenchmark> = {
   restaurant: { cogsRate: 33, laborRate: 25, rentRate: 12, netMargin: 9  },
   bar:        { cogsRate: 22, laborRate: 22, rentRate: 11, netMargin: 16 },
   finedining: { cogsRate: 35, laborRate: 30, rentRate: 13, netMargin: 13 },
+  gogi:       { cogsRate: 40, laborRate: 22, rentRate: 11, netMargin: 8  },
 };
 
 // ─── 업종별 설정 ────────────────────────────────────────────────
@@ -129,6 +142,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 8, cogsWarnRate: 30, laborWarnRate: 30, netMarginWarn: 10,
     simPctMin: 0.05, simPctMax: 0.20, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "10:00", closeTime: "22:00",
       seats: 20, avgSpend: 6000, turnover: 4,
       weekdayDays: 20, weekendDays: 8, weekendMultiplier: 1.5,
       takeoutRatio: 30, cashPaymentRate: 10,
@@ -159,6 +173,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 3, cogsWarnRate: 35, laborWarnRate: 25, netMarginWarn: 8,
     simPctMin: 0.05, simPctMax: 0.25, simSteps: 5,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "11:00", closeTime: "22:00",
       seats: 36, avgSpend: 25000, turnover: 1.6,
       weekdayDays: 20, weekendDays: 6, weekendMultiplier: 1.4,
       takeoutRatio: 10, cashPaymentRate: 15,
@@ -189,6 +204,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 2, cogsWarnRate: 25, laborWarnRate: 20, netMarginWarn: 15,
     simPctMin: 0.05, simPctMax: 0.20, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "18:00", closeTime: "02:00",
       seats: 24, avgSpend: 35000, turnover: 1.2,
       weekdayDays: 16, weekendDays: 8, weekendMultiplier: 2.0,
       takeoutRatio: 0, cashPaymentRate: 20,
@@ -219,6 +235,7 @@ export const INDUSTRY_CONFIG: Record<
     maxTurnover: 1.5, cogsWarnRate: 35, laborWarnRate: 30, netMarginWarn: 12,
     simPctMin: 0.10, simPctMax: 0.30, simSteps: 4,
     defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "17:00", closeTime: "23:00",
       seats: 16, avgSpend: 80000, turnover: 0.9,
       weekdayDays: 18, weekendDays: 6, weekendMultiplier: 1.3,
       takeoutRatio: 0, cashPaymentRate: 5,
@@ -244,13 +261,45 @@ export const INDUSTRY_CONFIG: Record<
       recoveryMonths: 48, targetMonthlyProfit: 8000000,
     },
   },
+  gogi: {
+    label: "고깃집", icon: "🥩",
+    maxTurnover: 2.5, cogsWarnRate: 42, laborWarnRate: 25, netMarginWarn: 7,
+    simPctMin: 0.05, simPctMax: 0.25, simSteps: 5,
+    defaultStep1: {
+      storeName: "", storeLocation: "", openTime: "17:00", closeTime: "23:00",
+      seats: 40, avgSpend: 45000, turnover: 1.4,
+      weekdayDays: 22, weekendDays: 8, weekendMultiplier: 1.5,
+      takeoutRatio: 0, cashPaymentRate: 10,
+      deliveryEnabled: false, deliverySales: 0, deliveryAppRate: 15, deliveryDirectRate: 0,
+      deliveryPreference: "possible",
+      lunchRatio: 30, dinnerRatio: 60, nightRatio: 10,
+    },
+    defaultStep2: {
+      laborType: "direct", labor: 5000000, staffCount: 4, hourlyWage: 12000, workHoursPerDay: 8, workDaysPerMonth: 26,
+      rent: 3000000, utilities: 400000, telecom: 50000,
+      cogsRate: 40, alcoholCogsRate: 20, alcoholSalesRatio: 25,
+      wasteRate: 4, franchiseEnabled: false, franchiseRoyaltyRate: 0,
+      ownerType: "individual",
+      deliveryFeeRate: 15, cardFeeRate: 1.5,
+      marketing: 300000, supplies: 150000, maintenance: 100000, etc: 100000,
+      incomeTaxRate: 3.3, vatEnabled: true, insuranceRate: 9,
+    },
+    defaultStep3: {
+      businessType: "new",
+      deposit: 50000000, premiumKey: 30000000, interior: 40000000, equipment: 30000000, signage: 3000000,
+      franchiseFee: 0, trainingFee: 0, otherSetup: 5000000,
+      loanEnabled: true, loanAmount: 50000000, loanInterestRate: 5, loanTermMonths: 48,
+      recoveryMonths: 30, targetMonthlyProfit: 5000000,
+    },
+  },
 };
 
-export const VALID_INDUSTRIES: IndustryKey[] = ["cafe", "restaurant", "bar", "finedining"];
+export const VALID_INDUSTRIES: IndustryKey[] = ["cafe", "restaurant", "bar", "finedining", "gogi"];
 
 /** 빈 폼 초기화 */
 export function createEmptyForm(industry: IndustryKey = "restaurant"): FullForm {
   return {
+    storeName: "", storeLocation: "", openTime: "10:00", closeTime: "22:00",
     industry,
     seats: 0, avgSpend: 0, turnover: 0,
     weekdayDays: 0, weekendDays: 0, weekendMultiplier: 1.0,
@@ -292,6 +341,10 @@ export function sanitizeFullForm(raw: Record<string, unknown>): FullForm {
     options.includes(raw[k] as T) ? (raw[k] as T) : fallback;
 
   return {
+    storeName:            typeof raw.storeName === "string" ? raw.storeName : "",
+    storeLocation:        typeof raw.storeLocation === "string" ? raw.storeLocation : "",
+    openTime:             typeof raw.openTime === "string" ? raw.openTime : "10:00",
+    closeTime:            typeof raw.closeTime === "string" ? raw.closeTime : "22:00",
     industry,
     seats:                num("seats", def.seats, 1, 10000),
     avgSpend:             num("avgSpend", def.avgSpend, 100, 10000000),

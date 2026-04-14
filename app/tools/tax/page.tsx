@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import NavBar from "@/components/NavBar";
 import ToolNav from "@/components/ToolNav";
 import { useSimulatorData } from "@/lib/useSimulatorData";
 import SendToSimulator from "@/components/SendToSimulator";
+import CollapsibleTip from "@/components/CollapsibleTip";
+import SimDataPicker from "@/components/SimDataPicker";
+import { createSupabaseBrowserClient } from "@/lib/supabase-client";
+import { fmt } from "@/lib/vela";
+import { useCloudSync } from "@/lib/useCloudSync";
+import CloudSyncBadge from "@/components/CloudSyncBadge";
+import type { SimulatorSnapshot } from "@/lib/useSimulatorData";
+
+type MonthSnap = { month: string; monthly_sales: number; profit: number; industry: string };
 
 function num(v: string) { const n = Number(v.replace(/,/g, "")); return isNaN(n) ? 0 : n; }
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
 // ─── 세금 계산 로직 ───────────────────────────────────────────────────────────
 
@@ -55,6 +62,30 @@ function calcDeductions(hasDependents: number, isBlueReturn: boolean) {
   return d;
 }
 
+const INDUSTRY_LABEL: Record<string, string> = {
+  cafe: "카페", restaurant: "음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
+};
+
+type TaxCloudData = {
+  annualSales: string;
+  annualProfit: string;
+  isSimplified: boolean;
+  dependents: string;
+  isBlueReturn: boolean;
+  isDualBiz: boolean;
+  meatCostRatio: string;
+};
+
+const TAX_DEFAULT: TaxCloudData = {
+  annualSales: "120000000",
+  annualProfit: "24000000",
+  isSimplified: false,
+  dependents: "0",
+  isBlueReturn: false,
+  isDualBiz: false,
+  meatCostRatio: "40",
+};
+
 export default function TaxPage() {
   const simData = useSimulatorData();
   const [annualSales, setAnnualSales] = useState("120000000");
@@ -65,6 +96,47 @@ export default function TaxPage() {
   const [isDualBiz, setIsDualBiz] = useState(false);
   const [meatCostRatio, setMeatCostRatio] = useState("40");
 
+  const [monthlySnaps, setMonthlySnaps] = useState<MonthSnap[]>([]);
+
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<TaxCloudData>("vela-tax-calc", TAX_DEFAULT);
+
+  // Load from cloud on mount
+  useEffect(() => {
+    if (cloudData.annualSales) setAnnualSales(cloudData.annualSales);
+    if (cloudData.annualProfit) setAnnualProfit(cloudData.annualProfit);
+    if (cloudData.isSimplified !== undefined) setIsSimplified(cloudData.isSimplified);
+    if (cloudData.dependents) setDependents(cloudData.dependents);
+    if (cloudData.isBlueReturn !== undefined) setIsBlueReturn(cloudData.isBlueReturn);
+    if (cloudData.isDualBiz !== undefined) setIsDualBiz(cloudData.isDualBiz);
+    if (cloudData.meatCostRatio) setMeatCostRatio(cloudData.meatCostRatio);
+  }, [cloudData]);
+
+  // SimDataPicker 필드 정의
+  const simFields = (sim: SimulatorSnapshot) => [
+    { key: "totalSales", label: "월매출", value: `${fmt(Math.round(sim.totalSales))}원`, rawValue: sim.totalSales },
+    { key: "profit", label: "월 순이익", value: `${fmt(Math.round(sim.profit))}원`, rawValue: sim.profit },
+    { key: "industry", label: "업종", value: INDUSTRY_LABEL[sim.industry] ?? sim.industry, rawValue: sim.industry },
+    { key: "cogsRatio", label: "원가율", value: `${sim.cogsRatio}%`, rawValue: sim.cogsRatio },
+    { key: "rent", label: "임대료", value: `${fmt(Math.round(sim.rent))}원`, rawValue: sim.rent },
+  ];
+
+  const applySimSelected = (selected: Record<string, number | string>) => {
+    if (selected.totalSales !== undefined) {
+      setAnnualSales(String(Math.round(Number(selected.totalSales) * 12)));
+    }
+    if (selected.profit !== undefined) {
+      setAnnualProfit(String(Math.max(0, Math.round(Number(selected.profit) * 12))));
+    }
+    if (selected.industry === "gogi") {
+      setIsDualBiz(true);
+    }
+  };
+
+  // Save to cloud on change
+  useEffect(() => {
+    cloudUpdate({ annualSales, annualProfit, isSimplified, dependents, isBlueReturn, isDualBiz, meatCostRatio });
+  }, [annualSales, annualProfit, isSimplified, dependents, isBlueReturn, isDualBiz, meatCostRatio, cloudUpdate]);
+
   // 시뮬레이터 데이터 자동 입력
   useEffect(() => {
     if (!simData) return;
@@ -72,6 +144,30 @@ export default function TaxPage() {
     setAnnualProfit(String(Math.max(0, simData.profit * 12)));
     if (simData.industry === "gogi") setIsDualBiz(true);
   }, [simData]);
+
+  // 월별 매출 데이터 불러오기
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
+      if (!user) return;
+      sb.from("monthly_snapshots").select("month,monthly_sales,profit,industry")
+        .eq("user_id", user.id).order("month", { ascending: false }).limit(12)
+        .then(({ data }: { data: MonthSnap[] | null }) => {
+          if (data) setMonthlySnaps(data);
+        });
+    });
+  }, []);
+
+  const loadFromMonthly = (months: MonthSnap[]) => {
+    if (months.length === 0) return;
+    const totalSales = months.reduce((s, m) => s + m.monthly_sales, 0);
+    const totalProfit = months.reduce((s, m) => s + m.profit, 0);
+    // 12개월 미만이면 연환산
+    const factor = months.length < 12 ? 12 / months.length : 1;
+    setAnnualSales(String(Math.round(totalSales * factor)));
+    setAnnualProfit(String(Math.max(0, Math.round(totalProfit * factor))));
+    if (months.some(m => m.industry === "gogi")) setIsDualBiz(true);
+  };
 
   const sales = num(annualSales);
   const profit = num(annualProfit);
@@ -113,13 +209,8 @@ export default function TaxPage() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
-        body{font-family:'Pretendard',-apple-system,sans-serif}
-      `}</style>
-      <NavBar />
       <ToolNav />
-      <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 md:pl-60">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 pt-20 pb-16 px-4 md:pl-60">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3 mb-8 mt-4">
             <Link href="/tools" className="text-sm text-slate-400 hover:text-slate-700 transition">← 도구 목록</Link>
@@ -129,12 +220,28 @@ export default function TaxPage() {
             <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
               <span>🧾</span> 세금 계산기
             </div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">세금 계산기</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">세금 계산기</h1>
+              <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+            </div>
             <p className="text-slate-500 text-sm">연 매출과 순이익을 입력하면 부가세·종합소득세 예상액을 계산합니다.</p>
           </div>
 
-          {/* 시뮬레이터 연계 배너 */}
-          {simData ? (
+          {/* 데이터 불러오기 — SimDataPicker 통합 */}
+          <div className="rounded-3xl bg-white ring-1 ring-slate-200 p-5 mb-4">
+            <h3 className="text-sm font-bold text-slate-900 mb-3">📂 데이터 불러오기</h3>
+            <SimDataPicker fields={simFields} onApply={applySimSelected} />
+            {monthlySnaps.length > 0 && (
+              <button
+                onClick={() => loadFromMonthly(monthlySnaps)}
+                className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition"
+              >
+                📈 월별 매출 ({monthlySnaps.length}개월 합산{monthlySnaps.length < 12 ? " → 연환산" : ""})
+              </button>
+            )}
+          </div>
+
+          {simData && (
             <div className="rounded-2xl bg-slate-900 px-4 py-3 mb-4 flex items-center gap-3">
               <span className="text-lg">🔗</span>
               <div className="flex-1">
@@ -147,7 +254,8 @@ export default function TaxPage() {
               </div>
               <span className="text-xs text-slate-500">자동 반영됨</span>
             </div>
-          ) : (
+          )}
+          {!simData && monthlySnaps.length === 0 && (
             <div className="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3 mb-4 flex items-center gap-3">
               <span className="text-slate-400 text-sm">💡 시뮬레이터를 실행하면 매출·이익이 자동으로 입력됩니다.</span>
               <Link href="/simulator" className="ml-auto text-xs font-semibold text-blue-500">시뮬레이터 →</Link>
@@ -423,9 +531,9 @@ export default function TaxPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl bg-slate-100 px-5 py-4 text-xs text-slate-500 leading-relaxed">
-            💡 <strong className="text-slate-700">Tip.</strong> 매출이 증가할수록 간이과세에서 일반과세로 전환하는 것이 유리할 수 있습니다. 신용카드·현금영수증 매출 비중이 높은 경우 세액공제 혜택도 확인하세요.
-          </div>
+          <CollapsibleTip className="mt-4">
+            매출이 증가할수록 간이과세에서 일반과세로 전환하는 것이 유리할 수 있습니다. 신용카드·현금영수증 매출 비중이 높은 경우 세액공제 혜택도 확인하세요.
+          </CollapsibleTip>
         </div>
       </main>
     </>

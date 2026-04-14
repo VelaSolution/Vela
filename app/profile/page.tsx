@@ -2,6 +2,11 @@
 export const dynamic = "force-dynamic";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import DataBackup from "@/components/DataBackup";
+import DarkModeToggle from "@/components/DarkModeToggle";
+import ConsentManager from "@/components/ConsentManager";
+import NotificationSettings from "@/components/NotificationSettings";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt } from "@/lib/vela";
 import type { User } from "@supabase/supabase-js";
@@ -14,6 +19,105 @@ type HistoryRow = {
 
 const II: Record<string,string> = { cafe:"☕",restaurant:"🍽️",bar:"🍺",finedining:"✨",gogi:"🥩" };
 type Tab = "profile"|"history"|"subscription"|"account";
+
+function TaxInvoiceForm({ userId, payments }: { userId: string | null; payments: { id: string; plan: string; amount: number; created_at: string; status: string }[] }) {
+  const [bizNo, setBizNo] = useState("");
+  const [bizName, setBizName] = useState("");
+  const [email, setEmail] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const sb = createSupabaseBrowserClient();
+    sb.from("tax_invoice_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false })
+      .then(({ data }: { data: any[] | null }) => { if (data) setRequests(data); });
+  }, [userId, submitted]);
+
+  const handleSubmit = async () => {
+    if (!bizNo.trim() || !bizName.trim() || !email.trim()) { alert("모든 필드를 입력해주세요"); return; }
+    if (!selectedPayment) { alert("결제 건을 선택해주세요"); return; }
+    if (!/^\d{3}-\d{2}-\d{5}$/.test(bizNo)) { alert("사업자번호 형식: 000-00-00000"); return; }
+    setSubmitting(true);
+    const sb = createSupabaseBrowserClient();
+    const { error } = await sb.from("tax_invoice_requests").insert({
+      user_id: userId, biz_no: bizNo.trim(), biz_name: bizName.trim(),
+      email: email.trim(), payment_id: selectedPayment, status: "대기",
+    });
+    setSubmitting(false);
+    if (error) { alert("신청 실패: " + error.message); return; }
+    setSubmitted(true);
+    setBizNo(""); setBizName(""); setEmail(""); setSelectedPayment("");
+    alert("세금계산서 발행이 신청되었습니다. 영업일 기준 1~3일 내 발행됩니다.");
+  };
+
+  const donePayments = payments.filter(p => p.status === "done");
+
+  return (
+    <div className="space-y-4">
+      {donePayments.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-4">결제 내역이 없습니다</p>
+      ) : (
+        <>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">결제 건 선택</label>
+            <select className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+              value={selectedPayment} onChange={e => setSelectedPayment(e.target.value)}>
+              <option value="">선택하세요</option>
+              {donePayments.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.plan} 플랜 - {p.amount.toLocaleString("ko-KR")}원 ({new Date(p.created_at).toLocaleDateString("ko-KR")})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">사업자등록번호</label>
+              <input className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+                placeholder="000-00-00000" value={bizNo} onChange={e => setBizNo(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">상호명</label>
+              <input className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+                placeholder="회사명" value={bizName} onChange={e => setBizName(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 mb-1">이메일 (세금계산서 수신)</label>
+            <input type="email" className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500"
+              placeholder="tax@company.com" value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+          <button onClick={handleSubmit} disabled={submitting}
+            className="w-full rounded-xl bg-[#3182F6] text-white font-semibold px-5 py-2.5 text-sm hover:bg-[#2672DE] transition-all disabled:opacity-50">
+            {submitting ? "신청 중..." : "세금계산서 발행 신청"}
+          </button>
+        </>
+      )}
+
+      {requests.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <h4 className="text-xs font-bold text-slate-500 mb-2">발행 신청 내역</h4>
+          <div className="space-y-2">
+            {requests.map((r: any) => (
+              <div key={r.id} className="flex items-center justify-between py-2 text-xs">
+                <div>
+                  <span className="font-semibold text-slate-700">{r.biz_name}</span>
+                  <span className="text-slate-400 ml-2">{r.biz_no}</span>
+                </div>
+                <span className={`font-semibold ${r.status === "완료" ? "text-emerald-600" : r.status === "대기" ? "text-amber-600" : "text-slate-500"}`}>
+                  {r.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const [user, setUser]             = useState<User|null>(null);
@@ -127,7 +231,7 @@ export default function ProfilePage() {
   const displayName = user?.user_metadata?.nickname||user?.user_metadata?.full_name||user?.email?.split("@")[0]||"사용자";
 
   if(loading) return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       
       <div className="mx-auto max-w-2xl px-4 py-8 md:px-8 space-y-4 animate-pulse">
         <div className="h-20 bg-slate-200 rounded-3xl" />
@@ -138,7 +242,7 @@ export default function ProfilePage() {
     </div>
   );
   if(!user) return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <div className="flex items-center justify-center h-[80vh]">
         <Link href="/login" className="rounded-2xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white">로그인</Link>
       </div>
@@ -146,7 +250,7 @@ export default function ProfilePage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       
       <main className="px-4 py-8 md:px-8">
         <div className="mx-auto max-w-2xl space-y-5">
@@ -155,7 +259,7 @@ export default function ProfilePage() {
           <div className="rounded-3xl bg-white p-5 ring-1 ring-slate-200 flex items-center gap-4 flex-wrap">
             <button onClick={()=>fileRef.current?.click()} className="group relative flex-shrink-0">
               {avatar
-                ? <img src={avatar} alt="프로필" className="h-14 w-14 rounded-full object-cover"/>
+                ? <Image src={avatar} alt="프로필" width={56} height={56} className="h-14 w-14 rounded-full object-cover"/>
                 : <div className="h-14 w-14 rounded-full bg-slate-900 flex items-center justify-center text-white text-xl font-bold">
                     {displayName[0]?.toUpperCase()??"U"}
                   </div>
@@ -181,7 +285,7 @@ export default function ProfilePage() {
           </div>
 
           {/* 탭 */}
-          <div className="flex gap-1 rounded-2xl bg-white p-1 ring-1 ring-slate-200">
+          <div className="flex overflow-x-auto gap-1 rounded-2xl bg-white p-1 ring-1 ring-slate-200 scrollbar-hide">
             {([
               {k:"profile" as Tab, l:"⚙️ 프로필 설정"},
               {k:"history" as Tab, l:"📋 시뮬레이션 기록"},
@@ -189,7 +293,7 @@ export default function ProfilePage() {
               {k:"account" as Tab, l:"🛡️ 계정 관리"},
             ]).map(t=>(
               <button key={t.k} onClick={()=>setTab(t.k)}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${tab===t.k?"bg-slate-900 text-white":"text-slate-500 hover:text-slate-800"}`}>
+                className={`flex-shrink-0 rounded-xl px-3 py-2 text-[11px] font-semibold transition whitespace-nowrap ${tab===t.k?"bg-slate-900 text-white":"text-slate-500 hover:text-slate-800"}`}>
                 {t.l}
               </button>
             ))}
@@ -230,7 +334,7 @@ export default function ProfilePage() {
                 <h3 className="text-sm font-bold text-slate-900">프로필 사진</h3>
                 <div className="flex items-center gap-4">
                   {avatar
-                    ? <img src={avatar} alt="프로필" className="h-16 w-16 rounded-full object-cover"/>
+                    ? <Image src={avatar} alt="프로필" width={64} height={64} className="h-16 w-16 rounded-full object-cover"/>
                     : <div className="h-16 w-16 rounded-full bg-slate-900 flex items-center justify-center text-white text-2xl font-bold">
                         {displayName[0]?.toUpperCase()??"U"}
                       </div>
@@ -340,20 +444,47 @@ export default function ProfilePage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
-                        ✨ PRO
-                      </span>
-                      <p className="text-base font-bold text-slate-900">{payments[0].plan} 플랜</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {new Date(payments[0].created_at).toLocaleDateString("ko-KR")} 결제
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1 rounded-full mb-2">
+                          ✨ PRO
+                        </span>
+                        <p className="text-base font-bold text-slate-900">{payments[0].plan} 플랜</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {new Date(payments[0].created_at).toLocaleDateString("ko-KR")} 결제
+                        </p>
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">
+                        {payments[0].amount.toLocaleString("ko-KR")}원
                       </p>
                     </div>
-                    <p className="text-lg font-bold text-blue-600">
-                      {payments[0].amount.toLocaleString("ko-KR")}원
-                    </p>
-                  </div>
+                    <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-slate-400">다음 갱신일: {(() => { const d = new Date(payments[0].created_at); d.setMonth(d.getMonth() + 1); return d.toLocaleDateString("ko-KR"); })()}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (!confirm("정말 구독을 해지하시겠습니까?\n해지 즉시 무료 플랜으로 전환됩니다.")) return;
+                            const res = await fetch("/api/subscription/cancel", { method: "POST" });
+                            if (res.ok) {
+                              alert("구독이 해지되었습니다. 무료 플랜으로 전환됩니다.");
+                              window.location.reload();
+                            } else {
+                              alert("해지에 실패했습니다. 다시 시도해주세요.");
+                            }
+                          }}
+                          className="text-xs font-semibold text-red-400 hover:text-red-500 transition border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50"
+                        >
+                          구독 해지
+                        </button>
+                        <a href="mailto:mnhyuk@velaanalytics.com?subject=[VELA] 환불 요청" className="text-xs font-semibold text-slate-400 hover:text-slate-500 transition border border-slate-200 rounded-lg px-3 py-1.5 hover:bg-slate-50">
+                          환불 문의
+                        </a>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -387,6 +518,13 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* 세금계산서 발행 */}
+              <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-6">
+                <h3 className="text-sm font-bold text-slate-900 mb-4">🧾 세금계산서 발행</h3>
+                <p className="text-xs text-slate-500 mb-4">사업자 등록번호를 입력하시면 결제 건에 대한 세금계산서를 발행해드립니다.</p>
+                <TaxInvoiceForm userId={user?.id ?? null} payments={payments} />
+              </div>
+
               {/* 플랜 비교 링크 */}
               <Link href="/pricing"
                 className="block w-full rounded-2xl bg-slate-50 ring-1 ring-slate-200 p-4 text-center text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">
@@ -398,6 +536,31 @@ export default function ProfilePage() {
           {/* ── 계정 관리 탭 ── */}
           {tab==="account" && (
             <div className="space-y-4">
+
+              {/* 글씨 크기 */}
+              <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">🔤 글씨 크기</h3>
+                <p className="text-xs text-slate-400 mb-3">화면 전체 글씨 크기를 조절합니다</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-400">가</span>
+                  <input type="range" min={13} max={19} defaultValue={typeof window !== "undefined" ? parseInt(localStorage.getItem("vela-font-size") || "15") : 15}
+                    onChange={e => { const s = e.target.value; document.documentElement.style.fontSize = s + "px"; localStorage.setItem("vela-font-size", s); }}
+                    className="flex-1" style={{ accentColor: "#3182F6" }} />
+                  <span className="text-base text-slate-900 font-bold">가</span>
+                </div>
+              </div>
+
+              {/* 동의 관리 */}
+              <ConsentManager userId={user?.id ?? null} />
+
+              {/* 알림 설정 */}
+              <NotificationSettings />
+
+              {/* 다크모드 */}
+              <DarkModeToggle />
+
+              {/* 데이터 백업 */}
+              <DataBackup />
 
               {/* 데이터 초기화 */}
               <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 space-y-3">

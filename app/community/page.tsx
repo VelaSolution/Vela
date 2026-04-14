@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 import { fmt, pct, INDUSTRY_BENCHMARK } from "@/lib/vela";
+import EventBanner from "@/components/EventBanner";
 
 // ─── 타입 ──────────────────────────────────────────────────────
-type Tab = "feed" | "board" | "anonymous" | "benchmark";
+type Tab = "feed" | "board" | "benchmark";
 type IndustryFilter = "all" | "cafe" | "restaurant" | "bar" | "finedining";
 type BoardCategory = "all" | "free" | "question" | "tip";
 
@@ -125,7 +126,14 @@ function FeedTab({ userId, isAdmin }: { userId: string | null; isAdmin: boolean 
       {loading ? (
         <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
       ) : posts.length === 0 ? (
-        <EmptyState icon="📊" text="아직 공유된 분석이 없어요" sub="내 수익 공유 버튼으로 첫 번째 공유를 남겨보세요" />
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <span className="text-5xl mb-4">📊</span>
+          <p className="text-slate-600 font-semibold text-lg">아직 공유된 수익이 없어요</p>
+          <p className="mt-2 text-sm text-slate-400">시뮬레이터를 실행하고 첫 번째로 공유해보세요!</p>
+          <Link href="/simulator" className="mt-6 inline-block rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-700 transition">
+            시뮬레이터 시작
+          </Link>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {posts.map(p => <FeedCard key={p.id} post={p} userId={userId} isAdmin={isAdmin} onLike={() => handleLike(p.id)} onDelete={() => handleDelete(p.id)} />)}
@@ -209,14 +217,14 @@ function ShareForm({ userId, onDone, onCancel }: { userId: string; onDone: () =>
     <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm space-y-4">
       <h3 className="font-bold text-slate-900">내 수익 공유하기</h3>
       <div className="grid gap-3 sm:grid-cols-2">
-        <input placeholder="닉네임 (예: 홍대카페 사장)" value={form.nickname} onChange={e => setForm(p => ({ ...p, nickname: e.target.value }))}
+        <input placeholder="닉네임 (예: 홍대카페 사장)" aria-label="닉네임" value={form.nickname} onChange={e => setForm(p => ({ ...p, nickname: e.target.value }))}
           className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
         <select value={form.industry} onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
           className="rounded-xl border border-slate-200 px-3 py-2 text-sm">
           {Object.entries(INDUSTRY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <input className="sm:col-span-2 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
-          placeholder="제목 (예: 홍대 카페 3년차 현황 공유)" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
+          placeholder="제목 (예: 홍대 카페 3년차 현황 공유)" aria-label="제목" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
         {[
           { key: "total_sales", label: "월 총 매출 (원)" },
           { key: "net_profit", label: "세후 실수령 (원)" },
@@ -399,7 +407,8 @@ function PostDetail({ post, userId, onBack }: { post: BoardPost; userId: string 
     setLoading(true);
     const sb = createSupabaseBrowserClient();
     await sb.from("comments").insert({ post_id: post.id, user_id: userId, nickname, content: input });
-    await sb.from("posts").update({ comment_count: post.comment_count + comments.length + 1 }).eq("id", post.id);
+    const { count } = await sb.from("comments").select("id", { count: "exact", head: true }).eq("post_id", post.id);
+    await sb.from("posts").update({ comment_count: count ?? 0 }).eq("id", post.id);
     setInput("");
     const { data } = await sb.from("comments").select("*").eq("post_id", post.id).order("created_at");
     setComments(data ?? []);
@@ -439,234 +448,12 @@ function PostDetail({ post, userId, onBack }: { post: BoardPost; userId: string 
         <div className="flex gap-2 pt-2">
           <input placeholder="닉네임" value={nickname} onChange={e => setNickname(e.target.value)}
             className="w-24 shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
-          <input placeholder="댓글을 입력하세요..." value={input} onChange={e => setInput(e.target.value)}
+          <input placeholder="댓글을 입력하세요..." aria-label="댓글 입력" value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
             className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
           <button onClick={submitComment} disabled={loading}
             className="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50">
             {loading ? "..." : "등록"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── 익명 상담 탭 ──────────────────────────────────────────────
-type AnonPost = {
-  id: string; user_id?: string; industry: string; title: string; content: string;
-  likes: number; comment_count: number; created_at: string;
-};
-
-function AnonymousTab({ userId, isAdmin }: { userId: string | null; isAdmin: boolean }) {
-  const [posts, setPosts] = useState<AnonPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<AnonPost | null>(null);
-  const [showWrite, setShowWrite] = useState(false);
-
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
-    const sb = createSupabaseBrowserClient();
-    const { data } = await sb.from("anonymous_posts").select("*").order("created_at", { ascending: false }).limit(50);
-    setPosts(data ?? []);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { fetchPosts(); }, [fetchPosts]);
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("이 게시글을 삭제할까요?")) return;
-    const sb = createSupabaseBrowserClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) return;
-    const { error } = await sb.from("anonymous_posts").delete().eq("id", id);
-    if (error) { alert("삭제 실패: " + error.message); return; }
-    fetchPosts();
-  };
-
-  if (selected) return <AnonDetail post={selected} userId={userId} onBack={() => { setSelected(null); fetchPosts(); }} />;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="rounded-2xl bg-amber-50 px-4 py-2.5">
-          <p className="text-xs font-semibold text-amber-700">🔒 익명 보장 — 닉네임 없이 고민을 나눠요</p>
-        </div>
-        <button onClick={() => setShowWrite(true)}
-          className="rounded-xl bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-slate-700">
-          고민 올리기
-        </button>
-      </div>
-
-      {showWrite && <WriteAnonForm userId={userId} onDone={() => { setShowWrite(false); fetchPosts(); }} onCancel={() => setShowWrite(false)} />}
-
-      {loading ? (
-        <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" /></div>
-      ) : posts.length === 0 ? (
-        <EmptyState icon="🤫" text="아직 익명 상담이 없어요" sub="고민을 익명으로 올려보세요. AI가 먼저 답변해드려요" />
-      ) : (
-        <div className="rounded-3xl bg-white ring-1 ring-slate-200 overflow-hidden divide-y divide-slate-100">
-          {posts.map(p => (
-            <button key={p.id} onClick={() => setSelected(p)} className="w-full text-left px-5 py-4 hover:bg-slate-50 transition">
-              <div className="flex items-start gap-3">
-                <span className="text-lg mt-0.5">{INDUSTRY_ICONS[p.industry] ?? "🏪"}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-slate-900 truncate">{p.title}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">익명 · {new Date(p.created_at).toLocaleDateString("ko-KR")}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-slate-400">💬 {p.comment_count}</span>
-                  {(userId && p.user_id === userId || isAdmin) && (
-                    <span onClick={e => handleDelete(p.id, e)} className="text-xs text-red-400 hover:text-red-600 font-medium cursor-pointer">삭제</span>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WriteAnonForm({ userId, onDone, onCancel }: { userId: string | null; onDone: () => void; onCancel: () => void }) {
-  const [form, setForm] = useState({ industry: "restaurant", title: "", content: "" });
-  const [loading, setLoading] = useState(false);
-
-  const submit = async () => {
-    if (!form.title.trim() || !form.content.trim()) return alert("제목과 내용을 입력해주세요.");
-    setLoading(true);
-    const sb = createSupabaseBrowserClient();
-    await sb.from("anonymous_posts").insert({ user_id: userId ?? null, ...form });
-    setLoading(false);
-    onDone();
-  };
-
-  return (
-    <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 shadow-sm space-y-3">
-      <div className="flex items-center gap-2">
-        <h3 className="font-bold text-slate-900">익명 고민 올리기</h3>
-        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">익명</span>
-      </div>
-      <select value={form.industry} onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
-        {Object.entries(INDUSTRY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-      </select>
-      <input placeholder="제목 (예: 원가율이 40%인데 정상인가요?)" value={form.title}
-        onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
-      <textarea placeholder="자세한 상황을 적어주세요. AI가 먼저 답변해드려요." value={form.content}
-        onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400 resize-none h-28" />
-      <div className="flex gap-2 justify-end">
-        <button onClick={onCancel} className="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">취소</button>
-        <button onClick={submit} disabled={loading} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50">
-          {loading ? "등록 중..." : "익명으로 올리기"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-type AnonComment = { id: string; content: string; is_ai: boolean; created_at: string };
-
-function AnonDetail({ post, userId, onBack }: { post: AnonPost; userId: string | null; onBack: () => void }) {
-  const [comments, setComments] = useState<AnonComment[]>([]);
-  const [input, setInput] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const loadComments = useCallback(async () => {
-    const sb = createSupabaseBrowserClient();
-    const { data } = await sb.from("anonymous_comments").select("*").eq("post_id", post.id).order("created_at");
-    setComments(data ?? []);
-    // 첫 로딩 시 AI 답변 없으면 자동 생성
-    if ((data ?? []).length === 0) generateAIReply();
-  }, [post.id]);
-
-  useEffect(() => { loadComments(); }, [loadComments]);
-
-  const generateAIReply = async () => {
-    setAiLoading(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: `${post.title}\n\n${post.content}` }],
-          context: { industry: post.industry, isAnonymousConsult: true },
-        }),
-      });
-      if (!res.ok || !res.body) return;
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let aiText = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        aiText += decoder.decode(value, { stream: true });
-      }
-      if (aiText.trim()) {
-        const sb = createSupabaseBrowserClient();
-        await sb.from("anonymous_comments").insert({ post_id: post.id, content: aiText, is_ai: true });
-        await loadComments();
-      }
-    } catch { /* skip */ } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const submitComment = async () => {
-    if (!input.trim()) return;
-    setSubmitting(true);
-    const sb = createSupabaseBrowserClient();
-    await sb.from("anonymous_comments").insert({ post_id: post.id, user_id: userId ?? null, content: input, is_ai: false });
-    await sb.from("anonymous_posts").update({ comment_count: comments.length + 1 }).eq("id", post.id);
-    setInput("");
-    await loadComments();
-    setSubmitting(false);
-  };
-
-  return (
-    <div className="space-y-5">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800">← 목록으로</button>
-      <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">{INDUSTRY_ICONS[post.industry] ?? "🏪"}</span>
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">익명</span>
-        </div>
-        <h2 className="text-xl font-bold text-slate-900">{post.title}</h2>
-        <p className="mt-1 text-xs text-slate-400">{new Date(post.created_at).toLocaleDateString("ko-KR")}</p>
-        <p className="mt-5 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-      </div>
-
-      <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-200 space-y-4">
-        <h3 className="font-bold text-slate-900">답변 {comments.length}개</h3>
-        {aiLoading && (
-          <div className="flex items-center gap-2 rounded-2xl bg-blue-50 px-4 py-3">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
-            <span className="text-sm text-blue-600">VELA AI가 답변을 작성하고 있어요...</span>
-          </div>
-        )}
-        {comments.map(c => (
-          <div key={c.id} className={`rounded-2xl px-4 py-3 ${c.is_ai ? "bg-blue-50" : "bg-slate-50"}`}>
-            <div className="flex items-center gap-2 mb-1.5">
-              {c.is_ai
-                ? <span className="text-xs font-bold text-blue-600">🤖 VELA AI</span>
-                : <span className="text-xs font-semibold text-slate-600">익명</span>}
-              <span className="text-xs text-slate-400">{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
-            </div>
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{c.content}</p>
-          </div>
-        ))}
-        <div className="flex gap-2 pt-2">
-          <input placeholder="익명으로 답변하기..." value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400" />
-          <button onClick={submitComment} disabled={submitting}
-            className="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-50">
-            {submitting ? "..." : "등록"}
           </button>
         </div>
       </div>
@@ -755,7 +542,7 @@ export default function CommunityPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const ADMIN_EMAILS = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
+  const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
@@ -769,15 +556,19 @@ export default function CommunityPage() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "feed", label: "수익 피드", icon: "📊" },
     { key: "board", label: "게시판", icon: "📝" },
-    { key: "anonymous", label: "익명 상담", icon: "🤫" },
     { key: "benchmark", label: "벤치마크", icon: "📈" },
   ];
 
   return (
     <>
       
-      <main className="min-h-screen bg-slate-50 px-4 py-8 md:px-8">
+      <main className="min-h-screen bg-slate-50 dark:bg-slate-900 px-4 py-8 md:px-8">
         <div className="mx-auto max-w-4xl">
+
+          {/* 이벤트 배너 */}
+          <div className="mb-6">
+            <EventBanner />
+          </div>
 
           {/* 헤더 */}
           <div className="mb-8">
@@ -799,7 +590,7 @@ export default function CommunityPage() {
           {/* 탭 콘텐츠 */}
           {tab === "feed" && <FeedTab userId={userId} isAdmin={isAdmin} />}
           {tab === "board" && <BoardTab userId={userId} isAdmin={isAdmin} />}
-          {tab === "anonymous" && <AnonymousTab userId={userId} isAdmin={isAdmin} />}
+          {/* 익명 상담 탭 제거 — 추후 AI 채팅으로 대체 예정 */}
           {tab === "benchmark" && <BenchmarkTab />}
 
         </div>
