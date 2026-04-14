@@ -1,9 +1,17 @@
 // lib/useSimulatorData.ts
 "use client";
 
-import { useEffect, useState } from "react";
-
-const STORAGE_KEY = "vela-form-v3";
+import { useEffect, useState, useCallback } from "react";
+import {
+  STORAGE_KEYS,
+  FORM_UPDATED_EVENT,
+  loadFormData,
+  saveFormData,
+  getSaveSlots,
+  addSaveSlot,
+  deleteSaveSlot,
+  type SaveSlot,
+} from "./storage";
 
 export type SimulatorSnapshot = {
   industry: string;
@@ -58,31 +66,74 @@ function parse(raw: string): SimulatorSnapshot | null {
   } catch { return null; }
 }
 
+/**
+ * 시뮬레이터 폼 데이터의 계산된 스냅샷을 반환하는 훅
+ * - localStorage 변경 (같은 탭 + 다른 탭) 자동 감지
+ * - storage.ts의 saveFormData()를 통해 저장하면 자동으로 업데이트됨
+ */
 export function useSimulatorData(): SimulatorSnapshot | null {
   const [data, setData] = useState<SimulatorSnapshot | null>(null);
 
+  const refresh = useCallback(() => {
+    const raw = localStorage.getItem(STORAGE_KEYS.FORM);
+    if (raw) setData(parse(raw));
+    else setData(null);
+  }, []);
+
   useEffect(() => {
     // 초기 로드
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) setData(parse(raw));
+    refresh();
 
     // 다른 탭에서 변경 감지
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) setData(parse(e.newValue));
+      if (e.key === STORAGE_KEYS.FORM && e.newValue) setData(parse(e.newValue));
     };
-    // 같은 탭에서 변경 감지 (커스텀 이벤트)
-    const onUpdate = () => {
-      const updated = localStorage.getItem(STORAGE_KEY);
-      if (updated) setData(parse(updated));
-    };
+    // 같은 탭에서 변경 감지 (saveFormData에서 발생시키는 커스텀 이벤트)
+    const onUpdate = () => refresh();
 
     window.addEventListener("storage", onStorage);
-    window.addEventListener("vela-form-updated", onUpdate);
+    window.addEventListener(FORM_UPDATED_EVENT, onUpdate);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("vela-form-updated", onUpdate);
+      window.removeEventListener(FORM_UPDATED_EVENT, onUpdate);
     };
-  }, []);
+  }, [refresh]);
 
   return data;
 }
+
+// ─── 저장 슬롯 훅 ───────────────────────────────────────────────
+// simulator/page.tsx 등에서 직접 localStorage 접근 대신 사용
+
+export { type SaveSlot } from "./storage";
+
+/**
+ * 시뮬레이터 저장 슬롯을 관리하는 훅
+ */
+export function useSaveSlots() {
+  const [saves, setSaves] = useState<SaveSlot[]>([]);
+
+  useEffect(() => {
+    setSaves(getSaveSlots());
+  }, []);
+
+  const save = useCallback((form: Record<string, unknown>) => {
+    const label = addSaveSlot(form);
+    setSaves(getSaveSlots());
+    return label;
+  }, []);
+
+  const remove = useCallback((id: string) => {
+    deleteSaveSlot(id);
+    setSaves(getSaveSlots());
+  }, []);
+
+  const reload = useCallback(() => {
+    setSaves(getSaveSlots());
+  }, []);
+
+  return { saves, save, remove, reload };
+}
+
+// Re-export storage helpers for convenient access
+export { saveFormData, loadFormData, mergeFormData } from "./storage";

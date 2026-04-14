@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import NavBar from "@/components/NavBar";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -28,6 +29,20 @@ export default function RootLayout({
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-VDZ131LSM0"
+          strategy="afterInteractive"
+        />
+        <Script id="gtag-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-VDZ131LSM0');
+          `}
+        </Script>
+      </head>
       <body className="flex flex-col min-h-screen pt-16 bg-slate-50">
         <NavBar />
         {children}

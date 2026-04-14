@@ -1,3 +1,5 @@
+import { STORAGE_KEYS, getStorageItem, setStorageItem } from "./storage";
+
 export type IndustryKey = "cafe" | "restaurant" | "bar" | "finedining";
 
 // ─── 폼 상태 ────────────────────────────────────────────────────
@@ -689,7 +691,6 @@ export function calcAnalysis(form: FullForm, result: CalcResult): AnalysisItem[]
 }
 
 // ─── 히스토리 ───────────────────────────────────────────────────
-const HISTORY_KEY = "vela-history-v2";
 const MAX_HISTORY = 12;
 
 export function saveHistory(form: FullForm, result: CalcResult): void {
@@ -703,17 +704,15 @@ export function saveHistory(form: FullForm, result: CalcResult): void {
     savedAt: now.toISOString(),
   };
   const updated = [record, ...loadHistory().filter((r) => r.id !== id)].slice(0, MAX_HISTORY);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+  setStorageItem(STORAGE_KEYS.HISTORY, updated);
 }
 
 export function loadHistory(): HistoryRecord[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) ?? "[]"); } catch { return []; }
+  return getStorageItem<HistoryRecord[]>(STORAGE_KEYS.HISTORY) ?? [];
 }
 
 export function deleteHistory(id: string): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(loadHistory().filter((r) => r.id !== id)));
+  setStorageItem(STORAGE_KEYS.HISTORY, loadHistory().filter((r) => r.id !== id));
 }
 
 // ─── 포맷 ───────────────────────────────────────────────────────

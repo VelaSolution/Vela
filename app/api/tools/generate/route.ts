@@ -1,5 +1,6 @@
 // app/api/tools/generate/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-error";
 import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "edge";
@@ -27,31 +28,31 @@ export async function POST(req: NextRequest) {
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
+    return apiError("로그인이 필요합니다.", 401);
   }
 
   // Rate limiting
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }, { status: 429 });
+    return apiError("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.", 429);
   }
 
   let body: { prompt?: unknown; systemPrompt?: unknown };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "잘못된 요청입니다." }, { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
 
   const { prompt, systemPrompt } = body;
 
   if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
-    return NextResponse.json({ error: "프롬프트가 없습니다." }, { status: 400 });
+    return apiError("프롬프트가 없습니다.", 400);
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "API 키가 설정되지 않았습니다." }, { status: 500 });
+    return apiError("API 키가 설정되지 않았습니다.", 500);
   }
 
   const safeSystem = typeof systemPrompt === "string" && systemPrompt.trim()
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
   if (!response.ok) {
     const err = await response.text().catch(() => "unknown");
     console.error("Anthropic error:", response.status, err);
-    return NextResponse.json({ error: "AI 응답 중 오류가 발생했습니다." }, { status: 500 });
+    return apiError("AI 응답 중 오류가 발생했습니다.", 500);
   }
 
   const data = await response.json();

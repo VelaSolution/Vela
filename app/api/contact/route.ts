@@ -1,5 +1,6 @@
 // app/api/contact/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "edge";
 
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
     const { name, email, message } = await req.json();
 
     if (!name || !email || !message) {
-      return NextResponse.json({ error: "필드를 모두 입력해 주세요." }, { status: 400 });
+      return apiError("필드를 모두 입력해 주세요.", 400);
     }
 
     const res = await fetch("https://api.resend.com/emails", {
@@ -50,12 +51,12 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const err = await res.json();
       console.error("Resend error:", err);
-      return NextResponse.json({ error: "이메일 발송 실패" }, { status: 500 });
+      return apiError("이메일 발송에 실패했습니다.", 500);
     }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "서버 오류" }, { status: 500 });
+    return apiError("서버 오류가 발생했습니다.", 500);
   }
 }

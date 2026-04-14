@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "edge";
 
@@ -10,13 +11,13 @@ export async function POST(req: NextRequest) {
 
   // 서버 측 입력값 검증
   if (!form || typeof form !== "object") {
-    return new Response(JSON.stringify({ error: "잘못된 요청입니다." }), { status: 400 });
+    return apiError("잘못된 요청입니다.", 400);
   }
   if (!VALID_INDUSTRIES.includes(form.industry)) {
-    return new Response(JSON.stringify({ error: "유효하지 않은 업종입니다." }), { status: 400 });
+    return apiError("유효하지 않은 업종입니다.", 400);
   }
   if (typeof result?.totalSales !== "number" || typeof result?.profit !== "number") {
-    return new Response(JSON.stringify({ error: "결과 데이터가 올바르지 않습니다." }), { status: 400 });
+    return apiError("결과 데이터가 올바르지 않습니다.", 400);
   }
 
   const industryLabels: Record<string, string> = {
@@ -76,7 +77,7 @@ ${existingList || "(없음)"}
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "API 키가 설정되지 않았습니다." }), { status: 500 });
+    return apiError("API 키가 설정되지 않았습니다.", 500);
   }
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -94,7 +95,7 @@ ${existingList || "(없음)"}
   });
 
   if (!response.ok) {
-    return new Response(JSON.stringify({ error: "AI 전략 생성 중 오류가 발생했습니다." }), { status: 500 });
+    return apiError("AI 전략 생성 중 오류가 발생했습니다.", 500);
   }
 
   const data = await response.json();
@@ -112,6 +113,6 @@ ${existingList || "(없음)"}
       headers: { "Content-Type": "application/json" },
     });
   } catch {
-    return new Response(JSON.stringify({ error: "응답 파싱 실패" }), { status: 500 });
+    return apiError("응답 파싱에 실패했습니다.", 500);
   }
 }

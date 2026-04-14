@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { apiError } from "@/lib/api-error";
 
 export const runtime = "edge";
 
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   const { csvText, fileName, industry } = body;
 
   if (!csvText || typeof csvText !== "string") {
-    return new Response(JSON.stringify({ error: "데이터가 없습니다." }), { status: 400 });
+    return apiError("데이터가 없습니다.", 400);
   }
 
   const safeIndustry = VALID_INDUSTRIES.includes(industry) ? industry : "restaurant";
@@ -88,7 +89,7 @@ ${safeCsvText}
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "API 키가 설정되지 않았습니다." }), { status: 500 });
+    return apiError("API 키가 설정되지 않았습니다.", 500);
   }
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -106,7 +107,7 @@ ${safeCsvText}
   });
 
   if (!response.ok) {
-    return new Response(JSON.stringify({ error: "AI 분석 중 오류가 발생했습니다." }), { status: 500 });
+    return apiError("AI 분석 중 오류가 발생했습니다.", 500);
   }
 
   const data = await response.json();
@@ -119,6 +120,6 @@ ${safeCsvText}
       headers: { "Content-Type": "application/json" },
     });
   } catch {
-    return new Response(JSON.stringify({ error: "응답 파싱 실패" }), { status: 500 });
+    return apiError("응답 파싱에 실패했습니다.", 500);
   }
 }

@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { mergeFormData } from "@/lib/storage";
 
 type Props = {
   data: {
@@ -25,30 +26,24 @@ export default function SendToSimulator({ data, label = "시뮬레이터에서 �
   const [done, setDone] = useState(false);
 
   function handleSend() {
-    try {
-      const STORAGE_KEY = "vela-form-v3";
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const existing = raw ? JSON.parse(raw) : {};
+    // 도구에서 수정한 값을 시뮬레이터 폼에 병합
+    const partial: Record<string, unknown> = {};
+    if (data.industry) partial.industry = data.industry;
+    if (data.seats) partial.seats = data.seats;
+    if (data.avgSpend) partial.avgSpend = data.avgSpend;
+    if (data.rent !== undefined) partial.rent = data.rent;
+    if (data.laborCost !== undefined) partial.labor = data.laborCost;
+    if (data.cogsRate !== undefined) partial.cogsRate = data.cogsRate;
+    if (data.etc !== undefined) partial.etc = data.etc;
 
-      // 도구에서 수정한 값을 시뮬레이터 폼에 병합
-      const merged = {
-        ...existing,
-        ...(data.industry && { industry: data.industry }),
-        ...(data.seats && { seats: data.seats }),
-        ...(data.avgSpend && { avgSpend: data.avgSpend }),
-        ...(data.rent !== undefined && { rent: data.rent }),
-        ...(data.laborCost !== undefined && { labor: data.laborCost }),
-        ...(data.cogsRate !== undefined && { cogsRate: data.cogsRate }),
-        ...(data.etc !== undefined && { etc: data.etc }),
-      };
+    const success = mergeFormData(partial);
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    if (success) {
       setDone(true);
-
       setTimeout(() => {
         router.push("/simulator");
       }, 600);
-    } catch {
+    } else {
       router.push("/simulator");
     }
   }
