@@ -287,7 +287,7 @@ export default function Page() {
       <UpgradeModal open={showSimLimit} onClose={() => setShowSimLimit(false)} title="이번 달 시뮬레이션 한도를 다 사용했어요" description="무료 플랜은 월 10회까지 시뮬레이션할 수 있어요. 스탠다드 플랜으로 업그레이드하면 무제한으로 분석 가능합니다." />
 
       <main className="px-4 py-6 md:px-8">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-6xl">
 
         {showSaveModal && (
           <SaveModal
@@ -356,7 +356,7 @@ export default function Page() {
           <PreviewBar form={form} />
         </div>
 
-        <div className="lg:grid lg:grid-cols-[1fr_260px] lg:gap-4 lg:items-start">
+        <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8 lg:items-start">
 
           <div className="space-y-6">
             {step === 1 && <FormStep1 form={form} update={update} errors={step1Errors} loadIndustryDefaults={loadIndustryDefaults} applyPosResult={applyPosResult} />}
@@ -395,7 +395,7 @@ export default function Page() {
           </div>
 
           <div className="hidden lg:block relative">
-            <div className="fixed top-20 w-[244px] space-y-3" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
+            <div className="fixed top-20 w-[284px] space-y-3" style={{ maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
               <PreviewBar form={form} />
               <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
                 <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">입력 단계</p>
