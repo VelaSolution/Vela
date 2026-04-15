@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
-import { PLANS } from "@/lib/plans";
 import EventPopup from "@/components/EventPopup";
 import { LandingStyles } from "@/app/components/landing/LandingStyles";
 import { HeroSection } from "@/app/components/landing/HeroSection";
