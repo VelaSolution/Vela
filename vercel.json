@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/subscription/renew",
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/subscription/retry",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/subscription/notify",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}

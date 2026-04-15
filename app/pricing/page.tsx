@@ -38,7 +38,7 @@ export default function PricingPage() {
     if (!selectedPlan || !userId) return;
     setPayLoading(true);
     try {
-      // 토스페이먼츠 SDK v1 (API 개별 연동)
+      // 토스페이먼츠 SDK v1
       if (!(window as any).TossPayments) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement("script");
@@ -50,17 +50,12 @@ export default function PricingPage() {
       }
 
       const toss = (window as any).TossPayments(process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!);
-      const isAnnualPay = billingCycle === "annual";
-      const amount = isAnnualPay ? (selectedPlan.annualPriceNum ?? selectedPlan.priceNum) * 12 : selectedPlan.priceNum;
-      const suffix = isAnnualPay ? "annual" : "monthly";
-      const orderId = `VELA-${selectedPlan.id}-${suffix}-${Date.now()}`;
+      const cycle = billingCycle === "annual" ? "annual" : "monthly";
 
-      await toss.requestPayment("카드", {
-        amount,
-        orderId,
-        orderName: `VELA ${selectedPlan.name} 플랜 (${isAnnualPay ? "연간" : "월간"})`,
-        customerName: "VELA 사용자",
-        successUrl: `${window.location.origin}/payment/success`,
+      // 빌링키 발급 (자동 결제용 카드 등록)
+      await toss.requestBillingAuth("카드", {
+        customerKey: userId,
+        successUrl: `${window.location.origin}/api/billing/callback?cycle=${cycle}`,
         failUrl: `${window.location.origin}/payment/fail`,
       });
     } catch (e: unknown) {
@@ -140,8 +135,9 @@ export default function PricingPage() {
               </div>
             </div>
             <div className="modal-notice">
-              💳 토스페이먼츠로 안전하게 결제됩니다.<br />
-              언제든지 마이페이지에서 해지할 수 있습니다.
+              💳 카드 등록 후 자동 결제됩니다.<br />
+              카드 정보는 토스페이먼츠에 안전하게 보관되며,<br />
+              언제든 마이페이지에서 해지할 수 있습니다.
             </div>
             <button
               className="modal-btn"

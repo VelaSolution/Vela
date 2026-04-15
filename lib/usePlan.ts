@@ -16,21 +16,22 @@ export function usePlan(): { plan: Plan; userId: string | null; loading: boolean
       if (!user) { setLoading(false); return; }
       setUserId(user.id);
 
-      // 1순위: payments 테이블 (결제 완료된 플랜)
-      // 2순위: profiles 테이블 (이벤트/관리자 부여 플랜)
-      Promise.all([
-        sb.from("payments").select("plan").eq("user_id", user.id).eq("status", "done")
-          .order("created_at", { ascending: false }).limit(1),
-        sb.from("profiles").select("plan").eq("id", user.id).single(),
-      ]).then(([paymentsRes, profileRes]) => {
-        const paymentPlan = paymentsRes.data?.[0]?.plan;
-        const profilePlan = profileRes.data?.plan;
+      sb.from("profiles").select("plan, plan_expires_at").eq("id", user.id).single()
+        .then(({ data: profile }: { data: { plan: string; plan_expires_at: string | null } | null }) => {
+          if (!profile) { setLoading(false); return; }
 
-        // 결제 플랜 > 프로필 플랜 > free
-        const resolved = paymentPlan ?? profilePlan ?? "free";
-        setPlan(resolved as Plan);
-        setLoading(false);
-      });
+          const profilePlan = profile.plan ?? "free";
+          const expiresAt = profile.plan_expires_at;
+
+          // 만료일이 있고 과거이면 → free
+          if (expiresAt && new Date(expiresAt) < new Date()) {
+            setPlan("free");
+          } else {
+            setPlan(profilePlan as Plan);
+          }
+
+          setLoading(false);
+        });
     });
   }, []);
 
