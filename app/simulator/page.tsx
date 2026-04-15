@@ -357,15 +357,6 @@ export default function Page() {
             {step === 2 && <FormStep2 form={form} update={update} errors={step2Errors} />}
             {step === 3 && <FormStep3 form={form} update={update} errors={step3Errors} />}
 
-            {/* 저장/공유 액션 */}
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => { const label = addSaveSlot(form as unknown as Record<string, unknown>); showMessage(`${label} 저장 완료`); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.97] transition">💾 현재 값 저장</button>
-              <button type="button" onClick={() => { setCloudSaveTitle(""); setShowCloudSave(true); }} className="rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 active:scale-[0.97] transition">☁️ 클라우드 저장</button>
-              <button type="button" onClick={() => setShowSaveModal(true)} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.97] transition">📂 불러오기</button>
-              <button type="button" onClick={() => { setForm(createEmptyForm(form.industry)); setStep(1); setStepError(""); showMessage("초기화가 완료되었습니다."); }} className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:scale-[0.97] transition">초기화</button>
-              <button type="button" onClick={async () => { try { const url = `${window.location.origin}${window.location.pathname}?${buildQuery(form)}`; await navigator.clipboard.writeText(url); showMessage("링크가 복사되었습니다."); } catch (error) { console.error(error); showMessage("링크 복사에 실패했습니다."); } }} className="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 active:scale-[0.97] transition">링크 공유</button>
-            </div>
-
             {/* 데스크톱 네비게이션 */}
             <section className="hidden lg:block rounded-2xl bg-white p-5 ring-1 ring-slate-100">
               {stepError && <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
