@@ -165,9 +165,9 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
 
 /* ── 모바일 앱 UX (max-width: 768px) ─────────────── */
 @media (max-width: 768px) {
-  /* ─ 기본 타이포그래피 — 가독성 최우선 ─ */
-  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-  body { word-break: keep-all; line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  /* ─ 기본 타이포그래피 ─ */
+  html { font-size: 14px; -webkit-text-size-adjust: 100%; }
+  body { word-break: keep-all; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 
   /* 오버플로 방지 */
   *, *::before, *::after { max-width: 100vw; }
@@ -190,20 +190,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
   aside.hidden.md\:flex { display: none !important; }
   ::-webkit-scrollbar { display: none; }
 
-  /* ─ 가독성 타이포그래피 ─ */
-  .text-sm { font-size: 0.9rem !important; line-height: 1.6 !important; }
-  .text-xs { font-size: 0.8125rem !important; line-height: 1.55 !important; }
-
   /* 최소 텍스트 크기 */
-  .text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; }
-  .text-\[11px\] { font-size: 12px !important; }
+  .text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 10px !important; }
 
   /* ─ 입력 필드 ─ */
   input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
   textarea, select {
     font-size: 16px !important;
-    min-height: 48px;
-    border-radius: 14px !important;
   }
 
   /* ─ 버튼 터치 + 피드백 ─ */
