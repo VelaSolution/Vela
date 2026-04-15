@@ -167,42 +167,57 @@ function ResultContent() {
       <main className="px-4 py-6 md:px-8 print:px-0">
       <div className="mx-auto max-w-5xl space-y-6">
 
-        {/* 헤더 */}
-        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 print:rounded-none print:shadow-none">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <div className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">VELA</div>
-                <div className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{config.label}</div>
-                <div className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{form.businessType === "new" ? "창업 예정" : "운영 중"}</div>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900">분석 결과</h1>
-              <p className="mt-2 text-slate-500">입력하신 수치를 {config.label} 기준으로 분석했습니다.</p>
+        {/* 히어로 — 핵심 숫자 먼저 */}
+        <section className={`rounded-3xl p-6 shadow-sm ring-1 print:rounded-none print:shadow-none ${isProfit ? "bg-gradient-to-br from-emerald-50 to-white ring-emerald-200" : "bg-gradient-to-br from-red-50 to-white ring-red-200"}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="rounded-full bg-slate-900 px-2.5 py-0.5 text-xs font-medium text-white">{config.label}</span>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+              {isProfit ? "흑자" : "적자"}
+            </span>
+          </div>
+
+          {/* 핵심 3개 숫자 */}
+          <div className="mb-4">
+            <p className="text-xs text-slate-500 mb-1">세후 실수령</p>
+            <p className={`text-3xl font-extrabold tracking-tight ${result.netProfit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+              {result.netProfit >= 0 ? "+" : ""}{fmt(result.netProfit)}<span className="text-lg font-bold text-slate-400 ml-0.5">원</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="rounded-xl bg-white/80 px-3 py-2.5">
+              <p className="text-xs text-slate-400">월매출</p>
+              <p className="text-lg font-bold text-slate-900">{fmt(result.totalSales)}<span className="text-xs text-slate-400 ml-0.5">원</span></p>
             </div>
-            <div className={`inline-flex h-fit rounded-full px-4 py-2 text-sm font-semibold ${isProfit ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-              {isProfit ? "현재 흑자 구조입니다" : "현재 적자 구조입니다"}
+            <div className="rounded-xl bg-white/80 px-3 py-2.5">
+              <p className="text-xs text-slate-400">순이익률</p>
+              <p className={`text-lg font-bold ${isProfit ? "text-emerald-600" : "text-red-500"}`}>{pct(result.netMargin)}</p>
             </div>
           </div>
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
-            <button onClick={() => router.push("/simulator")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">← 입력으로 돌아가기</button>
-            <button onClick={() => window.print()} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">PDF로 저장</button>
-            <button onClick={() => navigator.clipboard.writeText(window.location.href).then(() => setSaveMsg("링크 복사됨!")).catch(console.error)} className="w-full rounded-2xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-500">링크 복사</button>
-            <KakaoShare title={`[VELA] ${config.label} 수익 분석`} description={`월매출 ${fmt(result.totalSales)}원 / 순이익 ${fmt(result.netProfit)}원 (순이익률 ${pct(result.netMargin)})`} buttonText="카카오톡 공유" className="w-full rounded-2xl bg-yellow-400 py-3 text-sm font-semibold text-slate-900 hover:bg-yellow-300" />
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-semibold text-white hover:bg-emerald-500">
-              👥 커뮤니티에 공유
-            </button>
-            <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="w-full rounded-2xl bg-violet-600 py-3 text-sm font-semibold text-white hover:bg-violet-500">
-              🏆 성적표 공유
-            </button>
-            <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white hover:bg-slate-700">
-              {userId ? "☁️ 클라우드 저장" : "🔒 로그인 후 저장"}
-            </button>
-            {userId && (
-              <button onClick={() => router.push("/profile")} className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                대시보드 →
+
+          {/* 액션 버튼 — 접을 수 있게 */}
+          <details className="print:hidden">
+            <summary className="text-xs font-semibold text-slate-400 cursor-pointer py-1">저장 · 공유 · 내보내기 ▾</summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button onClick={() => router.push("/simulator")} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">← 다시 입력</button>
+              <button onClick={() => window.print()} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">PDF 저장</button>
+              <button onClick={() => navigator.clipboard.writeText(window.location.href).then(() => setSaveMsg("링크 복사됨!")).catch(console.error)} className="w-full rounded-xl bg-blue-600 py-2.5 text-xs font-semibold text-white">링크 복사</button>
+              <KakaoShare title={`[VELA] ${config.label} 수익 분석`} description={`월매출 ${fmt(result.totalSales)}원 / 순이익 ${fmt(result.netProfit)}원 (순이익률 ${pct(result.netMargin)})`} buttonText="카카오 공유" className="w-full rounded-xl bg-yellow-400 py-2.5 text-xs font-semibold text-slate-900" />
+              <button onClick={() => { if (!userId) { router.push("/login"); return; } setShareTitle(`${config.label} 분석 결과 공유`); setShowShareModal(true); }} className="w-full rounded-xl bg-emerald-600 py-2.5 text-xs font-semibold text-white">
+                커뮤니티 공유
               </button>
-            )}
-          </div>
+              <button onClick={() => { const params = new URLSearchParams({ store: form.storeName || config.label, industry: config.label, sales: String(result.totalSales), profit: String(result.netProfit), margin: String(result.netMargin), rank: String(Math.max(5, Math.min(95, Math.round(50 - result.netMargin * 2)))) }); window.open(`/api/report-card?${params}`, "_blank"); }} className="w-full rounded-xl bg-violet-600 py-2.5 text-xs font-semibold text-white">
+                성적표
+              </button>
+              <button onClick={() => { if (!userId) { router.push("/login"); return; } setCloudSaveTitle(""); setShowCloudSave(true); }} className="w-full rounded-xl bg-slate-900 py-2.5 text-xs font-semibold text-white">
+                {userId ? "클라우드 저장" : "로그인 후 저장"}
+              </button>
+              {userId && (
+                <button onClick={() => router.push("/profile")} className="w-full rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-600">
+                  대시보드 →
+                </button>
+              )}
+            </div>
+          </details>
           {(saveMsg || shareMsg) && (
             <div className="mt-2 print:hidden">
               {saveMsg && <span className="text-sm font-medium text-emerald-600">{saveMsg}</span>}

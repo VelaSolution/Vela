@@ -12,10 +12,10 @@ export function SummaryCard({ title, value, sub, highlight }: { title: string; v
     : highlight === "info" ? "text-blue-700 dark:text-blue-400"
     : "text-slate-900 dark:text-slate-100";
   return (
-    <div className={`rounded-3xl p-4 shadow-sm ring-1 ${bg}`}>
-      <p className="text-xs text-slate-500 dark:text-slate-400">{title}</p>
-      <p className={`mt-1.5 text-lg font-bold tracking-tight ${tc}`}>{value}</p>
-      {sub && <p className="mt-1 text-[11px] text-slate-400">{sub}</p>}
+    <div className={`rounded-2xl p-3.5 shadow-sm ring-1 ${bg}`}>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{title}</p>
+      <p className={`text-[15px] font-bold tracking-tight leading-snug break-all ${tc}`}>{value}</p>
+      {sub && <p className="mt-1 text-xs text-slate-400 leading-relaxed">{sub}</p>}
     </div>
   );
 }
