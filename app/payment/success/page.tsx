@@ -51,7 +51,7 @@ function PaymentSuccessContent() {
           <>
             <div className="text-5xl mb-4">🎉</div>
             <h1 className="text-2xl font-bold text-slate-900 mb-2">결제 완료!</h1>
-            <p className="text-slate-500 mb-8">VELA {params.get("orderId")?.split("-")[1] === "pro" ? "프로" : "스탠다드"} 플랜이 활성화됐어요.</p>
+            <p className="text-slate-500 mb-8">VELA 프로 플랜이 활성화됐어요.</p>
             <Link href="/dashboard"
               className="block w-full rounded-2xl bg-blue-600 text-white font-semibold py-3 hover:bg-blue-700 transition">
               대시보드로 가기 →
