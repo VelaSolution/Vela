@@ -165,9 +165,9 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
 
 /* ── 모바일 앱 UX (max-width: 768px) ─────────────── */
 @media (max-width: 768px) {
-  /* ─ 기본 타이포그래피 ─ */
+  /* ─ 기본 타이포그래피 — 가독성 최우선 ─ */
   html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-  body { word-break: keep-all; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+  body { word-break: keep-all; line-height: 1.7; -webkit-font-smoothing: antialiased; }
 
   /* 오버플로 방지 */
   *, *::before, *::after { max-width: 100vw; }
@@ -190,18 +190,15 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
   aside.hidden.md\:flex { display: none !important; }
   ::-webkit-scrollbar { display: none; }
 
-  /* ─ 앱 타이포그래피 스케일 ─ */
-  h1, .text-2xl { font-size: 1.5rem !important; line-height: 1.3 !important; }
-  h2, .text-xl  { font-size: 1.25rem !important; line-height: 1.35 !important; }
-  .text-lg { font-size: 1.1rem !important; }
-  .text-sm { font-size: 0.875rem !important; line-height: 1.5 !important; }
-  .text-xs { font-size: 0.8rem !important; line-height: 1.45 !important; }
+  /* ─ 가독성 타이포그래피 ─ */
+  .text-sm { font-size: 0.9rem !important; line-height: 1.6 !important; }
+  .text-xs { font-size: 0.8125rem !important; line-height: 1.55 !important; }
 
   /* 최소 텍스트 크기 */
   .text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; }
   .text-\[11px\] { font-size: 12px !important; }
 
-  /* ─ 입력 필드 — 앱 수준 터치 ─ */
+  /* ─ 입력 필드 ─ */
   input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
   textarea, select {
     font-size: 16px !important;
@@ -209,32 +206,14 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
     border-radius: 14px !important;
   }
 
-  /* ─ 버튼 — 앱 수준 터치 + 피드백 ─ */
-  button, [role="button"], [role="tab"],
-  a.rounded-xl, a.rounded-2xl, a.rounded-3xl {
-    min-height: 44px;
-  }
-  button:active, [role="button"]:active,
-  a.rounded-xl:active, a.rounded-2xl:active, a.rounded-3xl:active {
+  /* ─ 버튼 터치 + 피드백 ─ */
+  button:active, [role="button"]:active {
     transform: scale(0.97);
     transition: transform 0.1s ease;
   }
 
-  /* ─ 카드 — 앱 느낌 ─ */
-  .rounded-2xl { border-radius: 16px !important; }
+  /* ─ 카드 ─ */
   .rounded-3xl { border-radius: 18px !important; }
-  .p-5 { padding: 16px !important; }
-  .p-6 { padding: 18px !important; }
-  .p-8 { padding: 20px !important; }
-
-  .ring-1 { box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important; }
-  .shadow-sm, .shadow-lg { box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important; }
-
-  /* ─ 간격 ─ */
-  .space-y-6 > * + * { margin-top: 1rem; }
-  .space-y-5 > * + * { margin-top: 0.875rem; }
-  .gap-6 { gap: 1rem !important; }
-  .gap-4 { gap: 0.875rem !important; }
 
   /* ─ 테이블 ─ */
   table { font-size: 13px; }
@@ -242,12 +221,6 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
 
   /* ─ hover 전용 요소 모바일 표시 ─ */
   .group-hover\:opacity-100 { opacity: 1 !important; }
-
-  /* ─ 모달/오버레이 ─ */
-  .fixed.inset-0 { padding: 16px !important; }
-
-  /* ─ 이미지/아바타 ─ */
-  img { border-radius: 12px; }
 }
 
 /* ── 라이트 모드 가독성 강화 ───────────────────────── */
