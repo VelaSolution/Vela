@@ -24,15 +24,15 @@ export function HeroSection() {
         <div className="fade-init d2">
           <div className="hero-card">
             <div className="hero-card-header">
-              <span className="hero-card-title">☕ 카페 · 운영 중</span>
+              <span className="hero-card-title">☕ 카페 · 20석 · 운영 중</span>
               <span className="hero-card-badge">흑자</span>
             </div>
-            <div className="hero-metric-label">이번 달 세전 순이익</div>
-            <div className={`hero-metric-value green`}>+3,420,000원</div>
+            <div className="hero-metric-label">세후 실수령</div>
+            <div className={`hero-metric-value green`}>+2,180,000원</div>
             <div className="hero-bar-wrap"><div className="hero-bar" /></div>
-            <div className="hero-row"><span className="hero-row-label">월 총 매출</span><span className="hero-row-value">28,500,000원</span></div>
-            <div className="hero-row"><span className="hero-row-label">손익분기점</span><span className="hero-row-value">22,100,000원 ✓</span></div>
-            <div className="hero-row"><span className="hero-row-label">투자금 회수</span><span className="hero-row-value">18개월 예상</span></div>
+            <div className="hero-row"><span className="hero-row-label">월 매출</span><span className="hero-row-value">18,200,000원</span></div>
+            <div className="hero-row"><span className="hero-row-label">원가율</span><span className="hero-row-value">32%</span></div>
+            <div className="hero-row"><span className="hero-row-label">손익분기</span><span className="hero-row-value">14,800,000원 ✓</span></div>
             <div className="hero-row"><span className="hero-row-label">순이익률</span><span className="hero-row-value" style={{ color: "#3182F6" }}>12.0%</span></div>
           </div>
         </div>
