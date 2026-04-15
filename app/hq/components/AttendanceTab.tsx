@@ -75,18 +75,33 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const loadWorkStartTime = async () => {
     const s = sb();
     if (!s) return;
-    const { data } = await s.from("hq_settings").select("value").eq("key", "work_start_time").single();
-    if (data?.value) { setWorkStartTime(data.value); setTempStartTime(data.value); }
+    try {
+      const { data, error } = await s.from("hq_settings").select("value").eq("key", "work_start_time").single();
+      if (error) { console.warn("hq_settings 로드 실패 (테이블 미생성?):", error.message); return; }
+      if (data?.value) { setWorkStartTime(data.value); setTempStartTime(data.value); }
+    } catch (e) { console.warn("hq_settings 테이블 없음:", e); }
   };
 
   const saveWorkStartTime = async () => {
     const s = sb();
     if (!s) return;
-    const { error } = await s.from("hq_settings").upsert({ key: "work_start_time", value: tempStartTime, updated_by: userName, updated_at: new Date().toISOString() });
-    if (error) { flash("저장 실패: " + error.message); return; }
-    setWorkStartTime(tempStartTime);
-    setEditStartTime(false);
-    flash(`출근 기준 시간이 ${tempStartTime}으로 변경되었습니다`);
+    try {
+      // 먼저 update 시도
+      const { data: existing } = await s.from("hq_settings").select("key").eq("key", "work_start_time").single();
+      let error;
+      if (existing) {
+        ({ error } = await s.from("hq_settings").update({ value: tempStartTime, updated_by: userName, updated_at: new Date().toISOString() }).eq("key", "work_start_time"));
+      } else {
+        ({ error } = await s.from("hq_settings").insert({ key: "work_start_time", value: tempStartTime, updated_by: userName, updated_at: new Date().toISOString() }));
+      }
+      if (error) { flash("저장 실패: " + error.message); return; }
+      setWorkStartTime(tempStartTime);
+      setEditStartTime(false);
+      flash(`출근 기준 시간이 ${tempStartTime}으로 변경되었습니다`);
+    } catch (e) {
+      flash("저장 실패: hq_settings 테이블을 확인해주세요");
+      console.error(e);
+    }
   };
 
   // Live clock
