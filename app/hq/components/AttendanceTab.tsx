@@ -125,6 +125,30 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const [editClockOut, setEditClockOut] = useState(false);
   const [editClockOutTime, setEditClockOutTime] = useState("");
 
+  // 대표 전용: 과거 출근시간 수정
+  const [editClockInId, setEditClockInId] = useState<string | null>(null);
+  const [editClockInTime, setEditClockInTime] = useState("");
+
+  const updateClockIn = async (recId: string) => {
+    if (!editClockInTime) return;
+    const s = sb();
+    if (!s) return;
+    const rec = records.find(r => r.id === recId);
+    if (!rec) return;
+    const [h, m] = editClockInTime.split(":").map(Number);
+    const d = new Date(`${rec.date}T00:00:00`);
+    d.setHours(h, m, 0, 0);
+    const isLate = editClockInTime > workStartTime;
+    const newStatus = isLate ? "지각" : (rec.status === "지각" ? "정상" : rec.status);
+    const { error } = await s.from("hq_attendance").update({
+      clock_in: d.toISOString(), status: newStatus,
+    }).eq("id", recId);
+    if (error) { flash("수정 실패: " + error.message); return; }
+    flash(`출근 시간 수정 완료 (${editClockInTime})`);
+    setEditClockInId(null);
+    loadData();
+  };
+
   const todayStr = today();
   // 오늘 출근 기록 또는 어제 미퇴근 기록 (익일 퇴근 대응)
   const yesterdayStr = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); })();
@@ -365,7 +389,24 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                   <tr key={d} className={`border-b border-slate-50 ${d === todayStr ? "bg-blue-50/40" : ""}`}>
                     <td className="py-2.5 px-3 font-semibold text-slate-600">{DAY_LABELS[i]}</td>
                     <td className="py-2.5 px-3 text-slate-500">{d.slice(5)}</td>
-                    <td className="py-2.5 px-3 text-slate-700">{r?.clockIn || "-"}</td>
+                    <td className="py-2.5 px-3 text-slate-700">
+                      {editClockInId === r?.id ? (
+                        <div className="flex items-center gap-1">
+                          <input type="time" value={editClockInTime} onChange={e => setEditClockInTime(e.target.value)}
+                            className="border border-slate-200 rounded-lg px-1.5 py-0.5 text-sm font-bold text-slate-800 w-[5.5rem]" />
+                          <button onClick={() => updateClockIn(r!.id)} className="text-xs text-[#3182F6] font-bold">확인</button>
+                          <button onClick={() => setEditClockInId(null)} className="text-xs text-slate-400">취소</button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          {r?.clockIn || "-"}
+                          {myRole === "대표" && r?.clockIn && (
+                            <button onClick={() => { setEditClockInId(r.id); setEditClockInTime(r.clockIn); }}
+                              className="text-xs text-slate-300 hover:text-[#3182F6] transition-colors" title="출근 시간 수정">✏️</button>
+                          )}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3 text-slate-700">{r?.clockOut || "-"}</td>
                     <td className="py-2.5 px-3">
                       {r ? (
@@ -478,7 +519,24 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                       <tr key={name} className="border-b border-slate-50 hover:bg-slate-50/60">
                         <td className="py-2.5 px-3 font-semibold text-slate-700">{displayName(name)}</td>
                         <td className="py-2.5 px-3 text-slate-500 text-xs">{member?.role ?? "-"}</td>
-                        <td className="py-2.5 px-3 text-slate-700">{rec?.clockIn || <span className="text-slate-300">-</span>}</td>
+                        <td className="py-2.5 px-3 text-slate-700">
+                          {editClockInId === rec?.id ? (
+                            <div className="flex items-center gap-1">
+                              <input type="time" value={editClockInTime} onChange={e => setEditClockInTime(e.target.value)}
+                                className="border border-slate-200 rounded-lg px-1.5 py-0.5 text-sm font-bold text-slate-800 w-[5.5rem]" />
+                              <button onClick={() => updateClockIn(rec!.id)} className="text-xs text-[#3182F6] font-bold">확인</button>
+                              <button onClick={() => setEditClockInId(null)} className="text-xs text-slate-400">취소</button>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1">
+                              {rec?.clockIn || <span className="text-slate-300">-</span>}
+                              {myRole === "대표" && rec?.clockIn && (
+                                <button onClick={() => { setEditClockInId(rec.id); setEditClockInTime(rec.clockIn); }}
+                                  className="text-xs text-slate-300 hover:text-[#3182F6] transition-colors">✏️</button>
+                              )}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-slate-700">{rec?.clockOut || <span className="text-slate-300">-</span>}</td>
                         <td className="py-2.5 px-3">
                           {rec ? (

@@ -16,6 +16,7 @@ const TABS = [
 export default function MobileTabBar() {
   const pathname = usePathname();
   const [isHqMember, setIsHqMember] = useState(false);
+  const [open, setOpen] = useState(false);
 
   if (pathname?.startsWith("/hq")) return null;
 
@@ -50,53 +51,59 @@ export default function MobileTabBar() {
     ? [...TABS.slice(0, 3), { href: "/hq", icon: "🏛️", label: "HQ" }, ...TABS.slice(3)]
     : TABS;
 
+  // 현재 활성 탭
+  const activeTab = tabs.find(t =>
+    t.href === "/" ? pathname === "/" : pathname.startsWith(t.href)
+  );
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden vela-mobile-tab"
-      style={{
-        paddingBottom: "env(safe-area-inset-bottom)",
-        background: "rgba(255,255,255,0.92)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(0,0,0,0.06)",
-      }}
-    >
-      <div style={{ display: "flex", height: 56, paddingTop: 4 }}>
-        {tabs.map(tab => {
-          const isActive = tab.href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(tab.href);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textDecoration: "none",
-                color: isActive ? "#3182F6" : "#B0B8C1",
-                gap: 2,
-                minHeight: "auto",
-                fontSize: "inherit",
-                fontWeight: "inherit",
-                transition: "color 0.15s, transform 0.1s",
-                position: "relative",
-              }}
-            >
-              {isActive && (
-                <span style={{
-                  position: "absolute", top: -4, width: 20, height: 2,
-                  borderRadius: 1, background: "#3182F6",
-                }} />
-              )}
-              <span style={{ fontSize: 21, lineHeight: 1 }}>{tab.icon}</span>
-              <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500, letterSpacing: "0.01em" }}>{tab.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <div className="md:hidden">
+      {/* 열린 상태: 메뉴 패널 */}
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-50 right-5 flex flex-col-reverse items-end gap-2"
+            style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 0px))" }}
+          >
+            {tabs.map(tab => {
+              const isActive = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center gap-2.5 rounded-2xl px-4 py-3 shadow-lg transition-all ${
+                    isActive
+                      ? "bg-[#3182F6] text-white"
+                      : "bg-white text-slate-700 ring-1 ring-slate-200"
+                  }`}
+                  style={{ animation: "slideUp 0.15s ease-out" }}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span className="text-sm font-semibold">{tab.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* FAB 버튼 */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="fixed z-50 right-5 w-14 h-14 rounded-full bg-[#3182F6] text-white shadow-xl shadow-blue-600/30 flex items-center justify-center active:scale-90 transition-all"
+        style={{ bottom: "calc(20px + env(safe-area-inset-bottom, 0px))" }}
+        aria-label="내비게이션 메뉴"
+      >
+        {open ? (
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 4l12 12M16 4L4 16" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <span className="text-xl">{activeTab?.icon ?? "🏠"}</span>
+        )}
+      </button>
+    </div>
   );
 }

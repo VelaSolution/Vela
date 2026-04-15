@@ -246,7 +246,7 @@ export default function Page() {
     const error = validateStep3();
     if (error) {
       setStepError(error);
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -362,10 +362,10 @@ export default function Page() {
               {stepError && <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{stepError}</div>}
               <div className="flex gap-3">
                 {step > 1 && (
-                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">이전</button>
+                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">이전</button>
                 )}
                 {step < 3 ? (
-                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">다음 단계</button>
+                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo({ top: 0, behavior: "smooth" }); return; } setStepError(""); setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">다음 단계</button>
                 ) : (
                   <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">결과 보기</button>
                 )}
@@ -377,10 +377,10 @@ export default function Page() {
               {stepError && <p className="text-xs text-red-500 text-center mb-2">{stepError}</p>}
               <div className="flex gap-3">
                 {step > 1 && (
-                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo(0, 0); }} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600">이전</button>
+                  <button type="button" onClick={() => { setStepError(""); setStep(step - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600">이전</button>
                 )}
                 {step < 3 ? (
-                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo(0, 0); return; } setStepError(""); setStep(step + 1); window.scrollTo(0, 0); }} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">다음 단계 →</button>
+                  <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo({ top: 0, behavior: "smooth" }); return; } setStepError(""); setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">다음 단계 →</button>
                 ) : (
                   <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">결과 보기 →</button>
                 )}
@@ -398,7 +398,7 @@ export default function Page() {
                   {(["매출 정보", "운영 비용", "초기비용 & 부채"] as const).map((label, i) => {
                     const s = i + 1;
                     return (
-                      <div key={s} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition cursor-pointer ${step === s ? "bg-slate-900 text-white font-semibold" : step > s ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-slate-50 text-slate-400 hover:bg-slate-100"}`} onClick={() => { if (s <= step || s === step + 1) { const error = s > step ? getCurrentStepError() : ""; if (error) { setStepError(error); return; } setStepError(""); setStep(s); window.scrollTo(0, 0); } }}>
+                      <div key={s} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition cursor-pointer ${step === s ? "bg-slate-900 text-white font-semibold" : step > s ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-slate-50 text-slate-400 hover:bg-slate-100"}`} onClick={() => { if (s <= step || s === step + 1) { const error = s > step ? getCurrentStepError() : ""; if (error) { setStepError(error); return; } setStepError(""); setStep(s); window.scrollTo({ top: 0, behavior: "smooth" }); } }}>
                         <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${step === s ? "bg-white text-slate-900" : step > s ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
                           {step > s ? "✓" : s}
                         </span>
