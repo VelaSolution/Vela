@@ -187,13 +187,14 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20p
   .pb-16, .pb-20 { padding-bottom: 40px !important; }
 
   /* 도구 페이지: ToolNav fixed 바 공간 확보 */
-  .pt-20 { padding-top: 96px !important; }
+  .pt-20 { padding-top: 88px !important; }
 
   /* 데스크탑 사이드바 숨기기 */
   aside.hidden.md\:flex { display: none !important; }
   ::-webkit-scrollbar { display: none; }
 
-  /* 최소 텍스트 크기 */
+  /* 최소 텍스트 크기 보정 (14px 베이스에서 text-xs=10.5px 방지) */
+  .text-xs { font-size: 11px !important; }
   .text-\[8px\], .text-\[9px\], .text-\[10px\] { font-size: 10px !important; }
 
   /* ─ 입력 필드 ─ */
