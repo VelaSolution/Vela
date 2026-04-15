@@ -124,7 +124,7 @@ export default function ToolNav() {
       </aside>
 
       {/* 모바일: 상단 네비게이션 바 */}
-      <div className="md:hidden sticky top-[56px] z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 -mx-4 px-4 py-2.5">
+      <div className="md:hidden sticky top-[52px] z-40 bg-white/95 backdrop-blur-sm border-b border-slate-100 -mx-4 px-4 py-2.5">
         <div className="flex items-center justify-between">
           <Link href="/tools" className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 active:text-slate-600 py-1.5">
             ← 목록

@@ -345,7 +345,7 @@ export default function Page() {
         </section>
 
         {/* 모바일 미리보기 */}
-        <div className="lg:hidden sticky top-0 z-40 mb-3 -mx-4 px-3 pt-1 pb-1 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm">
+        <div className="lg:hidden sticky top-[52px] z-30 mb-3 -mx-4 px-3 pt-1.5 pb-1.5 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm">
           <PreviewBar form={form} />
         </div>
 

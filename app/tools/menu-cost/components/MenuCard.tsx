@@ -96,20 +96,23 @@ export default function MenuCard({
           </select>
         </div>
 
-        {/* 핵심 지표 요약 */}
-        <div className="hidden sm:flex items-center gap-6 text-right flex-shrink-0">
-          <div>
+        {/* 핵심 지표 요약 — 데스크탑: 풀 / 모바일: 원가율+뱃지 */}
+        <div className="flex items-center gap-3 sm:gap-6 text-right flex-shrink-0">
+          <div className="hidden sm:block">
             <p className="text-xs text-slate-400">원가율</p>
             <p className="text-sm font-bold" style={{ color: statusColor }}>
               {price > 0 ? `${costRatio.toFixed(1)}%` : "—"}
             </p>
           </div>
-          <div>
+          <div className="hidden sm:block">
             <p className="text-xs text-slate-400">건당 순익</p>
             <p className={`text-sm font-bold ${profit >= 0 ? "text-slate-900" : "text-red-500"}`}>
               {price > 0 ? `${fmt(profit)}원` : "—"}
             </p>
           </div>
+          {price > 0 && (
+            <span className="sm:hidden text-xs font-bold" style={{ color: statusColor }}>{costRatio.toFixed(0)}%</span>
+          )}
           <div
             className="px-2.5 py-1 rounded-full text-xs font-bold"
             style={{ background: `${statusColor}18`, color: statusColor }}

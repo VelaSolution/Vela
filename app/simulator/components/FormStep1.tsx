@@ -49,7 +49,7 @@ export function FormStep1({
               }`}
             >
               <span className="text-2xl">{INDUSTRY_CONFIG[key].icon}</span>
-              <span className="text-xs font-semibold">{INDUSTRY_CONFIG[key].label}</span>
+              <span className="text-sm font-semibold">{INDUSTRY_CONFIG[key].label}</span>
             </button>
           ))}
         </div>
