@@ -20,10 +20,10 @@ export function FormStep2({
   const config = INDUSTRY_CONFIG[form.industry];
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+    <div className="space-y-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">인건비</h2>
+          <h2 className="text-base font-bold text-slate-900">인건비</h2>
           <p className="mt-1 text-sm text-slate-500">
             직접 입력하거나 인원·시급으로 계산할 수 있습니다.
           </p>
@@ -117,9 +117,9 @@ export function FormStep2({
         />
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">임대 & 시설비</h2>
+          <h2 className="text-base font-bold text-slate-900">임대 & 시설비</h2>
         </div>
 
         <InputCard
@@ -156,9 +156,9 @@ export function FormStep2({
         />
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">원가 & 수수료</h2>
+          <h2 className="text-base font-bold text-slate-900">원가 & 수수료</h2>
         </div>
 
         {form.industry === "cafe" ? (
@@ -285,9 +285,9 @@ export function FormStep2({
         )}
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">마케팅 & 기타</h2>
+          <h2 className="text-base font-bold text-slate-900">마케팅 & 기타</h2>
         </div>
 
         <InputCard
@@ -313,9 +313,9 @@ export function FormStep2({
         />
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">세금</h2>
+          <h2 className="text-base font-bold text-slate-900">세금</h2>
           <p className="mt-1 text-sm text-slate-500">실수령액 계산을 위한 세율을 입력하세요.</p>
         </div>
 
@@ -359,9 +359,9 @@ export function FormStep2({
       </section>
 
       {/* 프랜차이즈 섹션 */}
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">프랜차이즈</h2>
+          <h2 className="text-base font-bold text-slate-900">프랜차이즈</h2>
           <p className="mt-1 text-sm text-slate-500">프랜차이즈 가맹점인 경우 입력하세요.</p>
         </div>
         <Toggle

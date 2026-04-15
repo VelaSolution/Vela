@@ -103,22 +103,22 @@ export function PosUploader({
   };
 
   return (
-    <div className="rounded-[28px] bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden">
+    <div className="rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden">
       {/* SheetJS CDN */}
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" strategy="lazyOnload" />
 
-      <div className="p-5 border-b border-slate-100">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">POS 연동</span>
+      <div className="px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">POS</span>
           <p className="text-sm font-semibold text-slate-900">매출 파일 불러오기</p>
         </div>
-        <p className="text-xs text-slate-400">POS에서 내보낸 Excel 파일을 업로드하면 AI가 자동으로 분석해 폼에 반영합니다.</p>
+        <p className="text-xs text-slate-400">Excel 파일을 업로드하면 AI가 자동 분석합니다.</p>
       </div>
 
-      <div className="p-5 space-y-4">
+      <div className="px-4 py-3 space-y-3">
         {/* 드래그 드롭 영역 */}
         <div
-          className={`relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition cursor-pointer ${
+          className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center transition cursor-pointer ${
             dragging ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100"
           } ${status === "parsing" || status === "analyzing" ? "pointer-events-none opacity-60" : ""}`}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}

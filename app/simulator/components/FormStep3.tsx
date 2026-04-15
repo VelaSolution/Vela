@@ -21,10 +21,10 @@ export function FormStep3({
   const result = useMemo(() => calcResult(form), [form]);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-xl font-bold text-slate-900">사업 현황</h2>
-        <p className="mb-4 text-sm text-slate-500">현재 상태를 선택해주세요.</p>
+    <div className="space-y-4">
+      <section className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+        <h2 className="mb-0.5 text-base font-bold text-slate-900">사업 현황</h2>
+        <p className="mb-3 text-xs text-slate-400">현재 상태를 선택해주세요.</p>
 
         <div className="grid grid-cols-2 gap-3">
           {(["new", "existing"] as const).map((type) => (
@@ -44,9 +44,9 @@ export function FormStep3({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">초기 투자비용</h2>
+          <h2 className="text-base font-bold text-slate-900">초기 투자비용</h2>
           <p className="mt-1 text-sm text-slate-500">
             창업 시 들어간 (또는 예정인) 비용을 입력하세요.
           </p>
@@ -150,9 +150,9 @@ export function FormStep3({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">부채 & 대출</h2>
+          <h2 className="text-base font-bold text-slate-900">부채 & 대출</h2>
           <p className="mt-1 text-sm text-slate-500">사업 관련 대출이 있는 경우 입력하세요.</p>
         </div>
 
@@ -203,9 +203,9 @@ export function FormStep3({
         )}
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">목표 설정</h2>
+          <h2 className="text-base font-bold text-slate-900">목표 설정</h2>
           <p className="mt-1 text-sm text-slate-500">
             투자금 회수 목표와 목표 순이익을 설정하세요.
           </p>

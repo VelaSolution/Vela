@@ -26,52 +26,49 @@ export function FormStep1({
   const ratioSum = form.lunchRatio + form.dinnerRatio + form.nightRatio;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* POS 파일 업로드 */}
       <PosUploader industry={form.industry} onApply={applyPosResult} />
 
-      <section className="rounded-[28px] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-xl font-bold text-slate-900">업종 선택</h2>
-        <p className="mb-4 text-sm text-slate-500">
-          업종별 벤치마크 기준과 기본값이 자동 적용됩니다.
-        </p>
+      <section className="rounded-2xl bg-white px-4 py-4 shadow-sm ring-1 ring-slate-200">
+        <h2 className="mb-0.5 text-base font-bold text-slate-900">업종 선택</h2>
+        <p className="mb-3 text-xs text-slate-400">업종별 벤치마크와 기본값이 자동 적용됩니다.</p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
           {VALID_INDUSTRIES.map((key) => (
             <button
               key={key}
               type="button"
               onClick={() => update("industry", key)}
-              className={`flex flex-col items-center gap-2 rounded-3xl border p-4 text-center transition ${
+              className={`flex flex-col items-center gap-1 rounded-xl border py-2.5 px-1 text-center transition ${
                 form.industry === key
                   ? "border-slate-900 bg-slate-900 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <span className="text-2xl">{INDUSTRY_CONFIG[key].icon}</span>
-              <span className="text-sm font-semibold">{INDUSTRY_CONFIG[key].label}</span>
+              <span className="text-xl">{INDUSTRY_CONFIG[key].icon}</span>
+              <span className="text-xs font-semibold">{INDUSTRY_CONFIG[key].label}</span>
             </button>
           ))}
         </div>
 
-        <div className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-500">
-          <span className="font-semibold text-slate-700">{config.label} 기준</span>
-          &nbsp;— 원가율 {config.cogsWarnRate}% · 인건비 {config.laborWarnRate}% · 최대
-          회전율 {config.maxTurnover}회 · 순이익률 {config.netMarginWarn}% 이상
+        <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
+          <span className="font-semibold text-slate-700">{config.label}</span>
+          &nbsp;— 원가율 {config.cogsWarnRate}% · 인건비 {config.laborWarnRate}% · 회전율 {config.maxTurnover}회
         </div>
 
         <button
           type="button"
           onClick={loadIndustryDefaults}
-          className="mt-3 w-full rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
+          className="mt-2 w-full rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
         >
-          {config.label} 샘플 기본값 불러오기 →
+          {config.label} 기본값 불러오기 →
         </button>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">홀 매출</h2>
+          <h2 className="text-base font-bold text-slate-900">홀 매출</h2>
           <p className="mt-1 text-sm text-slate-500">매장 내 홀 영업 수치를 입력하세요.</p>
         </div>
 
@@ -162,9 +159,9 @@ export function FormStep1({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">시간대별 매출 비중</h2>
+          <h2 className="text-base font-bold text-slate-900">시간대별 매출 비중</h2>
           <p className="mt-1 text-sm text-slate-500">합계가 100%가 되도록 입력하세요.</p>
         </div>
 
@@ -211,9 +208,9 @@ export function FormStep1({
         </div>
       </section>
 
-      <section className="space-y-4 rounded-[28px] bg-slate-100 p-4">
+      <section className="space-y-3 rounded-2xl bg-slate-100 p-3">
         <div className="px-1">
-          <h2 className="text-xl font-bold text-slate-900">배달 매출</h2>
+          <h2 className="text-base font-bold text-slate-900">배달 매출</h2>
           <p className="mt-1 text-sm text-slate-500">배달 채널이 있는 경우 입력하세요.</p>
         </div>
 
