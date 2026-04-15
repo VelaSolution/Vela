@@ -53,8 +53,7 @@ export async function POST(req: NextRequest) {
     const plan = parsePlan(orderId);
     const isAnnual = orderId.includes("-annual-");
     const PLAN_PRICES: Record<string, { monthly: number; annual: number }> = {
-      standard: { monthly: 9900, annual: 7900 * 12 },
-      pro: { monthly: 29900, annual: 23900 * 12 },
+      standard: { monthly: 29900, annual: 24900 * 12 },
     };
     const planPrices = PLAN_PRICES[plan];
     const expectedPrice = planPrices ? (isAnnual ? planPrices.annual : planPrices.monthly) : undefined;

@@ -8,7 +8,7 @@ import { PLANS as PLAN_DATA } from "@/lib/plans";
 
 const PLANS = [
   { ...PLAN_DATA[0], name: "무료", price: 0, color: "#6B7684" },
-  { ...PLAN_DATA[1], name: "스탠다드", price: 9900, color: "#3182F6", popular: true },
+  { ...PLAN_DATA[1], name: "프로", price: 29900, color: "#3182F6", popular: true },
 ];
 
 export default function PricingPage() {
@@ -194,7 +194,7 @@ export default function PricingPage() {
                   className={`plan-btn ${plan.id === "standard" ? "plan-btn-blue" : plan.id === "pro" ? "plan-btn-indigo" : "plan-btn-gray"}`}
                   onClick={() => handleSelect(plan)}
                 >
-                  {plan.id === "free" ? "무료로 시작하기" : plan.id === "standard" ? "스탠다드 시작하기" : "프로 시작하기"}
+                  {plan.id === "free" ? "무료로 시작하기" : "프로 시작하기"}
                 </button>
                 <ul className="plan-features">
                   {plan.features.map((f) => (
