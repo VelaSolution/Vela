@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiError } from "@/lib/api-error";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
-export const runtime = "edge";
+export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { messages, context } = body;
 
-  // 입력값 검증
   if (!Array.isArray(messages) || messages.length === 0) {
     return apiError("메시지가 없습니다.", 400);
   }
@@ -23,7 +22,6 @@ export async function POST(req: NextRequest) {
     cafe: "카페", restaurant: "일반 음식점", bar: "술집/바", finedining: "파인다이닝", gogi: "고깃집",
   };
 
-  // 익명 상담 전용 프롬프트
   const anonymousPrompt = `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다.
 외식업 사장님의 익명 고민 상담에 답변합니다.
 업종: ${industryLabels[context?.industry ?? ""] ?? "외식업"}
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
   const systemPrompt = context?.isAnonymousConsult
     ? anonymousPrompt
     : context?.form
-    ? `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다. 
+    ? `당신은 VELA의 외식업 전문 경영 컨설턴트 AI입니다.
 사용자의 매장 데이터를 기반으로 실용적이고 구체적인 조언을 제공하세요.
 친절하고 명확하게 답변하되, 전문 용어는 쉽게 풀어서 설명하세요.
 답변은 간결하게 3~5문장 이내로 유지하세요.${deliveryConstraint}
@@ -70,62 +68,98 @@ export async function POST(req: NextRequest) {
     return apiError("API 키가 설정되지 않았습니다.", 500);
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      // 제거: "anthropic-beta": "messages-2023-12-15" — 존재하지 않는 베타 헤더
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: context?.isAnonymousConsult ? 2048 : 1024,
-      system: systemPrompt,
-      stream: true,
-      messages: messages
-        .slice(-50) // 최근 50개만 전송 (컨텍스트 폭발 방지)
-        .map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: String(m.content).slice(0, 2000), // 메시지당 최대 2000자
-        })),
-    }),
-  });
+  let anthropicRes: Response;
+  try {
+    anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: context?.isAnonymousConsult ? 2048 : 1024,
+        system: systemPrompt,
+        stream: true,
+        messages: messages
+          .slice(-50)
+          .map((m: { role: string; content: string }) => ({
+            role: m.role,
+            content: String(m.content).slice(0, 2000),
+          })),
+      }),
+    });
+  } catch {
+    return apiError("AI 서버에 연결할 수 없습니다.", 502);
+  }
 
-  if (!response.ok) {
+  if (!anthropicRes.ok) {
+    const errText = await anthropicRes.text().catch(() => "unknown");
+    console.error("[chat] Anthropic error:", anthropicRes.status, errText);
     return apiError("AI 응답 중 오류가 발생했습니다.", 500);
   }
 
+  if (!anthropicRes.body) {
+    return apiError("AI 응답 스트림이 없습니다.", 500);
+  }
+
+  // Anthropic SSE → plain text 변환 (pull 패턴)
+  const reader = anthropicRes.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = "";
+  let done = false;
+
   const stream = new ReadableStream({
-    async start(controller) {
-      const reader = response.body?.getReader();
-      if (!reader) { controller.close(); return; }
-      const decoder = new TextDecoder();
+    async pull(controller) {
+      if (done) { controller.close(); return; }
+
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) { controller.close(); break; }
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter((l) => l.trim());
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") { controller.close(); return; }
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
-                controller.enqueue(new TextEncoder().encode(parsed.delta.text));
-              }
-            } catch { /* skip */ }
-          }
+        const result = await reader.read();
+        if (result.done) {
+          done = true;
+          controller.close();
+          return;
         }
+
+        buffer += decoder.decode(result.value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        let enqueued = false;
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6).trim();
+          if (!data || data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta" && parsed.delta?.type === "text_delta") {
+              controller.enqueue(encoder.encode(parsed.delta.text));
+              enqueued = true;
+            }
+            if (parsed.type === "message_stop" || parsed.type === "error") {
+              done = true;
+              controller.close();
+              return;
+            }
+          } catch { /* incomplete JSON chunk */ }
+        }
+
+        if (enqueued) return; // yield control back after enqueuing
       }
+    },
+    cancel() {
+      reader.cancel();
     },
   });
 
   return new Response(stream, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-store",
+      "Transfer-Encoding": "chunked",
       "X-Accel-Buffering": "no",
     },
   });
