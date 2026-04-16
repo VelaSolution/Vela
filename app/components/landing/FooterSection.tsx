@@ -6,7 +6,7 @@ export function FooterSection() {
       <div className="footer-inner">
         <div className="footer-top">
           <div>
-            <div className="footer-logo">VELA<span>.</span></div>
+            <div className="footer-logo">VELA<span style={{background:"linear-gradient(135deg,#3182F6,#7C3AED)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>.</span></div>
             <p style={{fontSize:"13px",color:"var(--gray-400)",marginTop:"12px",lineHeight:"1.8"}}>
               상호명 : 벨라솔루션 | 대표자 : 김민혁<br />
               사업자등록번호 : 777-17-02386<br />

@@ -10,7 +10,11 @@ export function PricingSection() {
   return (
     <section id="pricing" className="features-bg">
       <div className="section-inner">
-        <FadeIn><span className="section-tag">요금제</span><h2 className="section-title">합리적인 가격으로</h2><p className="section-desc">매장 규모에 맞는 플랜을 선택하세요. 언제든 변경 가능합니다.</p></FadeIn>
+        <FadeIn>
+          <span className="section-tag">요금제</span>
+          <h2 className="section-title">합리적인 가격으로</h2>
+          <p className="section-desc">매장 규모에 맞는 플랜을 선택하세요. 언제든 변경 가능합니다.</p>
+        </FadeIn>
         <div className="pricing-grid">
           {PLANS.map((p) => (
             <FadeIn key={p.plan}>

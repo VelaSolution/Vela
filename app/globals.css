@@ -32,6 +32,13 @@ body {
   scroll-behavior: smooth;
 }
 
+/* ── Premium Utilities ──────────────────────────── */
+.gradient-text{background:linear-gradient(135deg,#3182F6 0%,#7C3AED 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.glass{background:rgba(255,255,255,0.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,0.8)}
+.glass-dark{background:rgba(255,255,255,0.04);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08)}
+.shadow-premium{box-shadow:0 1px 2px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.06),0 12px 24px rgba(0,0,0,0.04)}
+.shadow-premium-lg{box-shadow:0 4px 6px rgba(0,0,0,0.04),0 12px 24px rgba(0,0,0,0.06),0 24px 48px rgba(0,0,0,0.08)}
+
 /* ── 미디어 오버플로 방지 ─────────────────────────── */
 img, video, svg { max-width: 100%; height: auto; }
 
@@ -261,7 +268,7 @@ input[type="range"].vela-slider::-moz-range-thumb {
                 .vela-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid #E5E8EB;display:flex;align-items:center;font-family:var(--font-geist-sans),'Pretendard','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
         .vela-nav-inner{max-width:1152px;margin:0 auto;padding:0 32px;width:100%;display:flex;align-items:center;justify-content:space-between}
         .vela-nav-logo{font-size:20px;font-weight:800;color:#191F28;text-decoration:none;letter-spacing:-0.02em;font-family:inherit}
-        .vela-nav-logo span{color:#3182F6}
+        .vela-nav-logo span{background:linear-gradient(135deg,#3182F6,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
         .vela-nav-links{display:flex;align-items:center;gap:28px}
         .vela-nav-links a{font-size:15px;font-weight:500;color:#6B7684;text-decoration:none;transition:color .15s;font-family:inherit}
         .vela-nav-links a:hover{color:#191F28}
@@ -272,8 +279,8 @@ input[type="range"].vela-slider::-moz-range-thumb {
         .vela-btn-dashboard:hover{background:#E5E8EB}
         .vela-btn-logout{background:none;border:1px solid #E5E8EB;color:#6B7684;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;line-height:1}
         .vela-btn-logout:hover{border-color:#333D4B;color:#191F28}
-        .vela-btn-start{background:#3182F6;color:#fff;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;font-family:inherit;line-height:1}
-        .vela-btn-start:hover{background:#2563EB}
+        .vela-btn-start{background:linear-gradient(135deg,#3182F6,#6366F1);color:#fff;padding:9px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:all .3s cubic-bezier(.16,1,.3,1);font-family:inherit;line-height:1;box-shadow:0 2px 8px rgba(49,130,246,0.25)}
+        .vela-btn-start:hover{box-shadow:0 4px 16px rgba(49,130,246,0.35);transform:translateY(-1px)}
         .vela-user-name{font-size:14px;font-weight:600;color:#333D4B;text-decoration:none;cursor:pointer;font-family:inherit}
         .vela-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:10px;background:none;border:none;min-width:44px;min-height:44px;align-items:center;justify-content:center}
         .vela-hamburger span{display:block;width:22px;height:2px;background:#333D4B;border-radius:2px;transition:all .2s}
@@ -285,7 +292,7 @@ input[type="range"].vela-slider::-moz-range-thumb {
         .vela-dropdown-btn:hover{color:#191F28}
         .vela-dropdown-arrow{font-size:10px;transition:transform .2s;display:inline-block}
         .vela-dropdown:hover .vela-dropdown-arrow{transform:rotate(180deg)}
-        .vela-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #E5E8EB;border-radius:20px;padding:14px 10px 10px;box-shadow:0 8px 32px rgba(0,0,0,.12);min-width:520px;display:none;z-index:200;grid-template-columns:1fr 1fr;gap:4px}
+        .vela-dropdown-menu{position:absolute;top:100%;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border:1px solid rgba(0,0,0,0.06);border-radius:20px;padding:14px 10px 10px;box-shadow:0 4px 6px rgba(0,0,0,0.04),0 12px 24px rgba(0,0,0,0.06),0 24px 48px rgba(0,0,0,0.08);min-width:520px;display:none;z-index:200;grid-template-columns:1fr 1fr;gap:4px}
         .vela-mega-menu{min-width:900px;grid-template-columns:repeat(4,1fr);gap:0;padding:20px 16px 16px}
         .vela-mega-col{padding:0 10px}
         .vela-mega-col+.vela-mega-col{border-left:1px solid #F2F4F6}

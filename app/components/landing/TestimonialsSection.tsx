@@ -10,7 +10,10 @@ export function TestimonialsSection() {
   return (
     <section className="testi-bg">
       <div className="section-inner">
-        <FadeIn><span className="section-tag" style={{ background: "rgba(255,255,255,.1)", color: "#93C5FD" }}>후기</span><h2 className="section-title">실제 사장님들의 이야기</h2></FadeIn>
+        <FadeIn>
+          <span className="section-tag" style={{ background: "rgba(255,255,255,.06)", color: "#93C5FD", border: "1px solid rgba(255,255,255,0.1)" }}>후기</span>
+          <h2 className="section-title">실제 사장님들의 이야기</h2>
+        </FadeIn>
         <div className="testi-grid">
           {TESTIMONIALS.map((t) => (
             <FadeIn key={t.name} delay={t.delay}>

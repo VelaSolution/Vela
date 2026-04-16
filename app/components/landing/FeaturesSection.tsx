@@ -16,7 +16,11 @@ export function FeaturesSection() {
   return (
     <section id="features" className="features-bg">
       <div className="section-inner">
-        <FadeIn><span className="section-tag">도구</span><h2 className="section-title">사업에 필요한 모든 도구</h2><p className="section-desc">외식업 사장님을 위한 실무 도구 모음. 계산부터 콘텐츠 생성까지 한 곳에서.</p></FadeIn>
+        <FadeIn>
+          <span className="section-tag">도구</span>
+          <h2 className="section-title">사업에 필요한 <span className="gradient-text">모든 도구</span></h2>
+          <p className="section-desc">외식업 사장님을 위한 실무 도구 모음. 계산부터 콘텐츠 생성까지 한 곳에서.</p>
+        </FadeIn>
         <div className="features-grid">
           {FEATURES.map((f, i) => (
             <FadeIn key={f.title} delay={i * 60}>

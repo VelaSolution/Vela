@@ -10,13 +10,22 @@ export function HowItWorksSection() {
   return (
     <section>
       <div className="section-inner">
-        <FadeIn><div style={{ textAlign: "center" }}><span className="section-tag">사용 방법</span><h2 className="section-title" style={{ textAlign: "center" }}>3단계로 끝납니다</h2></div></FadeIn>
+        <FadeIn>
+          <div style={{ textAlign: "center" }}>
+            <span className="section-tag">사용 방법</span>
+            <h2 className="section-title" style={{ textAlign: "center" }}>
+              <span className="gradient-text">3단계</span>로 끝납니다
+            </h2>
+          </div>
+        </FadeIn>
         <div className="steps-grid">
-          {STEPS.map((s) => (
+          {STEPS.map((s, i) => (
             <FadeIn key={s.num} delay={s.delay}>
-              <div className="step-num">{s.num}</div>
-              <div className="step-title">{s.title}</div>
-              <div className="step-desc">{s.desc}</div>
+              <div className="step-card">
+                <div className="step-num">{s.num}</div>
+                <div className="step-title">{s.title}</div>
+                <div className="step-desc">{s.desc}</div>
+              </div>
             </FadeIn>
           ))}
         </div>
