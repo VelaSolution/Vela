@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { DailyReport } from "@/app/hq/types";
 import { I, C, L, B, B2, useTeamDisplayNames } from "@/app/hq/utils";
 import { StatusBadge, FeedbackSection, CommentSection } from "./ReportHelpers";
@@ -103,64 +104,107 @@ export default function DailyReportSection(props: Props) {
         </div>
       </div>
 
-      <div className="space-y-3">
-        {dailies.map((d) => (
-          <div key={d.id} className={C}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-slate-800">{displayName(d.author ?? userName)}</span>
-                <span className="text-xs text-slate-400">{d.date}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <StatusBadge st={d.status ?? "submitted"} />
-                {canApprove && d.status === "submitted" && (
-                  <button onClick={() => checkReport(d.id)} className="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-100 transition-colors" title="확인">✓ 확인</button>
-                )}
-              </div>
-            </div>
-            {editId === d.id ? (
-              <div className="space-y-2">
-                <textarea className={`${I} min-h-[60px]`} rows={3} value={editContent} onChange={e => setEditContent(e.target.value)} />
-                <textarea className={`${I} min-h-[40px]`} rows={2} value={editProblems} onChange={e => setEditProblems(e.target.value)} placeholder="문제/이슈" />
-                <textarea className={`${I} min-h-[40px]`} rows={2} value={editNext} onChange={e => setEditNext(e.target.value)} placeholder="내일 계획" />
-                <div className="flex gap-2 justify-end">
-                  <button className={B2} onClick={() => setEditId(null)}>취소</button>
-                  <button className={B} onClick={() => saveEdit(d.id, "daily")}>저장</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap mb-2">{d.content}</p>
-                {d.problems && <p className="text-sm text-red-600 mb-1"><span className="font-semibold">문제:</span> {d.problems}</p>}
-                {d.nextSteps && <p className="text-sm text-blue-600"><span className="font-semibold">계획:</span> {d.nextSteps}</p>}
-                <div className="flex gap-3 mt-2">
-                  {(d.author === userName || isAdmin) && (
-                    <button onClick={() => { setEditId(d.id); setEditContent(d.content); setEditProblems(d.problems); setEditNext(d.nextSteps); }} className="text-xs text-slate-400 hover:text-[#3182F6] font-semibold">수정</button>
-                  )}
-                  {(canDelete || d.author === userName) && deleteReport && (
-                    <button onClick={() => deleteReport(d.id)} className="text-xs text-slate-400 hover:text-red-500 font-semibold">삭제</button>
-                  )}
-                </div>
-              </>
-            )}
-            {canApprove && d.status === "submitted" && d.author !== userName && (
-              <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-                <button className="rounded-xl bg-emerald-50 text-emerald-700 font-semibold px-4 py-2 text-sm hover:bg-emerald-100 transition-all" onClick={() => approveReport(d.id, "approved")}>승인</button>
-                <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={() => approveReport(d.id, "rejected")}>반려</button>
-              </div>
-            )}
-            <FeedbackSection item={d} canApprove={canApprove} userName={userName}
-              feedbackId={feedbackId} feedbackText={feedbackText}
-              setFeedbackId={setFeedbackId} setFeedbackText={setFeedbackText}
-              submitFeedback={submitFeedback} />
-            <CommentSection reportId={d.id} commentMap={commentMap}
-              commentTarget={commentTarget} commentText={commentText}
-              setCommentTarget={setCommentTarget} setCommentText={setCommentText}
-              addComment={addComment} />
-          </div>
-        ))}
-        {dailies.length === 0 && <div className="text-center py-8 text-slate-400">일일 보고가 없습니다</div>}
-      </div>
+      <DailyList dailies={dailies} userName={userName} canApprove={canApprove}
+        editId={editId} setEditId={setEditId} editContent={editContent} setEditContent={setEditContent}
+        editProblems={editProblems} setEditProblems={setEditProblems} editNext={editNext} setEditNext={setEditNext}
+        feedbackId={feedbackId} feedbackText={feedbackText} setFeedbackId={setFeedbackId} setFeedbackText={setFeedbackText}
+        commentMap={commentMap} commentTarget={commentTarget} commentText={commentText}
+        setCommentTarget={setCommentTarget} setCommentText={setCommentText}
+        approveReport={approveReport} checkReport={checkReport} submitFeedback={submitFeedback}
+        saveEdit={saveEdit} addComment={addComment} canDelete={canDelete} deleteReport={deleteReport} isAdmin={isAdmin}
+      />
     </>
+  );
+}
+
+/* ── 아코디언 리스트 ── */
+function DailyList(props: Omit<Props, "dDate" | "setDDate" | "dContent" | "setDContent" | "dProblems" | "setDProblems" | "dNext" | "setDNext" | "showTemplates" | "setShowTemplates" | "templates" | "applyTemplate" | "addDaily">) {
+  const { displayName } = useTeamDisplayNames();
+  const {
+    dailies, userName, canApprove,
+    editId, setEditId, editContent, setEditContent, editProblems, setEditProblems, editNext, setEditNext,
+    feedbackId, feedbackText, setFeedbackId, setFeedbackText,
+    commentMap, commentTarget, commentText, setCommentTarget, setCommentText,
+    approveReport, checkReport, submitFeedback, saveEdit, addComment,
+    canDelete, deleteReport, isAdmin,
+  } = props;
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      {dailies.map((d) => {
+        const isOpen = expandedIds.has(d.id) || editId === d.id;
+        return (
+          <div key={d.id} className={C}>
+            <button onClick={() => toggle(d.id)} className="w-full flex items-center justify-between text-left">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm font-semibold text-slate-800 truncate">{displayName(d.author ?? userName)}</span>
+                <span className="text-xs text-slate-400 flex-shrink-0">{d.date}</span>
+                {!isOpen && <span className="text-xs text-slate-400 truncate hidden sm:block">— {d.content.slice(0, 40)}{d.content.length > 40 ? "..." : ""}</span>}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <StatusBadge st={d.status ?? "submitted"} />
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
+                  <path d="M3 5l4 4 4-4" />
+                </svg>
+              </div>
+            </button>
+            {isOpen && (
+              <div className="mt-3 pt-3 border-t border-slate-100">
+                {editId === d.id ? (
+                  <div className="space-y-2">
+                    <textarea className={`${I} min-h-[60px]`} rows={3} value={editContent} onChange={e => setEditContent(e.target.value)} />
+                    <textarea className={`${I} min-h-[40px]`} rows={2} value={editProblems} onChange={e => setEditProblems(e.target.value)} placeholder="문제/이슈" />
+                    <textarea className={`${I} min-h-[40px]`} rows={2} value={editNext} onChange={e => setEditNext(e.target.value)} placeholder="내일 계획" />
+                    <div className="flex gap-2 justify-end">
+                      <button className={B2} onClick={() => setEditId(null)}>취소</button>
+                      <button className={B} onClick={() => saveEdit(d.id, "daily")}>저장</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap mb-2">{d.content}</p>
+                    {d.problems && <p className="text-sm text-red-600 mb-1"><span className="font-semibold">문제:</span> {d.problems}</p>}
+                    {d.nextSteps && <p className="text-sm text-blue-600"><span className="font-semibold">계획:</span> {d.nextSteps}</p>}
+                    <div className="flex gap-3 mt-2">
+                      {(d.author === userName || isAdmin) && (
+                        <button onClick={() => { setEditId(d.id); setEditContent(d.content); setEditProblems(d.problems); setEditNext(d.nextSteps); }} className="text-xs text-slate-400 hover:text-[#3182F6] font-semibold">수정</button>
+                      )}
+                      {(canDelete || d.author === userName) && deleteReport && (
+                        <button onClick={() => deleteReport(d.id)} className="text-xs text-slate-400 hover:text-red-500 font-semibold">삭제</button>
+                      )}
+                    </div>
+                  </>
+                )}
+                {canApprove && d.status === "submitted" && d.author !== userName && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+                    <button className="rounded-xl bg-emerald-50 text-emerald-700 font-semibold px-4 py-2 text-sm hover:bg-emerald-100 transition-all" onClick={() => approveReport(d.id, "approved")}>승인</button>
+                    <button className="rounded-xl bg-red-50 text-red-600 font-semibold px-4 py-2 text-sm hover:bg-red-100 transition-all" onClick={() => approveReport(d.id, "rejected")}>반려</button>
+                  </div>
+                )}
+                <FeedbackSection item={d} canApprove={canApprove} userName={userName}
+                  feedbackId={feedbackId} feedbackText={feedbackText}
+                  setFeedbackId={setFeedbackId} setFeedbackText={setFeedbackText}
+                  submitFeedback={submitFeedback} />
+                <CommentSection reportId={d.id} commentMap={commentMap}
+                  commentTarget={commentTarget} commentText={commentText}
+                  setCommentTarget={setCommentTarget} setCommentText={setCommentText}
+                  addComment={addComment} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {dailies.length === 0 && <div className="text-center py-8 text-slate-400">일일 보고가 없습니다</div>}
+    </div>
   );
 }
