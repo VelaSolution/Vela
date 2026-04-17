@@ -18,12 +18,12 @@ function FAQItem({ q, a }: { q: string; a: string }) {
       onClick={() => setOpen(!open)}
       className="w-full text-left rounded-2xl bg-white ring-1 ring-slate-200 overflow-hidden transition-all"
     >
-      <div className="flex items-center justify-between px-5 py-4">
-        <p className="text-sm font-semibold text-slate-900 pr-4">Q. {q}</p>
+      <div className="flex items-center justify-between px-6 py-5">
+        <p className="text-[15px] font-semibold text-slate-900 pr-4">Q. {q}</p>
         <span className={`text-slate-400 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`}>▾</span>
       </div>
       {open && (
-        <div className="px-5 pb-4">
+        <div className="px-6 pb-5">
           <p className="text-sm text-slate-500 leading-relaxed">{a}</p>
         </div>
       )}
