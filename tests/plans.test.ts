@@ -17,8 +17,8 @@ describe("Plans", () => {
     expect(free?.priceNum).toBe(0);
   });
 
-  it("standard 플랜은 9900원이다", () => {
-    expect(PLAN_PRICES.standard).toBe(9900);
+  it("standard 플랜은 29900원이다", () => {
+    expect(PLAN_PRICES.standard).toBe(29900);
   });
 
   it("free 플랜은 시뮬레이터 월 10회 제한", () => {
