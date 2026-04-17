@@ -447,7 +447,24 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-700">{r?.clockOut || "-"}</td>
+                    <td className="py-2.5 px-3 text-slate-700">
+                      {editClockOutId === r?.id ? (
+                        <div className="flex items-center gap-1">
+                          <input type="time" value={editClockOutTimeTeam} onChange={e => setEditClockOutTimeTeam(e.target.value)}
+                            className="border border-slate-200 rounded-lg px-1.5 py-0.5 text-sm font-bold text-slate-800 w-[5.5rem]" />
+                          <button onClick={() => updateClockOutTeam(r!.id)} className="text-xs text-[#3182F6] font-bold">확인</button>
+                          <button onClick={() => setEditClockOutId(null)} className="text-xs text-slate-400">취소</button>
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          {r?.clockOut || "-"}
+                          {r?.clockOut && (
+                            <button onClick={() => { setEditClockOutId(r.id); setEditClockOutTimeTeam(r.clockOut); }}
+                              className="text-xs text-slate-300 hover:text-[#3182F6] transition-colors" title="퇴근 시간 수정">✏️</button>
+                          )}
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2.5 px-3">
                       {r ? (
                         <span className={`${BADGE} text-[11px] ${STATUS_COLOR[r.status]}`}>{r.status}</span>
