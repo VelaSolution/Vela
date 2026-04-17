@@ -4,17 +4,24 @@ export default function NotFound() {
   return (
     <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 flex items-center justify-center">
       <div className="mx-auto max-w-md text-center">
-        <div className="text-6xl mb-4">🔍</div>
-        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">페이지를 찾을 수 없어요</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          요청하신 페이지가 존재하지 않거나 이동되었습니다.
+        <div className="relative inline-block mb-6">
+          <span className="text-8xl font-extrabold text-slate-200">404</span>
+          <span className="absolute inset-0 flex items-center justify-center text-4xl">🔍</span>
+        </div>
+        <h2 className="text-xl font-extrabold text-slate-900 mb-2">페이지를 찾을 수 없어요</h2>
+        <p className="text-sm text-slate-500 mb-8 leading-relaxed">
+          요청하신 페이지가 존재하지 않거나 이동되었습니다.<br />
+          주소를 다시 확인하거나 아래 링크를 이용해주세요.
         </p>
-        <div className="flex gap-3 justify-center">
-          <Link href="/" className="rounded-xl bg-slate-900 text-white font-semibold px-5 py-2.5 text-sm hover:bg-slate-800 transition">
-            홈으로
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/" className="rounded-xl bg-slate-900 text-white font-semibold px-6 py-3 text-sm hover:bg-slate-800 active:scale-[0.98] transition">
+            홈으로 돌아가기
           </Link>
-          <Link href="/tools" className="rounded-xl bg-white ring-1 ring-slate-200 text-slate-700 font-semibold px-5 py-2.5 text-sm hover:bg-slate-50 transition">
-            도구 목록
+          <Link href="/tools" className="rounded-xl bg-white ring-1 ring-slate-200 text-slate-700 font-semibold px-6 py-3 text-sm hover:bg-slate-50 active:scale-[0.98] transition">
+            도구 둘러보기
+          </Link>
+          <Link href="/guide" className="rounded-xl bg-white ring-1 ring-slate-200 text-slate-700 font-semibold px-6 py-3 text-sm hover:bg-slate-50 active:scale-[0.98] transition">
+            가이드 보기
           </Link>
         </div>
       </div>
