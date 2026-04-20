@@ -361,14 +361,102 @@ export default function DashboardHome() {
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-
-      <div className="mx-auto max-w-6xl px-4 py-8 md:px-8 space-y-4 animate-pulse">
-        <div className="h-8 bg-slate-200 rounded-3xl w-48" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-20 bg-slate-200 rounded-3xl" />)}
+      <div className="mx-auto max-w-6xl px-5 py-6 md:px-8 space-y-5 animate-pulse">
+        {/* 인사말 헤더 스켈레톤 */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-lg w-24 mb-2" />
+            <div className="h-6 bg-slate-200 dark:bg-slate-600 rounded-xl w-48" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded-3xl w-24" />
+            <div className="h-10 bg-slate-200 dark:bg-slate-600 rounded-3xl w-28" />
+          </div>
         </div>
-        <div className="h-64 bg-slate-200 rounded-3xl" />
-        <div className="h-48 bg-slate-200 rounded-3xl" />
+
+        {/* 핵심 지표 4개 스켈레톤 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="rounded-3xl bg-white dark:bg-slate-800 p-4 sm:p-5 ring-1 ring-slate-200 dark:ring-slate-700 space-y-2">
+              <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-lg w-16" />
+              <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-24" />
+              <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-lg w-20" />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* 왼쪽 2/3 스켈레톤 */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* 차트 영역 스켈레톤 */}
+            <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-32" />
+                <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded-lg w-16" />
+              </div>
+              <div className="h-32 bg-slate-100 dark:bg-slate-700 rounded-2xl" />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-16 bg-slate-100 dark:bg-slate-700 rounded-xl" />
+                <div className="h-16 bg-slate-100 dark:bg-slate-700 rounded-xl" />
+              </div>
+            </div>
+
+            {/* 시뮬레이션 목록 스켈레톤 */}
+            <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+              <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-36 mb-2" />
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-3 rounded-3xl bg-slate-50 dark:bg-slate-700 px-4 py-3">
+                  <div className="h-8 w-8 bg-slate-200 dark:bg-slate-600 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-xl w-3/4" />
+                    <div className="h-3 bg-slate-100 dark:bg-slate-600 rounded-lg w-1/2" />
+                  </div>
+                  <div className="space-y-1.5 flex-shrink-0">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-lg w-16" />
+                    <div className="h-3 bg-slate-100 dark:bg-slate-600 rounded-lg w-14" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 오른쪽 1/3 스켈레톤 */}
+          <div className="space-y-5">
+            {/* 도구 바로가기 스켈레톤 */}
+            <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+              <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-28" />
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-10 bg-slate-100 dark:bg-slate-700 rounded-xl" />
+                ))}
+              </div>
+            </div>
+
+            {/* 메뉴 원가 스켈레톤 */}
+            <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+              <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-24" />
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded-lg flex-1" />
+                  <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full w-14" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-lg w-9" />
+                </div>
+              ))}
+            </div>
+
+            {/* 커뮤니티 스켈레톤 */}
+            <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+              <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-20" />
+              {[1, 2].map(i => (
+                <div key={i} className="rounded-xl bg-slate-50 dark:bg-slate-700 px-3 py-2.5 space-y-1.5">
+                  <div className="h-3 bg-slate-200 dark:bg-slate-600 rounded-lg w-16" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-xl w-full" />
+                  <div className="h-3 bg-slate-100 dark:bg-slate-600 rounded-lg w-2/3" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

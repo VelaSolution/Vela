@@ -240,12 +240,55 @@ export default function ProfilePage() {
 
   if(loading) return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      
-      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 space-y-4 animate-pulse">
-        <div className="h-20 bg-slate-200 rounded-3xl" />
-        <div className="h-12 bg-slate-200 rounded-2xl" />
-        <div className="h-48 bg-slate-200 rounded-3xl" />
-        <div className="h-48 bg-slate-200 rounded-3xl" />
+      <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 space-y-5 animate-pulse">
+        {/* 프로필 카드 스켈레톤 */}
+        <div className="rounded-3xl bg-white dark:bg-slate-800 p-5 ring-1 ring-slate-200 dark:ring-slate-700 flex items-center gap-4">
+          <div className="h-14 w-14 rounded-full bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="h-5 bg-slate-200 dark:bg-slate-600 rounded-xl w-32" />
+            <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded-lg w-44" />
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <div className="h-8 bg-slate-100 dark:bg-slate-700 rounded-xl w-16" />
+            <div className="h-8 bg-slate-100 dark:bg-slate-700 rounded-xl w-16" />
+          </div>
+        </div>
+
+        {/* 탭 바 스켈레톤 */}
+        <div className="flex gap-1 rounded-2xl bg-white dark:bg-slate-800 p-1 ring-1 ring-slate-200 dark:ring-slate-700">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`h-8 rounded-xl flex-shrink-0 ${i === 1 ? "bg-slate-200 dark:bg-slate-600 w-24" : "bg-slate-100 dark:bg-slate-700 w-28"}`} />
+          ))}
+        </div>
+
+        {/* 프로필 설정 영역 스켈레톤 */}
+        <div className="space-y-4">
+          {/* 닉네임 섹션 */}
+          <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+            <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-xl w-24" />
+            <div className="rounded-2xl bg-slate-50 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
+              <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-lg w-28" />
+              <div className="h-3 bg-slate-100 dark:bg-slate-600 rounded-lg w-10" />
+            </div>
+          </div>
+
+          {/* 프로필 사진 섹션 */}
+          <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+            <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-xl w-20" />
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-slate-200 dark:bg-slate-600" />
+              <div className="h-9 bg-slate-100 dark:bg-slate-700 rounded-xl w-20" />
+            </div>
+          </div>
+
+          {/* 비밀번호 섹션 */}
+          <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700 space-y-3">
+            <div className="h-4 bg-slate-200 dark:bg-slate-600 rounded-xl w-24" />
+            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded-xl w-full" />
+            <div className="h-10 bg-slate-100 dark:bg-slate-700 rounded-xl w-full" />
+            <div className="h-10 bg-slate-200 dark:bg-slate-600 rounded-xl w-full" />
+          </div>
+        </div>
       </div>
     </div>
   );

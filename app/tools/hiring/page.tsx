@@ -87,7 +87,7 @@ export default function HiringPage() {
   const [jobBenefits, setJobBenefits] = useState("식사 제공, 교통비 지원");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const { data: hiringData, update: setHiringData, status, userId } = useCloudSync<{ employees: Employee[]; contract: ContractForm; savedContracts: ContractForm[] }>(KEY, { employees: [{ ...defaultEmp }], contract: defaultContract, savedContracts: [] });
+  const { data: hiringData, update: setHiringData, status, error: syncError, userId, retry } = useCloudSync<{ employees: Employee[]; contract: ContractForm; savedContracts: ContractForm[] }>(KEY, { employees: [{ ...defaultEmp }], contract: defaultContract, savedContracts: [] });
   useSimulatorData();
 
   useEffect(() => {
@@ -170,9 +170,18 @@ export default function HiringPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">인력 채용 도구</h1>
             <div className="flex items-center gap-2">
               <p className="text-slate-500 text-sm">급여 계산, 근로계약서, 채용공고까지 한 번에</p>
-              <CloudSyncBadge status={status} userId={userId} />
+              <CloudSyncBadge status={status} userId={userId} onRetry={retry} />
             </div>
           </div>
+
+          {syncError && (
+            <div className="rounded-xl bg-red-50 ring-1 ring-red-200 px-4 py-3 mb-4 flex items-center gap-2 text-sm text-red-700">
+              <span>⚠️</span>
+              <span className="font-medium">클라우드 동기화 실패</span>
+              <span className="text-red-500 text-xs">— 데이터는 로컬에 저장되었습니다</span>
+              <button onClick={retry} className="ml-auto px-3 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-xs font-bold transition">재시도</button>
+            </div>
+          )}
 
           <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4">
             {TABS.map(t => (

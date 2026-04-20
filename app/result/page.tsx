@@ -179,8 +179,15 @@ function ResultContent() {
           {/* 핵심 3개 숫자 */}
           <div className="mb-4">
             <p className="text-xs text-slate-500 mb-1">세후 실수령</p>
-            <p className={`text-3xl font-extrabold tracking-tight ${result.netProfit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+            <p className={`text-4xl font-extrabold tracking-tight ${result.netProfit >= 0 ? "text-emerald-700" : "text-red-600"}`}>
               {result.netProfit >= 0 ? "+" : ""}{fmt(result.netProfit)}<span className="text-lg font-bold text-slate-400 ml-0.5">원</span>
+            </p>
+            <p className={`mt-2 text-sm font-semibold ${result.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+              {(() => {
+                const man = Math.round(Math.abs(result.netProfit) / 10000);
+                if (result.netProfit >= 0) return `월 순이익 약 ${man.toLocaleString()}만원 예상됩니다`;
+                return `월 ${man.toLocaleString()}만원 적자가 예상됩니다`;
+              })()}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -304,13 +311,13 @@ function ResultContent() {
 
         {/* 핵심 요약 -- 6개 */}
         <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          <SummaryCard title="월 총 매출" value={`${fmt(result.totalSales)}원`} sub={`홀 ${fmt(result.hallSales)} · 배달 ${fmt(result.deliveryNetSales)}`} />
-          <SummaryCard title="세전 순이익" value={`${fmt(result.profit)}원`} sub={`순이익률 ${pct(result.netMargin)}`} highlight={isProfit ? "good" : "bad"} />
-          <SummaryCard title="세후 실수령" value={`${fmt(result.netProfit)}원`} sub={`세금 ${fmt(result.incomeTax + result.vatBurden)}원 차감`} highlight={result.netProfit >= 0 ? "good" : "bad"} />
-          <SummaryCard title="현금흐름" value={`${fmt(result.cashFlow)}원`} sub={form.loanEnabled ? `대출 상환 ${fmt(result.monthlyLoanPayment)}원 차감` : "대출 없음"} highlight={result.cashFlow >= 0 ? "good" : "bad"} />
-          <SummaryCard title="손익분기점" value={`${fmt(result.bep)}원`} sub={result.bepGap >= 0 ? `${fmt(result.bepGap)}원 초과` : `${fmt(Math.abs(result.bepGap))}원 부족`} highlight={result.bepGap >= 0 ? "good" : "bad"} />
+          <SummaryCard title="월 총 매출" value={`${fmt(result.totalSales)}원`} sub={`홀 ${fmt(result.hallSales)} · 배달 ${fmt(result.deliveryNetSales)}`} tooltip="홀 매출과 배달 매출(수수료 차감 후)의 합계입니다" />
+          <SummaryCard title="세전 순이익" value={`${fmt(result.profit)}원`} sub={`순이익률 ${pct(result.netMargin)}`} highlight={isProfit ? "good" : "bad"} tooltip="매출에서 모든 비용을 뺀 세전 이익입니다" />
+          <SummaryCard title="세후 실수령" value={`${fmt(result.netProfit)}원`} sub={`세금 ${fmt(result.incomeTax + result.vatBurden)}원 차감`} highlight={result.netProfit >= 0 ? "good" : "bad"} tooltip="소득세와 부가세를 차감한 실제 수령액입니다" />
+          <SummaryCard title="현금흐름" value={`${fmt(result.cashFlow)}원`} sub={form.loanEnabled ? `대출 상환 ${fmt(result.monthlyLoanPayment)}원 차감` : "대출 없음"} highlight={result.cashFlow >= 0 ? "good" : "bad"} tooltip="세후 순이익에서 대출 상환액을 뺀 실제 현금 흐름입니다" />
+          <SummaryCard title="손익분기점" value={`${fmt(result.bep)}원`} sub={result.bepGap >= 0 ? `${fmt(result.bepGap)}원 초과` : `${fmt(Math.abs(result.bepGap))}원 부족`} highlight={result.bepGap >= 0 ? "good" : "bad"} tooltip="이 매출 이상이면 손해 보지 않는 최소 매출액입니다" />
           <SummaryCard title="투자금 회수" value={result.recoveryMonthsActual === 999 ? "불가" : `${result.recoveryMonthsActual}개월`}
-            sub={`목표 ${form.recoveryMonths}개월`} highlight={result.recoveryMonthsActual <= form.recoveryMonths ? "good" : result.recoveryMonthsActual === 999 ? "bad" : "info"} />
+            sub={`목표 ${form.recoveryMonths}개월`} highlight={result.recoveryMonthsActual <= form.recoveryMonths ? "good" : result.recoveryMonthsActual === 999 ? "bad" : "info"} tooltip="초기 투자 비용을 월 현금흐름으로 회수하는 데 걸리는 기간입니다" />
         </section>
 
         {/* 손익분기 D-day */}
@@ -600,9 +607,9 @@ function ResultContent() {
                   <XAxis dataKey="label" />
                   <YAxis tickFormatter={(v) => `${Math.round(Number(v) / 10000)}만`} />
                   <Tooltip formatter={(value, name) => [`${fmt(Number(value ?? 0))}원`, String(name)]} />
-                  <Bar dataKey="profit" name="세전순이익" radius={[10, 10, 0, 0]} />
-                  <Bar dataKey="netProfit" name="세후실수령" radius={[10, 10, 0, 0]} />
-                  <Bar dataKey="cashFlow" name="현금흐름" radius={[10, 10, 0, 0]} />
+                  <Bar dataKey="profit" name="세전순이익" fill="#3182F6" radius={[10, 10, 0, 0]} />
+                  <Bar dataKey="netProfit" name="세후실수령" fill="#10B981" radius={[10, 10, 0, 0]} />
+                  <Bar dataKey="cashFlow" name="현금흐름" fill="#7C3AED" radius={[10, 10, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -2,7 +2,7 @@
 
 // 공통 UI 카드 컴포넌트들
 
-export function SummaryCard({ title, value, sub, highlight }: { title: string; value: string; sub?: string; highlight?: "good" | "bad" | "info" }) {
+export function SummaryCard({ title, value, sub, highlight, tooltip }: { title: string; value: string; sub?: string; highlight?: "good" | "bad" | "info"; tooltip?: string }) {
   const bg = highlight === "good" ? "bg-emerald-50 ring-emerald-200 dark:bg-emerald-900/20 dark:ring-emerald-800"
     : highlight === "bad" ? "bg-red-50 ring-red-200 dark:bg-red-900/20 dark:ring-red-800"
     : highlight === "info" ? "bg-blue-50 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-800"
@@ -12,8 +12,11 @@ export function SummaryCard({ title, value, sub, highlight }: { title: string; v
     : highlight === "info" ? "text-blue-700 dark:text-blue-400"
     : "text-slate-900 dark:text-slate-100";
   return (
-    <div className={`rounded-2xl p-3.5 shadow-sm ring-1 ${bg}`}>
-      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{title}</p>
+    <div className={`rounded-2xl p-3.5 shadow-sm ring-1 ${bg}`} title={tooltip}>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+        {title}
+        {tooltip && <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-600 text-[9px] font-bold text-slate-500 dark:text-slate-300 cursor-help">?</span>}
+      </p>
       <p className={`text-[15px] font-bold tracking-tight leading-snug break-all ${tc}`}>{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-400 leading-relaxed">{sub}</p>}
     </div>

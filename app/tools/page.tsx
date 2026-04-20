@@ -220,6 +220,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const BADGE_STYLES: Record<string, string> = {
   NEW: "bg-gradient-to-r from-violet-500 to-indigo-500 text-white",
   AI: "bg-gradient-to-r from-pink-500 to-rose-500 text-white",
+  PRO: "bg-gradient-to-r from-amber-500 to-orange-500 text-white",
   SOON: "bg-slate-200 text-slate-500",
 };
 
@@ -354,9 +355,11 @@ export default function ToolsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {cat.tools.map((tool) => {
                   const locked = !!(tool as { paid?: boolean }).paid && plan === "free";
+                  const isSoon = tool.badge === "SOON";
+                  const isDisabled = locked || isSoon;
                   const cardClass = [
                     "group relative rounded-2xl bg-white ring-1 ring-slate-200/80 p-5 flex gap-4 items-start transition-all duration-200",
-                    locked
+                    isDisabled
                       ? "opacity-60 cursor-not-allowed"
                       : "hover:shadow-lg hover:shadow-slate-200/50 hover:-translate-y-0.5 hover:ring-slate-300",
                   ].join(" ");
@@ -368,7 +371,7 @@ export default function ToolsPage() {
                         className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ring-1 ring-black/5 transition-transform duration-200 group-hover:scale-110"
                         style={{ background: tool.bg }}
                       >
-                        {locked ? "🔒" : tool.emoji}
+                        {locked ? "🔒" : isSoon ? "🕐" : tool.emoji}
                       </div>
                       {/* Content */}
                       <div className="flex-1 min-w-0">
@@ -379,18 +382,28 @@ export default function ToolsPage() {
                               {tool.badge}
                             </span>
                           )}
+                          {locked && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide ${BADGE_STYLES.PRO}`}>
+                              PRO
+                            </span>
+                          )}
                         </div>
                         {locked ? (
                           <div>
                             <p className="text-[13px] text-slate-400 leading-relaxed mb-1.5">{resolveDesc(tool, locale)}</p>
                             <Link href="/pricing" className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition">업그레이드 →</Link>
                           </div>
+                        ) : isSoon ? (
+                          <div>
+                            <p className="text-[13px] text-slate-400 leading-relaxed mb-1.5">{resolveDesc(tool, locale)}</p>
+                            <span className="text-xs font-semibold text-slate-400">곧 출시 예정</span>
+                          </div>
                         ) : (
                           <p className="text-[13px] text-slate-500 leading-relaxed">{resolveDesc(tool, locale)}</p>
                         )}
                       </div>
                       {/* Arrow indicator on hover */}
-                      {!locked && (
+                      {!isDisabled && (
                         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 text-sm font-medium">
                           →
                         </span>
@@ -398,7 +411,7 @@ export default function ToolsPage() {
                     </>
                   );
 
-                  return locked ? (
+                  return isDisabled ? (
                     <div key={tool.href} className={cardClass}>{inner}</div>
                   ) : (
                     <Link key={tool.href} href={tool.href} className={cardClass}>{inner}</Link>

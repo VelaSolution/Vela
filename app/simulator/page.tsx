@@ -367,7 +367,7 @@ export default function Page() {
                 {step < 3 ? (
                   <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo({ top: 0, behavior: "smooth" }); return; } setStepError(""); setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">다음 단계</button>
                 ) : (
-                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-600 active:scale-[0.98]">결과 보기</button>
+                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-600 hover:to-emerald-700 active:scale-[0.98]">결과 보기</button>
                 )}
               </div>
             </section>
@@ -382,7 +382,7 @@ export default function Page() {
                 {step < 3 ? (
                   <button type="button" onClick={() => { const error = getCurrentStepError(); if (error) { setStepError(error); window.scrollTo({ top: 0, behavior: "smooth" }); return; } setStepError(""); setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">다음 단계 →</button>
                 ) : (
-                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-blue-500 py-3 text-sm font-bold text-white active:scale-[0.98]">결과 보기 →</button>
+                  <button type="button" onClick={goToResult} className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98]">결과 보기 →</button>
                 )}
               </div>
             </div>

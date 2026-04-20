@@ -36,7 +36,7 @@ export function FeaturesSection() {
         <FadeIn>
           <div style={{ textAlign: "center", marginTop: 32 }}>
             <Link href="/tools" style={{ fontSize: 14, fontWeight: 600, color: "#3182F6", textDecoration: "none" }}>
-              도구 30개 전체 보기 →
+              도구 전체 보기 →
             </Link>
           </div>
         </FadeIn>

@@ -98,7 +98,7 @@ export default function TaxPage() {
 
   const [monthlySnaps, setMonthlySnaps] = useState<MonthSnap[]>([]);
 
-  const { data: cloudData, update: cloudUpdate, status: syncStatus, userId: syncUserId } = useCloudSync<TaxCloudData>("vela-tax-calc", TAX_DEFAULT);
+  const { data: cloudData, update: cloudUpdate, status: syncStatus, error: syncError, userId: syncUserId, retry } = useCloudSync<TaxCloudData>("vela-tax-calc", TAX_DEFAULT);
 
   // Load from cloud on mount
   useEffect(() => {
@@ -222,10 +222,19 @@ export default function TaxPage() {
             </div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">세금 계산기</h1>
-              <CloudSyncBadge status={syncStatus} userId={syncUserId} />
+              <CloudSyncBadge status={syncStatus} userId={syncUserId} onRetry={retry} />
             </div>
             <p className="text-slate-500 text-sm">연 매출과 순이익을 입력하면 부가세·종합소득세 예상액을 계산합니다.</p>
           </div>
+
+          {syncError && (
+            <div className="rounded-xl bg-red-50 ring-1 ring-red-200 px-4 py-3 mb-4 flex items-center gap-2 text-sm text-red-700">
+              <span>⚠️</span>
+              <span className="font-medium">클라우드 동기화 실패</span>
+              <span className="text-red-500 text-xs">— 데이터는 로컬에 저장되었습니다</span>
+              <button onClick={retry} className="ml-auto px-3 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-xs font-bold transition">재시도</button>
+            </div>
+          )}
 
           {/* 데이터 불러오기 — SimDataPicker 통합 */}
           <div className="rounded-3xl bg-white ring-1 ring-slate-200 p-5 mb-4">

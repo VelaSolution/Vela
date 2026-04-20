@@ -34,12 +34,14 @@ export function useCloudSync<T>(
 
   const [data, setData] = useState<T>(defaultData);
   const [status, setStatus] = useState<SyncStatus>("idle");
+  const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const userRef = useRef<string | null>(null);
   const cloudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const statusTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastFailedData = useRef<T | null>(null);
   const lsKey = toolKey;
 
   /* ── 초기 로드: 로컬 → 클라우드 병합 ── */
@@ -131,14 +133,17 @@ export function useCloudSync<T>(
         });
       }
 
+      setError(null);
+      lastFailedData.current = null;
       setStatus("saved");
       if (statusTimer.current) clearTimeout(statusTimer.current);
       statusTimer.current = setTimeout(() => setStatus("idle"), 2000);
     } catch (err) {
       captureError(err instanceof Error ? err : new Error(String(err)), { toolKey, phase: "save-to-cloud" });
+      const msg = err instanceof Error ? err.message : "클라우드 동기화에 실패했습니다";
+      setError(msg);
+      lastFailedData.current = next;
       setStatus("error");
-      if (statusTimer.current) clearTimeout(statusTimer.current);
-      statusTimer.current = setTimeout(() => setStatus("idle"), 3000);
     }
   }, [toolKey]);
 
@@ -157,6 +162,14 @@ export function useCloudSync<T>(
     await saveToCloud(data);
   }, [data, saveToCloud]);
 
+  /* ── 재시도 ── */
+  const retry = useCallback(async () => {
+    setError(null);
+    const target = lastFailedData.current ?? data;
+    await saveToCloud(target);
+    if (lastFailedData.current) lastFailedData.current = null;
+  }, [data, saveToCloud]);
+
   /* ── 클라우드 데이터 삭제 ── */
   const deleteCloud = useCallback(async () => {
     if (!userRef.current) return;
@@ -169,5 +182,5 @@ export function useCloudSync<T>(
     }
   }, [toolKey]);
 
-  return { data, update, status, userId, loaded, saveNow, deleteCloud };
+  return { data, update, status, error, userId, loaded, saveNow, deleteCloud, retry };
 }

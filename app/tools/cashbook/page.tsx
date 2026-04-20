@@ -50,7 +50,7 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 const uid = () => Math.random().toString(36).slice(2, 9);
 
 export default function CashbookPage() {
-  const { data: entries, update: setEntries, status, userId } = useCloudSync<Entry[]>("vela-cashbook", []);
+  const { data: entries, update: setEntries, status, error: syncError, userId, retry } = useCloudSync<Entry[]>("vela-cashbook", []);
 
   // 입력 폼
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -159,9 +159,18 @@ export default function CashbookPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">매장 가계부</h1>
             <div className="flex items-center gap-2">
               <p className="text-slate-500 text-sm">매일 수입/지출 기록하고, 이번 달 얼마 남았는지 확인하세요</p>
-              <CloudSyncBadge status={status} userId={userId} />
+              <CloudSyncBadge status={status} userId={userId} onRetry={retry} />
             </div>
           </div>
+
+          {syncError && (
+            <div className="rounded-xl bg-red-50 ring-1 ring-red-200 px-4 py-3 mb-4 flex items-center gap-2 text-sm text-red-700">
+              <span>⚠️</span>
+              <span className="font-medium">클라우드 동기화 실패</span>
+              <span className="text-red-500 text-xs">— 데이터는 로컬에 저장되었습니다</span>
+              <button onClick={retry} className="ml-auto px-3 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-xs font-bold transition">재시도</button>
+            </div>
+          )}
 
           {/* ── 월간 요약 카드 ── */}
           <div className="rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-5 mb-4 text-white">
