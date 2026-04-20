@@ -157,6 +157,7 @@ const CATEGORIES: { key: string; label: string; desc: string; tools: Tool[] }[] 
       { href: "/tools/tax", emoji: "🧾", title: "세금 계산기", desc: "매출 기반 부가세·종합소득세 예상액 자동 산출", color: "#D97706", bg: "#FFFBEB", badge: null },
       { href: "/tools/pl-report", emoji: "📄", title: "손익계산서 PDF", desc: "시뮬레이션 데이터로 월별 P&L 리포트 PDF 출력", color: "#7C3AED", bg: "#F5F3FF", badge: null },
       { href: "/tools/financial-sim", emoji: "📈", title: "재무 시뮬레이션", desc: "런웨이·BEP·현금흐름 12개월 시뮬레이션", color: "#3182F6", bg: "#EBF3FF", badge: null, i18nKey: "financialSim" },
+      { href: "/tools/cashbook", emoji: "📒", title: "매장 가계부", desc: "매일 수입/지출 기록 → 카테고리별 분석 + 월간 순이익", color: "#10B981", bg: "#ECFDF5", badge: "NEW" },
       { href: "/tools/daily-sales", emoji: "📝", title: "일일 매출 기록", desc: "매일 매출·고객수 입력 → 월간 자동 집계 + 요일 패턴", color: "#3182F6", bg: "#EFF6FF", badge: null },
       { href: "/tools/labor-law", emoji: "⚖️", title: "인건비 계산기 (법정)", desc: "주휴수당·야간수당·4대보험 자동 반영 실제 인건비", color: "#14B8A6", bg: "#F0FDFA", badge: null },
       { href: "/tools/competitor-pricing", emoji: "🔍", title: "경쟁매장 가격 조사", desc: "주변 매장 메뉴 가격 기록 → 내 가격 포지셔닝", color: "#D97706", bg: "#FFFBEB", badge: null },
