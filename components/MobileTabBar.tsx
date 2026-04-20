@@ -48,7 +48,7 @@ export default function MobileTabBar() {
   if (pathname.startsWith("/hq")) return null;
 
   const tabs = isHqMember
-    ? [...TABS.slice(0, 3), { href: "/hq", icon: "🏛️", label: "HQ" }, ...TABS.slice(3)]
+    ? [...TABS.slice(0, 3), { href: "/hq", icon: "⚓", label: "Bridge" }, ...TABS.slice(3)]
     : TABS;
 
   // 현재 활성 탭

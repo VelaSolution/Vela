@@ -147,7 +147,7 @@ export default function NavBar() {
                 </Link>
                 <Link href="/dashboard" className="vela-btn-dashboard">{t("nav.dashboard", locale)}</Link>
                 {isHqMember && (
-                  <Link href="/hq" className="vela-btn-dashboard" style={{background:"#1a1a2e",color:"#fff"}}>🏛️ HQ</Link>
+                  <Link href="/hq" className="vela-btn-dashboard" style={{background:"#1a1a2e",color:"#fff"}}>⚓ Bridge</Link>
                 )}
                 <button className="vela-btn-logout" onClick={handleLogout}>{t("nav.logout", locale)}</button>
                 <Link href="/simulator" className="vela-btn-start">{t("nav.simulator", locale)}</Link>

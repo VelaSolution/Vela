@@ -178,9 +178,9 @@ export default function HQPage() {
         <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <span className="text-3xl">🔒</span>
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">접근 권한 필요</h2>
-        <p className="text-sm text-slate-500 mb-2">VELA Bridge 접속 승인을 기다리고 있습니다.</p>
-        <p className="text-xs text-slate-400 mb-6">관리자 승인 후 사용하실 수 있습니다.</p>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">브릿�� 접근 권한 필요</h2>
+        <p className="text-sm text-slate-500 mb-2">선장의 승인이 필요합니다.</p>
+        <p className="text-xs text-slate-400 mb-6">승인 후 브��지에 탑승할 수 있습니다.</p>
         <Link href="/" className="inline-block rounded-xl bg-slate-900 text-white font-semibold px-6 py-3 text-sm hover:bg-slate-800 transition-all active:scale-[0.98]">
           홈으로 돌아가기
         </Link>
@@ -346,7 +346,7 @@ export default function HQPage() {
           {renderNav(true)}
           <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium" onClick={() => setSidebarOpen(false)}>
-              <span>←</span><span>VELA 서비스로 이동</span>
+              <span>←</span><span>갑판으로 나가기</span>
             </Link>
           </div>
         </aside>
@@ -367,7 +367,7 @@ export default function HQPage() {
               </div>
             </div>
             <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium px-1">
-              <span>←</span><span>VELA 서비스로 이동</span>
+              <span>←</span><span>갑판으로 나가기</span>
             </Link>
           </div>
         </aside>
