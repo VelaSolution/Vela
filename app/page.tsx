@@ -16,6 +16,7 @@ import { FAQSection } from "@/app/components/landing/FAQSection";
 import { CTASection } from "@/app/components/landing/CTASection";
 import { ContactSection } from "@/app/components/landing/ContactSection";
 import { FooterSection } from "@/app/components/landing/FooterSection";
+import { BrandStorySection } from "@/app/components/landing/BrandStorySection";
 import { MemberHome } from "@/app/components/landing/MemberHome";
 
 /* ── 미니 시뮬레이터 ── */
@@ -121,6 +122,7 @@ function LandingContent() {
     <>
       <LandingStyles />
       <HeroSection />
+      <BrandStorySection />
       <HowItWorksSection />
       <TestimonialsSection />
       <FeaturesSection />
