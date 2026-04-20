@@ -581,7 +581,52 @@ CREATE POLICY "hq_directives_auth" ON hq_directives
   WITH CHECK (auth.role() = 'authenticated');
 
 
+-- ──────────────────────────────────────────────────────────────
+-- 29. hq_expenses (경비 지출)
+-- ──────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS hq_expenses (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  author      text NOT NULL,                          -- 등록자 이름
+  date        text NOT NULL,                          -- YYYY-MM-DD
+  category    text NOT NULL,                          -- 식비 | 교통비 | 사무용품 | 마케팅 | 소프트웨어 | 통신비 | 복리후생 | 기타
+  amount      numeric NOT NULL DEFAULT 0,             -- 금액 (원)
+  description text DEFAULT '',                        -- 설명
+  payment     text DEFAULT '법인카드',                -- 법인카드 | 개인카드 | 현금 | 계좌이체
+  receipt_url text,                                   -- 영수증 이미지 URL
+  status      text DEFAULT '대기',                    -- 대기 | 승인 | 반려
+  approver    text,                                   -- 승인자 이름
+  memo        text DEFAULT '',                        -- 비고
+  created_at  timestamptz DEFAULT now()
+);
+
+ALTER TABLE hq_expenses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "hq_expenses_auth" ON hq_expenses
+  FOR ALL USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+
+-- ──────────────────────────────────────────────────────────────
+-- 30. hq_fixed_costs (고정비)
+-- ──────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS hq_fixed_costs (
+  id            uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name          text NOT NULL,                          -- 항목명 (ex: 김민혁 급여, Vercel Pro, 도메인 등)
+  category      text NOT NULL,                          -- 급여 | 임대료 | 도메인 | 서버/클라우드 | 구독서비스 | 보험 | 세금/공과금 | 통신비 | 기타
+  amount        numeric NOT NULL DEFAULT 0,             -- 금액 (원)
+  billing_cycle text DEFAULT '월',                      -- 월 | 분기 | 반기 | 연
+  due_day       int DEFAULT 1,                          -- 납부일 (매월 N일)
+  description   text DEFAULT '',                        -- 메모
+  active        boolean DEFAULT true,                   -- 활성 여부
+  created_at    timestamptz DEFAULT now()
+);
+
+ALTER TABLE hq_fixed_costs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "hq_fixed_costs_auth" ON hq_fixed_costs
+  FOR ALL USING (auth.role() = 'authenticated')
+  WITH CHECK (auth.role() = 'authenticated');
+
+
 -- ============================================================
--- 완료! 총 28개 테이블 생성
+-- 완료! 총 30개 테이블 생성
 -- 참고: hq-files Storage 버킷은 Supabase 대시보드에서 별도 생성 필요
 -- ============================================================

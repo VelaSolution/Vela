@@ -71,6 +71,21 @@ export type WikiArticle = {
   author: string; lastEditor: string; date: string; updatedAt: string;
   tags: string[]; views: number;
 };
+export type Expense = {
+  id: string; author: string; date: string;
+  category: "식비" | "교통비" | "사무용품" | "마케팅" | "소프트웨어" | "통신비" | "복리후생" | "기타";
+  amount: number; description: string;
+  payment: "법인카드" | "개인카드" | "현금" | "계좌이체";
+  receipt_url?: string; status: "대기" | "승인" | "반려";
+  approver?: string; memo: string; created_at: string;
+};
+export type FixedCost = {
+  id: string; name: string;
+  category: "급여" | "임대료" | "도메인" | "서버/클라우드" | "구독서비스" | "보험" | "세금/공과금" | "통신비" | "기타";
+  amount: number; billing_cycle: "월" | "분기" | "반기" | "연";
+  due_day: number; description: string; active: boolean;
+  created_at: string;
+};
 
 // ── 탭 설정 ────────────────────────────────────────────
 export const TABS: { key: Tab; label: string; icon: string }[] = [
@@ -100,7 +115,7 @@ export const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "orgchart", label: "조직도", icon: "🏢" },
   { key: "audit", label: "활동로그", icon: "📜" },
   { key: "gantt", label: "간트", icon: "📊" },
-  { key: "expense", label: "경비청구", icon: "🧾" },
+  { key: "expense", label: "재무", icon: "💰" },
   { key: "kudos", label: "칭찬", icon: "👏" },
   { key: "payslip", label: "급여", icon: "💰" },
 ];
@@ -113,7 +128,7 @@ export const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
   { label: "소통", items: ["notice", "board", "feedback", "chat", "memo", "kudos"] },
   { label: "조직", items: ["team", "contacts", "survey", "orgchart"] },
   { label: "문서", items: ["files", "approval", "wiki"] },
-  { label: "급여·경비", items: ["payslip", "expense"] },
+  { label: "재무", items: ["payslip", "expense"] },
   { label: "분석", items: ["timeline", "audit"] },
 ];
 
