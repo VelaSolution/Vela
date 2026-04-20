@@ -72,7 +72,7 @@ export default function AIBriefingSection({ form, result, plan }: { form: FullFo
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
         title="AI 브리핑 한도를 다 사용했어요"
-        description="무료 플랜은 월 10회까지 AI 브리핑을 생성할 수 있어요. 스탠다드 플랜으로 업그레이드하면 무제한으로 이용 가능합니다."
+        description="무료 플랜은 월 10회까지 AI 브리핑을 생성할 수 있어요. 프로 플랜으로 업그레이드하면 무제한으로 이용 가능합니다."
       />
       {isLimited && !briefing && (
         <button onClick={() => setShowUpgrade(true)} className="w-full rounded-2xl bg-slate-100 dark:bg-slate-700 py-4 text-sm font-semibold text-slate-500 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-600">

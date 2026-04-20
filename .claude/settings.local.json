@@ -80,7 +80,8 @@
       "Bash(/usr/bin/sed -i '' 's/\"무료로 시작\"/\"무료로 시작하기\"/g' /Users/mnhyuk/my-rose-app/app/pricing/page.tsx)",
       "Bash(/usr/bin/sed -i '' 's/\"스탠다드 시작\"/\"스탠다드 시작하기\"/g' /Users/mnhyuk/my-rose-app/app/pricing/page.tsx)",
       "Bash(/usr/bin/sed -i '' 's/\"프로 시작\"/\"프로 시작하기\"/g' /Users/mnhyuk/my-rose-app/app/pricing/page.tsx)",
-      "Bash(/usr/bin/sed -i '' 's/>무료 시작</>무료로 시작하기</g' /Users/mnhyuk/my-rose-app/components/NavBar.tsx)"
+      "Bash(/usr/bin/sed -i '' 's/>무료 시작</>무료로 시작하기</g' /Users/mnhyuk/my-rose-app/components/NavBar.tsx)",
+      "Bash(git commit -m 'fix: 푸터 사업자 정보 중복 제거:*)"
     ]
   }
 }

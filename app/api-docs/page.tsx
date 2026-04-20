@@ -155,7 +155,7 @@ const ENDPOINTS: Endpoint[] = [
     category: "결제",
     auth: true,
     rateLimit: null,
-    requestBody: JSON.stringify({ paymentKey: "toss_pay_key_xxx", orderId: "VELA-pro-1712345678", amount: 9900 }, null, 2),
+    requestBody: JSON.stringify({ paymentKey: "toss_pay_key_xxx", orderId: "VELA-pro-1712345678", amount: 29900 }, null, 2),
     responseExample: JSON.stringify({ ok: true, plan: "pro", orderId: "VELA-pro-1712345678" }, null, 2),
   },
   {

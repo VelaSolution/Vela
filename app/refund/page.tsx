@@ -36,8 +36,8 @@ export default function RefundPage() {
         </div>
 
         <div className="terms-section">
-          <h2 className="terms-h2">제2조 (유료 플랜 &mdash; 스탠다드)</h2>
-          <p className="terms-p">유료 플랜(스탠다드)의 환불 기준은 다음과 같습니다.</p>
+          <h2 className="terms-h2">제2조 (유료 플랜 &mdash; 프로)</h2>
+          <p className="terms-p">유료 플랜(프로)의 환불 기준은 다음과 같습니다.</p>
           <ul className="terms-list">
             <li><strong>결제 후 7일 이내:</strong> 전액 환불 가능</li>
             <li><strong>결제 후 7일~30일:</strong> 잔여 기간 비례 환불</li>

@@ -284,7 +284,7 @@ export default function Page() {
   // ─── 렌더링 ───────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      <UpgradeModal open={showSimLimit} onClose={() => setShowSimLimit(false)} title="이번 달 시뮬레이션 한도를 다 사용했어요" description="무료 플랜은 월 10회까지 시뮬레이션할 수 있어요. 스탠다드 플랜으로 업그레이드하면 무제한으로 분석 가능합니다." />
+      <UpgradeModal open={showSimLimit} onClose={() => setShowSimLimit(false)} title="이번 달 시뮬레이션 한도를 다 사용했어요" description="무료 플랜은 월 10회까지 시뮬레이션할 수 있어요. 프로 플랜으로 업그레이드하면 무제한으로 분석 가능합니다." />
 
       <main className="px-4 py-6 md:px-8">
       <div className="mx-auto max-w-6xl">

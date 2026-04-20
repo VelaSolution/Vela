@@ -30,7 +30,7 @@ const PROMO_IMAGES = [
   {
     id: "event",
     title: "출시 이벤트",
-    desc: "스탠다드 1개월 무료",
+    desc: "프로 1개월 무료",
     src: "/promo/event.png",
   },
 ];

@@ -55,7 +55,7 @@ export default function ReferralPage() {
         <div className="text-center mb-8 mt-4">
           <p className="text-5xl mb-4">🎁</p>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">사장님 추천 프로그램</h1>
-          <p className="text-slate-500 text-sm">친구를 초대하면 양쪽 모두 스탠다드 플랜 1개월 무료!</p>
+          <p className="text-slate-500 text-sm">친구를 초대하면 양쪽 모두 프로 플랜 1개월 무료!</p>
         </div>
 
         {/* 보상 설명 */}
@@ -64,12 +64,12 @@ export default function ReferralPage() {
             <div className="rounded-xl bg-blue-50 p-4">
               <p className="text-xs text-blue-500 font-semibold mb-1">나에게</p>
               <p className="text-lg font-extrabold text-blue-600">1개월 무료</p>
-              <p className="text-xs text-blue-400 mt-1">스탠다드 플랜</p>
+              <p className="text-xs text-blue-400 mt-1">프로 플랜</p>
             </div>
             <div className="rounded-xl bg-emerald-50 p-4">
               <p className="text-xs text-emerald-500 font-semibold mb-1">친구에게</p>
               <p className="text-lg font-extrabold text-emerald-600">1개월 무료</p>
-              <p className="text-xs text-emerald-400 mt-1">스탠다드 플랜</p>
+              <p className="text-xs text-emerald-400 mt-1">프로 플랜</p>
             </div>
           </div>
         </div>

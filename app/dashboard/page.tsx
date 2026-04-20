@@ -587,7 +587,7 @@ export default function DashboardHome() {
             {/* 왼쪽 2/3 */}
             <div className="lg:col-span-2 space-y-5">
 
-              {/* 월별 매출 차트 — 스탠다드 이상 */}
+              {/* 월별 매출 차트 — 프로 이상 */}
               <PlanGate>
               <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700">
                 <div className="flex items-center justify-between mb-5">
@@ -642,7 +642,7 @@ export default function DashboardHome() {
               </div>
               </PlanGate>
 
-              {/* 월별 추이 LineChart — 스탠다드 이상 */}
+              {/* 월별 추이 LineChart — 프로 이상 */}
               {snapshots.length >= 2 && (
               <PlanGate>
               <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700">
@@ -666,7 +666,7 @@ export default function DashboardHome() {
               </PlanGate>
               )}
 
-              {/* 매출 예측 — 스탠다드 이상 */}
+              {/* 매출 예측 — 프로 이상 */}
               <PlanGate>
               <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700">
                 <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4">🔮 매출 예측</h2>

@@ -68,7 +68,7 @@ export default function AIStrategySection({
         open={showUpgrade}
         onClose={() => setShowUpgrade(false)}
         title="AI 전략 추천은 유료 기능이에요"
-        description="AI가 매장 상황에 맞는 맞춤 전략을 제안합니다. 스탠다드 플랜으로 업그레이드하면 무제한 이용 가능합니다."
+        description="AI가 매장 상황에 맞는 맞춤 전략을 제안합니다. 프로 플랜으로 업그레이드하면 무제한 이용 가능합니다."
       />
       <div className="mb-4 flex items-center justify-between">
         <div>

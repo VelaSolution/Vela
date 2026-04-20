@@ -290,7 +290,7 @@ export default function StoresPage() {
         {stores.length >= maxStores && plan !== "pro" && (
           <div className="mt-4 rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 text-center">
             <p className="text-sm text-amber-800">
-              무료/스탠다드 요금제는 매장 1개까지 이용 가능합니다.{" "}
+              무료/프로 요금제는 매장 1개까지 이용 가능합니다.{" "}
               <span className="font-semibold text-blue-600 cursor-pointer hover:underline" onClick={() => setShowUpgrade(true)}>
                 Pro 업그레이드로 최대 5개 매장
               </span>

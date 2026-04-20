@@ -12,7 +12,7 @@ export async function GET() {
           <span style={{ fontSize: 40, fontWeight: 900, color: "#3182F6" }}>.</span>
         </div>
 
-        <p style={{ fontSize: 56, fontWeight: 800, color: "#191F28", margin: 0 }}>스탠다드 플랜</p>
+        <p style={{ fontSize: 56, fontWeight: 800, color: "#191F28", margin: 0 }}>프로 플랜</p>
         <p style={{ fontSize: 72, fontWeight: 900, color: "#3182F6", margin: "12px 0 0" }}>1개월 무료</p>
         <p style={{ fontSize: 24, color: "#6B7684", marginTop: 24 }}>회원가입만 하면 자동 적용</p>
 

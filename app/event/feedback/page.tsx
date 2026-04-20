@@ -125,7 +125,7 @@ export default function EventFeedbackPage() {
                 피드백 감사합니다!
               </h1>
               <p style={{ fontSize: 16, color: "#6B7684", lineHeight: 1.7, marginBottom: 8 }}>
-                스탠다드 플랜이 <b>1개월 무료</b>로 활성화되었습니다.
+                프로 플랜이 <b>1개월 무료</b>로 활성화되었습니다.
               </p>
               <p style={{ fontSize: 14, color: "#9EA6B3", marginBottom: 32 }}>
                 AI 브리핑, 대시보드, PDF 출력 등 모든 기능을 체험해보세요!<br />
@@ -152,14 +152,14 @@ export default function EventFeedbackPage() {
             <span className="fb-tag">오픈 체험단 이벤트</span>
             <h1 className="fb-title">VELA를 써보신 소감을 들려주세요!</h1>
             <p className="fb-subtitle">
-              피드백을 남겨주신 <b>모든 분께 스탠다드 플랜 1개월 무료</b> 체험을 드리고,<br />
+              피드백을 남겨주신 <b>모든 분께 프로 플랜 1개월 무료</b> 체험을 드리고,<br />
               추첨을 통해 <b>10분께 스타벅스 기프티콘</b>을 드립니다.
             </p>
           </div>
 
           {!user && (
             <div className="fb-login-notice">
-              <p>로그인 후 참여하시면 스탠다드 플랜이 자동으로 활성화됩니다.</p>
+              <p>로그인 후 참여하시면 프로 플랜이 자동으로 활성화됩니다.</p>
               <Link href="/login" className="fb-btn fb-btn-blue" style={{ display: "inline-block", marginTop: 12 }}>
                 로그인하기
               </Link>
@@ -270,7 +270,7 @@ export default function EventFeedbackPage() {
 
             {/* 결제 의향 */}
             <div className="fb-field">
-              <label className="fb-label">유료 플랜(월 9,900원) 결제 의향 <span className="fb-req">*</span></label>
+              <label className="fb-label">유료 플랜(월 29,900원) 결제 의향 <span className="fb-req">*</span></label>
               <div className="fb-scale">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -360,7 +360,7 @@ export default function EventFeedbackPage() {
               disabled={submitting || (!!user && !simUsed)}
               style={{ opacity: (submitting || (!!user && !simUsed)) ? 0.5 : 1 }}
             >
-              {!user ? "피드백 제출하기" : !simUsed ? "시뮬레이터 사용 후 제출 가능" : submitting ? "제출 중..." : "피드백 제출하고 스탠다드 체험 받기"}
+              {!user ? "피드백 제출하기" : !simUsed ? "시뮬레이터 사용 후 제출 가능" : submitting ? "제출 중..." : "피드백 제출하고 프로 체험 받기"}
             </button>
           </form>
         </div>

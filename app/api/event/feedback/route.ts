@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return apiError("피드백 저장에 실패했습니다.", 500);
     }
 
-    // 로그인 사용자: 스탠다드 플랜 1개월 무료 체험 활성화
+    // 로그인 사용자: 프로 플랜 1개월 무료 체험 활성화
     if (user_id) {
       const trialExpiresAt = new Date();
       trialExpiresAt.setMonth(trialExpiresAt.getMonth() + 1);
