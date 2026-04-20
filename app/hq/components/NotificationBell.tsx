@@ -66,7 +66,7 @@ function sendBrowserNotification(title: string, body: string) {
   if (window.Notification.permission !== "granted") return;
   if (document.hasFocus()) return; // 탭 활성 상태면 안 보냄
   try {
-    new window.Notification(title, { body, icon: "/icon.svg", tag: "vela-hq" });
+    new window.Notification(title, { body, icon: "/icon.svg", tag: "vela-bridge" });
   } catch {}
 }
 
@@ -160,7 +160,7 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
       const newRow = payload.new as RealtimeNewRow | undefined;
       const sender = newRow?.sender || newRow?.author || "";
       if (sender && sender !== userName) {
-        sendBrowserNotification("VELA HQ", `${title}: ${sender}`);
+        sendBrowserNotification("VELA Bridge", `${title}: ${sender}`);
       }
     };
     const channel = s
@@ -170,7 +170,7 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
         fetchNotifications();
         const newRow = payload.new as RealtimeNewRow | undefined;
         if (newRow?.receiver === userName) {
-          sendBrowserNotification("VELA HQ", `DM: ${newRow?.sender ?? ""}`);
+          sendBrowserNotification("VELA Bridge", `DM: ${newRow?.sender ?? ""}`);
         }
       })
       .on("postgres_changes" as "system", { event: "INSERT", schema: "public", table: "hq_approvals" } as Record<string, string>, withPush("새 결재 요청"))

@@ -164,7 +164,7 @@ export default function HQPage() {
           <div className="absolute -inset-1 rounded-2xl border-2 border-[#3182F6]/30 animate-ping" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-semibold text-slate-700">VELA HQ</p>
+          <p className="text-sm font-semibold text-slate-700">VELA Bridge</p>
           <p className="text-xs text-slate-400 mt-0.5">로딩 중...</p>
         </div>
       </div>
@@ -179,7 +179,7 @@ export default function HQPage() {
           <span className="text-3xl">🔒</span>
         </div>
         <h2 className="text-xl font-bold text-slate-900 mb-2">접근 권한 필요</h2>
-        <p className="text-sm text-slate-500 mb-2">VELA HQ 접속 승인을 기다리고 있습니다.</p>
+        <p className="text-sm text-slate-500 mb-2">VELA Bridge 접속 승인을 기다리고 있습니다.</p>
         <p className="text-xs text-slate-400 mb-6">관리자 승인 후 사용하실 수 있습니다.</p>
         <Link href="/" className="inline-block rounded-xl bg-slate-900 text-white font-semibold px-6 py-3 text-sm hover:bg-slate-800 transition-all active:scale-[0.98]">
           홈으로 돌아가기
@@ -278,7 +278,7 @@ export default function HQPage() {
                 <div className="w-8 h-8 bg-slate-900 rounded-xl flex items-center justify-center">
                   <span className="text-sm font-extrabold text-white tracking-tight">V<span className="text-[#3182F6]">.</span></span>
                 </div>
-                <span className="text-[15px] font-bold text-slate-800 hidden sm:block">HQ</span>
+                <span className="text-[15px] font-bold text-slate-800 hidden sm:block">Bridge</span>
               </button>
             </div>
 
