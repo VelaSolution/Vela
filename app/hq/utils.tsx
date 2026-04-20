@@ -51,7 +51,7 @@ export const toKR = (d: string | Date) => new Date(d).toLocaleDateString("ko-KR"
 
 // ── Tailwind 스타일 상수 (Vela 디자인 시스템) ──────────
 export const I = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm focus:border-[#3182F6] focus:ring-2 focus:ring-[#3182F6]/10 outline-none transition-all";
-export const C = "bg-white border border-slate-200/60 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-shadow";
+export const C = "bg-white border border-slate-200/60 rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-all duration-200";
 export const L = "block text-xs font-semibold text-slate-500 mb-1.5";
 export const B = "rounded-xl bg-[#3182F6] text-white font-semibold px-5 py-2.5 text-sm hover:bg-[#2672DE] active:scale-[0.98] transition-all shadow-sm shadow-[#3182F6]/20";
 export const B2 = "rounded-xl bg-slate-100 text-slate-700 font-semibold px-4 py-2 text-sm hover:bg-slate-200 active:scale-[0.98] transition-all";

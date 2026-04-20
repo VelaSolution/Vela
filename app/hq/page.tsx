@@ -242,13 +242,14 @@ export default function HQPage() {
                   const isActive = tab === k;
                   return (
                     <button key={k} onClick={() => { setTab(k); if (isMobile) setSidebarOpen(false); }}
-                      className={`w-full text-left px-3 py-2 text-[13px] rounded-xl flex items-center gap-2.5 transition-all ${
+                      className={`hq-sidebar-item w-full text-left px-3 py-2.5 text-[13px] rounded-xl flex items-center gap-2.5 ${
                         isActive
-                          ? "bg-[#3182F6] text-white font-semibold shadow-sm shadow-[#3182F6]/20"
-                          : "text-slate-600 hover:bg-slate-50 font-medium"
+                          ? "bg-[#3182F6] text-white font-semibold shadow-sm shadow-[#3182F6]/25"
+                          : "text-slate-600 hover:bg-slate-100/80 font-medium"
                       }`}>
-                      <span className={`text-sm ${isActive ? "grayscale-0" : ""}`}>{t.icon}</span>
+                      <span className="text-sm">{t.icon}</span>
                       <span>{t.label}</span>
+                      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/60" />}
                     </button>
                   );
                 })}
@@ -276,7 +277,13 @@ export default function HQPage() {
         .hq-dark input, .hq-dark textarea, .hq-dark select { background: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
         .hq-dark .hq-header-inner { background: rgba(15,23,42,0.97) !important; border-color: #334155 !important; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .hq-more-sheet { animation: slideUp 0.25s ease-out; }
+        .hq-fade-in { animation: fadeIn 0.3s ease-out; }
+        .hq-toast { animation: toastIn 0.3s ease-out; }
+        .hq-sidebar-item { transition: all 0.15s ease; }
+        .hq-sidebar-item:hover { transform: translateX(2px); }
       `}</style>
 
       {/* ── 헤더 ─────────────────────────────────────── */}
@@ -307,8 +314,8 @@ export default function HQPage() {
             {/* 우측: 시간 · 검색 · 알림 · 다크모드 · 프로필 */}
             <div className="flex items-center gap-1 lg:gap-2">
               {msg && (
-                <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xl animate-bounce">
-                  {msg}
+                <div className="hq-toast fixed top-16 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-5 py-3 rounded-2xl text-sm font-semibold shadow-2xl flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> {msg}
                 </div>
               )}
               {/* 인라인 검색바 (데스크톱) */}
@@ -409,25 +416,30 @@ export default function HQPage() {
             </div>
           )}
           <div className="px-3 lg:px-6 pt-2 lg:pt-3 pb-10">
-            {userId && tab === "dashboard" ? (
-              <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
-            ) : userId ? (
-              <ActiveComponent userId={userId} userName={userName} myRole={myRole} flash={flash} />
-            ) : null}
+            <div key={tab} className="hq-fade-in">
+              {userId && tab === "dashboard" ? (
+                <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
+              ) : userId ? (
+                <ActiveComponent userId={userId} userName={userName} myRole={myRole} flash={flash} />
+              ) : null}
+            </div>
           </div>
         </main>
       </div>
 
       {/* ── 모바일 하단 탭바 ──────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200/80" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-center h-14">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/97 backdrop-blur-2xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center h-[58px]">
           {MOBILE_NAV.map(item => {
             const isActive = tab === item.key;
             return (
               <button key={item.key} onClick={() => setTab(item.key)}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors active:scale-95 ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>
-                <span className="text-lg leading-none">{item.icon}</span>
-                <span className={`text-[10px] font-semibold ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>{item.label}</span>
+                className={`flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all active:scale-90 ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>
+                <div className={`transition-transform ${isActive ? "scale-110" : ""}`}>
+                  <span className="text-[18px] leading-none">{item.icon}</span>
+                </div>
+                <span className={`text-[10px] font-bold ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>{item.label}</span>
+                {isActive && <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-[#3182F6]" />}
               </button>
             );
           })}
