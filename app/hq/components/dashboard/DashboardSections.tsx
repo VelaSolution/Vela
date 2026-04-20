@@ -320,11 +320,11 @@ export function RecentNoticesSection({ notices, go }: SharedProps & {
     <div className={`${C} !p-4`}>
       <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5"><span>📢</span> 최근 공지</span>
-        <button onClick={() => go("notice")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+        <button onClick={() => go("board")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
       </h3>
       <div className="space-y-1">
         {notices.slice(0, 4).map(n => (
-          <div key={n.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("notice")}>
+          <div key={n.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("board")}>
             {n.pinned && <span className="text-[10px]">📌</span>}
             <span className="text-sm text-slate-800 truncate flex-1">{n.title}</span>
             <span className="text-[10px] text-slate-400 flex-shrink-0">{n.date?.slice(5, 10)}</span>
@@ -345,7 +345,7 @@ export function UpcomingEventsSection({ events, go }: SharedProps & {
     <div className={`${C} !p-4`}>
       <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5"><span>📅</span> 다가오는 일정</span>
-        <button onClick={() => go("calendar")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+        <button onClick={() => go("task")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
       </h3>
       <div className="space-y-1.5">
         {events.slice(0, 4).map(e => {
@@ -383,11 +383,11 @@ export function RecentReportsSection({ reports, go }: SharedProps & {
     <div className={`${C} !p-4`}>
       <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5"><span>📄</span> 최근 보고서</span>
-        <button onClick={() => go("report")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+        <button onClick={() => go("approval")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
       </h3>
       <div className="space-y-1">
         {reports.slice(0, 5).map(r => (
-          <div key={r.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("report")}>
+          <div key={r.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("approval")}>
             <span className="text-sm flex-shrink-0">{typeIcon[r.report_type] ?? "📄"}</span>
             <span className="text-sm text-slate-800 truncate flex-1">{r.title || r.content?.slice(0, 30) || "무제"}</span>
             <span className="text-[10px] text-slate-400 flex-shrink-0">{displayName(r.author)}</span>
@@ -403,13 +403,13 @@ export function RecentReportsSection({ reports, go }: SharedProps & {
 export function AarsSection({ aars, go }: SharedProps & { aars: AAR[] }) {
   const monthAars = aars.filter((a) => a.date?.startsWith(today().slice(0, 7))).length;
   return (
-    <div className={`${C} !p-3 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("strategy")}>
+    <div className={`${C} !p-3 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("performance")}>
       <h3 className="mb-1 text-xs font-bold text-slate-700">최근 AAR <span className="text-[10px] text-slate-400 font-normal">(이번 달 {monthAars}건) →</span></h3>
       {aars.length === 0 ? (
         <div className="text-center py-2">
           <span className="text-xl block mb-0.5">📝</span>
           <p className="text-xs text-slate-400">AAR이 없습니다.</p>
-          <button onClick={() => go("strategy")} className="text-[10px] text-[#3182F6] hover:underline mt-0.5">AAR 탭에서 추가하세요 &rarr;</button>
+          <button onClick={() => go("performance")} className="text-[10px] text-[#3182F6] hover:underline mt-0.5">AAR 탭에서 추가하세요 &rarr;</button>
         </div>
       ) : (
         <div className="space-y-0.5">
@@ -430,7 +430,7 @@ export function CheckinStatusSection({ checkinDone, checkinPending, go }: Shared
   checkinDone: number; checkinPending: number;
 }) {
   return (
-    <div className={`${C} !p-4 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("checkin" as Tab)}>
+    <div className={`${C} !p-4 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("task")}>
       <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
         <span>📍</span> 체크인 현황
         <span className="text-[10px] text-slate-400 font-normal">오늘</span>
@@ -474,7 +474,7 @@ export function CrmPipelineSection({ dealsByStage, totalDealValue, go }: SharedP
   totalDealValue: number;
 }) {
   return (
-    <div className={`${C} !p-4 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("crm" as Tab)}>
+    <div className={`${C} !p-4 cursor-pointer hover:ring-2 hover:ring-[#3182F6]/20`} onClick={() => go("admin")}>
       <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5"><span>💼</span> CRM 파이프라인</span>
         <span className="text-[10px] text-slate-400 font-normal">총 ₩{fmt(totalDealValue)}</span>

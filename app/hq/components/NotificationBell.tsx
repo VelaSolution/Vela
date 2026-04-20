@@ -120,22 +120,22 @@ export default function NotificationBell({ userId, userName, myRole, onNavigate 
     ]);
 
     if (r1) for (const a of r1) items.push({ id: `approval-${a.id}`, icon: "📋", title: `결재 대기: ${a.title}`, time: a.date, tab: "approval" });
-    if (r2) for (const n of r2) { if (!(n.read_by ?? []).includes(userName)) items.push({ id: `notice-${n.id}`, icon: "📢", title: `새 공지: ${n.title}`, time: n.date, tab: "notice" }); }
+    if (r2) for (const n of r2) { if (!(n.read_by ?? []).includes(userName)) items.push({ id: `notice-${n.id}`, icon: "📢", title: `새 공지: ${n.title}`, time: n.date, tab: "board" }); }
     if (r3) for (const t of r3) { if (t.status !== "completed" && t.status !== "failed") items.push({ id: `task-${t.id}`, icon: "⏰", title: `오늘 마감: ${t.title}`, time: todayStr, tab: "task" }); }
-    if (r4) for (const l of r4) items.push({ id: `leave-${l.id}`, icon: "🏖️", title: `휴가 ${l.status === "승인" ? "승인됨" : "반려됨"}: ${l.type}`, time: l.date, tab: "leave" });
+    if (r4) for (const l of r4) items.push({ id: `leave-${l.id}`, icon: "🏖️", title: `휴가 ${l.status === "승인" ? "승인됨" : "반려됨"}: ${l.type}`, time: l.date, tab: "attendance" });
     if (r5) for (const c of r5) items.push({ id: `chat-${c.id}`, icon: "💬", title: `${displayName(c.sender)}: ${c.text.slice(0, 30)}`, time: c.created_at, tab: "chat" });
     if (r6) for (const d of r6) items.push({ id: `dm-${d.id}`, icon: "✉️", title: `DM ${displayName(d.sender)}: ${d.text.slice(0, 30)}`, time: d.created_at, tab: "chat" });
     if (r7) for (const f of r7) { if (f.author !== userName) items.push({ id: `feedback-${f.id}`, icon: "🐛", title: `피드백: ${f.title}`, time: f.date, tab: "board" }); }
-    if (r8) for (const r of r8) { if (r.author !== userName) items.push({ id: `report-${r.id}`, icon: "📄", title: `보고서 제출: ${r.title ?? "무제"}`, time: r.date, tab: "report" }); }
+    if (r8) for (const r of r8) { if (r.author !== userName) items.push({ id: `report-${r.id}`, icon: "📄", title: `보고서 제출: ${r.title ?? "무제"}`, time: r.date, tab: "approval" }); }
     if (r9) for (const b of r9) { if (b.author !== userName) items.push({ id: `board-${b.id}`, icon: "📝", title: `게시판: ${b.title}`, time: b.date, tab: "board" }); }
-    if (r10) for (const sv of r10) { if (sv.author !== userName) items.push({ id: `survey-${sv.id}`, icon: "📊", title: `설문 참여: ${sv.title}`, time: sv.date, tab: "survey" }); }
+    if (r10) for (const sv of r10) { if (sv.author !== userName) items.push({ id: `survey-${sv.id}`, icon: "📊", title: `설문 참여: ${sv.title}`, time: sv.date, tab: "board" }); }
 
     // 추가 알림
-    if (rLeaveReq) for (const l of rLeaveReq) { if (l.requester !== userName) items.push({ id: `leave-req-${l.id}`, icon: "📩", title: `휴가 신청: ${l.requester} (${l.type})`, time: l.date, tab: "leave" }); }
-    if (rWiki) for (const w of rWiki) { if (w.author !== userName) items.push({ id: `wiki-${w.id}`, icon: "📖", title: `위키 수정: ${w.title}`, time: w.updated_at, tab: "wiki" }); }
-    if (rFiles) for (const f of rFiles) { if (f.uploaded_by !== userName) items.push({ id: `file-${f.id}`, icon: "📁", title: `파일 업로드: ${f.name}`, time: f.created_at, tab: "files" }); }
+    if (rLeaveReq) for (const l of rLeaveReq) { if (l.requester !== userName) items.push({ id: `leave-req-${l.id}`, icon: "📩", title: `휴가 신청: ${l.requester} (${l.type})`, time: l.date, tab: "attendance" }); }
+    if (rWiki) for (const w of rWiki) { if (w.author !== userName) items.push({ id: `wiki-${w.id}`, icon: "📖", title: `위키 수정: ${w.title}`, time: w.updated_at, tab: "docs" }); }
+    if (rFiles) for (const f of rFiles) { if (f.uploaded_by !== userName) items.push({ id: `file-${f.id}`, icon: "📁", title: `파일 업로드: ${f.name}`, time: f.created_at, tab: "docs" }); }
     if (rApprovalDone) for (const a of rApprovalDone) items.push({ id: `approval-done-${a.id}`, icon: a.status === "승인" ? "✅" : "❌", title: `결재 ${a.status}: ${a.title}`, time: a.date, tab: "approval" });
-    if (rCalendar) for (const c of rCalendar) items.push({ id: `cal-${c.id}`, icon: "📅", title: `일정: ${c.title}`, time: c.date, tab: "calendar" });
+    if (rCalendar) for (const c of rCalendar) items.push({ id: `cal-${c.id}`, icon: "📅", title: `일정: ${c.title}`, time: c.date, tab: "task" });
 
     items.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
     setNotifications(items);

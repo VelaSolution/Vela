@@ -70,10 +70,10 @@ export default function SearchModal({ userId, isOpen, onClose, onNavigate }: Pro
       const groups: ResultGroup[] = [];
 
       if (tasks.data?.length) groups.push({ type: "task", tab: "task", icon: "✅", label: "태스크", items: tasks.data.map((r: any) => ({ id: r.id, title: r.title })) });
-      if (notices.data?.length) groups.push({ type: "notice", tab: "notice", icon: "📢", label: "공지", items: notices.data.map((r: any) => ({ id: r.id, title: r.title, sub: r.content?.slice(0, 60) })) });
+      if (notices.data?.length) groups.push({ type: "notice", tab: "board", icon: "📢", label: "공지", items: notices.data.map((r: any) => ({ id: r.id, title: r.title, sub: r.content?.slice(0, 60) })) });
       if (feedback.data?.length) groups.push({ type: "feedback", tab: "board", icon: "🐛", label: "피드백", items: feedback.data.map((r: any) => ({ id: r.id, title: r.title })) });
-      if (files.data?.length) groups.push({ type: "file", tab: "files", icon: "📁", label: "파일", items: files.data.map((r: any) => ({ id: r.id, title: r.name })) });
-      if (wiki.data?.length) groups.push({ type: "wiki", tab: "wiki", icon: "📖", label: "위키", items: wiki.data.map((r: any) => ({ id: r.id, title: r.title, sub: r.content?.slice(0, 60) })) });
+      if (files.data?.length) groups.push({ type: "file", tab: "docs", icon: "📁", label: "파일", items: files.data.map((r: any) => ({ id: r.id, title: r.name })) });
+      if (wiki.data?.length) groups.push({ type: "wiki", tab: "docs", icon: "📖", label: "위키", items: wiki.data.map((r: any) => ({ id: r.id, title: r.title, sub: r.content?.slice(0, 60) })) });
       if (board.data?.length) groups.push({ type: "board", tab: "board", icon: "💬", label: "게시판", items: board.data.map((r: any) => ({ id: r.id, title: r.title })) });
       if (decisions.data?.length) groups.push({ type: "decision", tab: "approval", icon: "⚖️", label: "의사결정", items: decisions.data.map((r: any) => ({ id: r.id, title: r.title })) });
 

@@ -194,7 +194,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
           s.from("hq_feedback").select("id, title, created_at").order("created_at", { ascending: false }).limit(3),
         ]);
         const activities: { type: string; icon: string; title: string; time: string; tab: Tab }[] = [];
-        (noticeRecent.data ?? []).forEach((n: any) => activities.push({ type: "공지", icon: "📢", title: n.title, time: n.created_at, tab: "notice" }));
+        (noticeRecent.data ?? []).forEach((n: any) => activities.push({ type: "공지", icon: "📢", title: n.title, time: n.created_at, tab: "board" }));
         (taskRecent.data ?? []).forEach((t: any) => activities.push({ type: "태스크", icon: "✅", title: t.title, time: t.created_at, tab: "task" }));
         (fbRecent.data ?? []).forEach((f: any) => activities.push({ type: "피드백", icon: "🐛", title: f.title, time: f.created_at, tab: "board" }));
         activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -397,7 +397,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
             { tab: "report" as Tab, icon: "📄", label: "보고서" },
             { tab: "approval" as Tab, icon: "📋", label: "결재" },
             { tab: "chat" as Tab, icon: "💬", label: "채팅" },
-            { tab: "notice" as Tab, icon: "📢", label: "공지" },
+            { tab: "board" as Tab, icon: "📢", label: "공지" },
             { tab: "calendar" as Tab, icon: "📅", label: "일정" },
             { tab: "files" as Tab, icon: "📁", label: "파일" },
           ]).map(q => (

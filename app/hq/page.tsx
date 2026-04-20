@@ -14,56 +14,35 @@ import {
 import NotificationBell from "./components/NotificationBell";
 import SearchModal from "./components/SearchModal";
 
-// ── 탭 컴포넌트 (lazy loaded) ─────────────────────────
+// ── 탭 컴포넌트 (12탭 — lazy loaded) ─────────────────
 const Dashboard = dynamic(() => import("./components/Dashboard"));
-const TaskTab = dynamic(() => import("./components/TaskTab"));
-const CalendarTab = dynamic(() => import("./components/CalendarTab"));
-const CheckinTab = dynamic(() => import("./components/CheckinTab"));
-const StrategyTab = dynamic(() => import("./components/StrategyTab"));
-const PerformanceTab = dynamic(() => import("./components/PerformanceTab"));
-const ReportTab = dynamic(() => import("./components/ReportTab"));
-const ApprovalTab = dynamic(() => import("./components/ApprovalTab"));
-const NoticeTab = dynamic(() => import("./components/NoticeTab"));
-const BoardTab = dynamic(() => import("./components/BoardTab"));
+const AttendanceHub = dynamic(() => import("./components/AttendanceHub"));
+const TaskHub = dynamic(() => import("./components/TaskHub"));
+const BoardHub = dynamic(() => import("./components/BoardHub"));
 const ChatTab = dynamic(() => import("./components/ChatTab"));
-const KudosTab = dynamic(() => import("./components/KudosTab"));
-const AttendanceTab = dynamic(() => import("./components/AttendanceTab"));
-const LeaveTab = dynamic(() => import("./components/LeaveTab"));
-const TeamTab = dynamic(() => import("./components/TeamTab"));
-const OrganizationTab = dynamic(() => import("./components/OrganizationTab"));
-const SurveyTab = dynamic(() => import("./components/SurveyTab"));
-const EvaluationTab = dynamic(() => import("./components/EvaluationTab"));
-const FilesTab = dynamic(() => import("./components/FilesTab"));
-const WikiTab = dynamic(() => import("./components/WikiTab"));
-const PayslipTab = dynamic(() => import("./components/PayslipTab"));
-const ExpenseTab = dynamic(() => import("./components/ExpenseTab"));
+const DocsHub = dynamic(() => import("./components/DocsHub"));
+const ApprovalHub = dynamic(() => import("./components/ApprovalHub"));
+const FinanceHub = dynamic(() => import("./components/FinanceHub"));
+const TeamHub = dynamic(() => import("./components/TeamHub"));
 const ResourceTab = dynamic(() => import("./components/ResourceTab"));
-const EducationTab = dynamic(() => import("./components/EducationTab"));
-const RecruitTab = dynamic(() => import("./components/RecruitTab"));
-const CrmTab = dynamic(() => import("./components/CrmTab"));
-const ActivityTab = dynamic(() => import("./components/ActivityTab"));
+const PerformanceHub = dynamic(() => import("./components/PerformanceHub"));
+const AdminHub = dynamic(() => import("./components/AdminHub"));
 
-// ── 탭 → 컴포넌트 매핑 (통합 27탭) ───────────────────
+// ── 탭 → 컴포넌트 매핑 (12탭) ────────────────────────
 const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }>> = {
-  dashboard: Dashboard, task: TaskTab, calendar: CalendarTab, checkin: CheckinTab,
-  strategy: StrategyTab, performance: PerformanceTab,
-  report: ReportTab, approval: ApprovalTab,
-  notice: NoticeTab, board: BoardTab, chat: ChatTab, kudos: KudosTab,
-  attendance: AttendanceTab, leave: LeaveTab,
-  team: TeamTab, organization: OrganizationTab, survey: SurveyTab, evaluation: EvaluationTab,
-  files: FilesTab, wiki: WikiTab,
-  payslip: PayslipTab, expense: ExpenseTab,
-  resource: ResourceTab, education: EducationTab, recruit: RecruitTab, crm: CrmTab,
-  activity: ActivityTab,
+  dashboard: Dashboard, attendance: AttendanceHub, task: TaskHub,
+  board: BoardHub, chat: ChatTab, docs: DocsHub,
+  approval: ApprovalHub, finance: FinanceHub, team: TeamHub,
+  resource: ResourceTab, performance: PerformanceHub, admin: AdminHub,
 };
 
 // 모바일 하단 고정 5탭
 const MOBILE_NAV: { key: Tab; label: string; icon: string }[] = [
   { key: "dashboard", label: "홈", icon: "🏠" },
-  { key: "attendance", label: "근태", icon: "⏰" },
-  { key: "chat", label: "채팅", icon: "💬" },
   { key: "task", label: "업무", icon: "✅" },
-  { key: "notice", label: "공지", icon: "📢" },
+  { key: "chat", label: "채팅", icon: "💬" },
+  { key: "board", label: "게시판", icon: "💬" },
+  { key: "finance", label: "재무", icon: "💰" },
 ];
 
 export default function HQPage() {
