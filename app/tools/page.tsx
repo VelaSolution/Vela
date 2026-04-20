@@ -277,7 +277,7 @@ export default function ToolsPage() {
               🛠️ VELA 도구 모음
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-              사업에 필요한 모든 도구
+              사장님의 항해 장비
             </h1>
             <p className="text-slate-500 text-base">
               외식업 창업과 운영에 필요한 계산기·AI 도구를 모두 모았습니다.

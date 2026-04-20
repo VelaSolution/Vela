@@ -104,7 +104,7 @@ export default function HomePage() {
 
   const name = user?.user_metadata?.nickname || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "사장님";
   const hour = new Date().getHours();
-  const greeting = hour < 6 ? "늦은 밤이에요" : hour < 12 ? "좋은 아침이에요" : hour < 18 ? "안녕하세요" : "오늘도 수고하셨어요";
+  const greeting = hour < 6 ? "늦은 밤이에요" : hour < 12 ? "좋은 아침입니다, 선장님" : hour < 18 ? "순항 중이시죠" : "오늘도 수고하셨어요";
   const now = new Date();
   const filteredNews = newsFilter === "all" ? news : news.filter(n => n.tag === newsFilter);
 
@@ -187,7 +187,7 @@ export default function HomePage() {
         {/* 인사말 */}
         <div className="pt-2">
           <p className="text-sm text-slate-400">{now.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</p>
-          <h1 className="text-[22px] font-extrabold text-slate-900 dark:text-white mt-0.5 tracking-tight">{greeting}, {name}님!</h1>
+          <h1 className="text-[22px] font-extrabold text-slate-900 dark:text-white mt-0.5 tracking-tight">{greeting}, {name}님! ⛵</h1>
         </div>
 
         {/* 이번 달 매출 요약 */}

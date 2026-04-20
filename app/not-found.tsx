@@ -4,55 +4,63 @@ export default function NotFound() {
   return (
     <main className="min-h-screen bg-slate-50 pt-20 pb-16 px-4 flex items-center justify-center">
       <style>{`
-        @keyframes astronaut-float {
+        @keyframes boat-bob {
           0%, 100% { transform: translateY(0) rotate(0deg); }
-          25% { transform: translateY(-18px) rotate(3deg); }
-          50% { transform: translateY(-8px) rotate(-2deg); }
-          75% { transform: translateY(-22px) rotate(1deg); }
+          25% { transform: translateY(-8px) rotate(2deg); }
+          50% { transform: translateY(-4px) rotate(-1deg); }
+          75% { transform: translateY(-10px) rotate(1deg); }
         }
-        @keyframes star-twinkle {
-          0%, 100% { opacity: 0.2; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1.2); }
+        @keyframes wave-drift {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(12px); }
         }
-        @keyframes drift-slow {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(6px) translateY(-4px); }
+        @keyframes lighthouse-glow {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
         }
-        .astronaut-anim { animation: astronaut-float 6s ease-in-out infinite; }
-        .star-1 { animation: star-twinkle 3s ease-in-out infinite; }
-        .star-2 { animation: star-twinkle 3s ease-in-out 0.8s infinite; }
-        .star-3 { animation: star-twinkle 3s ease-in-out 1.6s infinite; }
-        .star-4 { animation: star-twinkle 2.5s ease-in-out 0.4s infinite; }
-        .planet-drift { animation: drift-slow 8s ease-in-out infinite; }
+        @keyframes wave-move {
+          0%, 100% { transform: translateX(0) scaleY(1); }
+          50% { transform: translateX(-8px) scaleY(0.9); }
+        }
+        .boat-anim { animation: boat-bob 4s ease-in-out infinite; }
+        .wave-1 { animation: wave-move 3s ease-in-out infinite; }
+        .wave-2 { animation: wave-move 3.5s ease-in-out 0.5s infinite; }
+        .wave-3 { animation: wave-move 4s ease-in-out 1s infinite; }
+        .lighthouse-light { animation: lighthouse-glow 2s ease-in-out infinite; }
+        .cloud-drift { animation: wave-drift 8s ease-in-out infinite; }
       `}</style>
 
       <div className="mx-auto max-w-lg text-center">
-        {/* Animated space illustration */}
+        {/* Animated sea illustration */}
         <div className="relative w-64 h-52 mx-auto mb-8">
-          {/* Stars */}
-          <div className="star-1 absolute top-4 left-8 w-1.5 h-1.5 bg-blue-400 rounded-full" />
-          <div className="star-2 absolute top-12 right-10 w-2 h-2 bg-indigo-400 rounded-full" />
-          <div className="star-3 absolute bottom-16 left-12 w-1 h-1 bg-purple-400 rounded-full" />
-          <div className="star-4 absolute top-8 right-24 w-1 h-1 bg-blue-300 rounded-full" />
-          <div className="star-1 absolute bottom-20 right-16 w-1.5 h-1.5 bg-indigo-300 rounded-full" />
+          {/* Clouds */}
+          <div className="cloud-drift absolute top-4 left-6 w-12 h-4 bg-slate-200 rounded-full opacity-60" />
+          <div className="cloud-drift absolute top-8 right-8 w-8 h-3 bg-slate-200 rounded-full opacity-40" />
 
-          {/* Small planet */}
-          <div className="planet-drift absolute bottom-8 left-6 w-10 h-10 rounded-full bg-gradient-to-br from-purple-200 to-indigo-300 opacity-60" />
+          {/* Lighthouse */}
+          <div className="absolute top-6 right-10">
+            <div className="w-4 h-16 bg-gradient-to-b from-red-300 to-red-400 rounded-t-full mx-auto" />
+            <div className="lighthouse-light w-6 h-6 bg-yellow-300 rounded-full absolute -top-2 left-1/2 -translate-x-1/2 blur-sm" />
+            <div className="w-6 h-2 bg-slate-400 rounded-sm" />
+          </div>
 
-          {/* Astronaut */}
-          <div className="astronaut-anim absolute inset-0 flex items-center justify-center">
+          {/* Boat */}
+          <div className="boat-anim absolute inset-0 flex items-center justify-center" style={{ top: "20px" }}>
             <div className="relative">
-              {/* Helmet */}
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 border-4 border-slate-400 flex items-center justify-center shadow-lg">
-                <div className="w-10 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 opacity-80" />
-              </div>
-              {/* Body */}
-              <div className="w-14 h-16 bg-slate-200 rounded-xl mx-auto -mt-2 border-2 border-slate-300 flex items-center justify-center">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-              </div>
-              {/* Backpack */}
-              <div className="absolute top-4 -right-3 w-5 h-12 bg-slate-300 rounded-lg border border-slate-400" />
+              {/* Sail */}
+              <div className="w-0 h-0 border-l-[2px] border-l-transparent border-r-[18px] border-r-blue-300 border-b-[32px] border-b-transparent absolute -top-8 left-4" />
+              {/* Mast */}
+              <div className="w-[2px] h-10 bg-slate-500 absolute -top-9 left-4" />
+              {/* Hull */}
+              <div className="w-20 h-6 bg-gradient-to-b from-amber-600 to-amber-700 rounded-b-xl" style={{ clipPath: "polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%)" }} />
             </div>
+          </div>
+
+          {/* Waves */}
+          <div className="absolute bottom-6 left-0 right-0">
+            <div className="wave-1 h-3 bg-blue-200 rounded-full opacity-50 mx-4 mb-1" />
+            <div className="wave-2 h-2 bg-blue-300 rounded-full opacity-40 mx-8 mb-1" />
+            <div className="wave-3 h-2 bg-blue-200 rounded-full opacity-30 mx-2" />
           </div>
 
           {/* 404 text floating behind */}
@@ -61,10 +69,10 @@ export default function NotFound() {
           </div>
         </div>
 
-        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">앗, 여기는 미지의 공간이에요</h2>
+        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">항로를 벗어났습니다</h2>
         <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-          찾으시는 페이지가 이동했거나 존재하지 않아요.<br />
-          아래에서 검색하거나 인기 페이지로 바로 이동해보세요.
+          이 바다에는 아무것도 없네요.<br />
+          아래에서 검색하거나 항구로 돌아가 보세요.
         </p>
 
         {/* Search bar */}

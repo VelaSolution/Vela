@@ -40,8 +40,8 @@ export function HeroSection() {
         <div>
           <div className="fade-init d1">
             <div className="hero-tag"><span className="hero-tag-dot" />매장 수익 계산기</div>
-            <h1 className="hero-title">이번 달,<br /><span className="gradient-text">내 손에 얼마</span> 남을까?</h1>
-            <p className="hero-desc">좌석 수랑 객단가만 넣으면 끝.<br />월세·재료비·인건비 빼고 진짜 남는 돈을 바로 보여드려요.</p>
+            <h1 className="hero-title">사장님의 <span className="gradient-text">항해를 시작</span>하세요</h1>
+            <p className="hero-desc">데이터라는 바람을 읽어 방향을 잡아드립니다.<br />좌석 수랑 객단가만 넣으면, 진짜 남는 돈이 바로 보여요.</p>
 
             {/* Live counter */}
             <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>

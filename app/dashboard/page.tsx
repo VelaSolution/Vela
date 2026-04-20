@@ -353,7 +353,7 @@ export default function DashboardHome() {
 
   const name = user?.user_metadata?.nickname || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "사장님";
   const hour = new Date().getHours();
-  const greeting = hour < 6 ? "늦은 밤이에요" : hour < 12 ? "좋은 아침이에요" : hour < 18 ? "안녕하세요" : "오늘도 수고하셨어요";
+  const greeting = hour < 6 ? "늦은 밤이에요" : hour < 12 ? "좋은 아침입니다, 선장님" : hour < 18 ? "순항 중이시죠" : "오늘 항해도 수고하셨어요";
   const latestSnap = snapshots[0];
   const avgCostRate = menus.length > 0 ? menus.reduce((a, m) => a + (m.cost_rate || 0), 0) / menus.length : 0;
   const totalRevenue = snapshots.reduce((a, s) => a + s.total_sales, 0);
@@ -815,7 +815,7 @@ export default function DashboardHome() {
               {/* 최근 시뮬레이션 */}
               <div className="rounded-3xl bg-white dark:bg-slate-800 p-6 ring-1 ring-slate-200 dark:ring-slate-700">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-slate-900 dark:text-white">📊 최근 시뮬레이션</h2>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">📊 항해 기록</h2>
                   <Link href="/profile" className="text-xs text-blue-500 font-semibold hover:text-blue-700">전체보기 →</Link>
                 </div>
                 {sims.length === 0 ? (

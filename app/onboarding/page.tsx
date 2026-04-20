@@ -175,7 +175,7 @@ export default function OnboardingPage() {
 
         {/* Step labels */}
         <div className="flex justify-between mb-8">
-          {["환영", "기능 소개", "시작하기"].map((label, i) => (
+          {["승선 환영", "항해 장비", "출항"].map((label, i) => (
             <span
               key={label}
               className={`text-[11px] font-semibold transition-colors duration-300 ${
@@ -190,12 +190,12 @@ export default function OnboardingPage() {
         {/* ── STEP 1: 환영 ── */}
         {step === 1 && (
           <div className="text-center ob-step-enter">
-            <div className="text-5xl mb-4">👋</div>
+            <div className="text-5xl mb-4">⛵</div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-              환영합니다, {name}님! 🎉
+              환영합니다, {name} 선장님!
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-              VELA가 매장 경영을 도와드릴게요.
+              항해를 준비합니다. VELA가 돛이 되어 드릴게요.
             </p>
 
             {/* 프로필 요약 */}
@@ -243,9 +243,9 @@ export default function OnboardingPage() {
           <div className="ob-step-enter">
             <div className="text-center mb-8">
               <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-                VELA로 할 수 있는 것들
+                항해 장비를 소개합니다
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">매장 운영에 필요한 모든 도구가 여기에 있어요.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">바다 위에서 방향을 잡아줄 도구들이에요.</p>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -298,11 +298,11 @@ export default function OnboardingPage() {
                 <div className="ob-confetti-piece ob-c5" style={{ top: 0, left: 0 }} />
                 <div className="ob-confetti-piece ob-c6" style={{ top: 2, left: -2 }} />
               </div>
-              <div className="text-4xl mb-3">🎊</div>
+              <div className="text-4xl mb-3">⚓</div>
               <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-                설정 완료! VELA를 시작해보세요
+                출항 준비 완료!
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">뭐부터 해볼까요? 하나를 선택하면 바로 시작됩니다.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">닻을 올릴 시간입니다. 첫 번째 목적지를 선택하세요.</p>
             </div>
 
             <div className="space-y-3 mb-6">

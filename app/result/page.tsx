@@ -185,8 +185,8 @@ function ResultContent() {
             <p className={`mt-2 text-sm font-semibold ${result.netProfit >= 0 ? "text-emerald-600" : "text-red-500"}`}>
               {(() => {
                 const man = Math.round(Math.abs(result.netProfit) / 10000);
-                if (result.netProfit >= 0) return `월 순이익 약 ${man.toLocaleString()}만원 예상됩니다`;
-                return `월 ${man.toLocaleString()}만원 적자가 예상됩니다`;
+                if (result.netProfit >= 0) return `순항 중입니다! 월 약 ${man.toLocaleString()}만원의 좋은 바람이 불고 있어요`;
+                return `항로 수정이 필요해요 — 월 ${man.toLocaleString()}만원 역풍이 불고 있습니다`;
               })()}
             </p>
           </div>
