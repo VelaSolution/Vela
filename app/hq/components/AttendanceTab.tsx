@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { HQRole, AttendanceRecord } from "@/app/hq/types";
 import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
 
@@ -66,6 +66,11 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const canViewTeam = myRole === "대표" || myRole === "이사" || myRole === "팀장";
+
+  // 검색 및 날짜 필터
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
   // 출근 기준 시간 설정
   const [workStartTime, setWorkStartTime] = useState("09:00");
@@ -288,6 +293,39 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     },
   }));
 
+  // 필터 적용된 레코드
+  const filteredRecords = useMemo(() => {
+    return records.filter(r => {
+      if (searchQuery && !r.userName.includes(searchQuery)) return false;
+      if (filterStartDate && r.date < filterStartDate) return false;
+      if (filterEndDate && r.date > filterEndDate) return false;
+      return true;
+    });
+  }, [records, searchQuery, filterStartDate, filterEndDate]);
+
+  const filteredTodayAllRecords = useMemo(() => {
+    return todayAllRecords.filter(r => {
+      if (searchQuery && !r.userName.includes(searchQuery)) return false;
+      return true;
+    });
+  }, [todayAllRecords, searchQuery]);
+
+  const filteredAllNames = useMemo(() => {
+    if (!searchQuery) return allNames;
+    return allNames.filter(name => name.includes(searchQuery));
+  }, [allNames, searchQuery]);
+
+  const filteredTeamWeekData = useMemo(() => {
+    return teamWeekData.filter(tw => {
+      if (searchQuery && !tw.name.includes(searchQuery)) return false;
+      return true;
+    });
+  }, [teamWeekData, searchQuery]);
+
+  const filteredCount = viewMode === "my"
+    ? filteredRecords.filter(r => r.userName === userName).length
+    : filteredRecords.length;
+
   return (
     <div className="space-y-6">
       {/* 뷰 모드 토글 */}
@@ -301,6 +339,46 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
           </button>
         </div>
       )}
+
+      {/* 검색 및 날짜 필터 */}
+      <div className={C}>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+          {canViewTeam && (
+            <div className="flex-1 min-w-0">
+              <label className={L}>직원명 검색</label>
+              <input
+                type="text"
+                className={I}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="이름으로 검색..."
+              />
+            </div>
+          )}
+          <div className="flex gap-2 items-end">
+            <div>
+              <label className={L}>시작일</label>
+              <input type="date" className={`${I} !w-auto`} value={filterStartDate} onChange={e => setFilterStartDate(e.target.value)} />
+            </div>
+            <span className="text-slate-400 pb-2.5">~</span>
+            <div>
+              <label className={L}>종료일</label>
+              <input type="date" className={`${I} !w-auto`} value={filterEndDate} onChange={e => setFilterEndDate(e.target.value)} />
+            </div>
+            {(searchQuery || filterStartDate || filterEndDate) && (
+              <button
+                onClick={() => { setSearchQuery(""); setFilterStartDate(""); setFilterEndDate(""); }}
+                className={`${B2} whitespace-nowrap`}
+              >
+                초기화
+              </button>
+            )}
+          </div>
+        </div>
+        {(searchQuery || filterStartDate || filterEndDate) && (
+          <p className="mt-2 text-sm font-semibold text-[#3182F6]">{filteredCount}건 조회</p>
+        )}
+      </div>
 
       {/* Live Clock & Clock In/Out */}
       <div className={C}>
@@ -541,19 +619,19 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               <div className="rounded-xl bg-emerald-50 p-3 text-center">
                 <p className="text-xs text-emerald-600 font-semibold">출근</p>
-                <p className="text-xl font-bold text-emerald-700">{todayAllRecords.filter(r => r.clockIn).length}</p>
+                <p className="text-xl font-bold text-emerald-700">{filteredTodayAllRecords.filter(r => r.clockIn).length}</p>
               </div>
               <div className="rounded-xl bg-amber-50 p-3 text-center">
                 <p className="text-xs text-amber-600 font-semibold">지각</p>
-                <p className="text-xl font-bold text-amber-700">{todayAllRecords.filter(r => r.status === "지각").length}</p>
+                <p className="text-xl font-bold text-amber-700">{filteredTodayAllRecords.filter(r => r.status === "지각").length}</p>
               </div>
               <div className="rounded-xl bg-slate-50 p-3 text-center">
                 <p className="text-xs text-slate-500 font-semibold">퇴근</p>
-                <p className="text-xl font-bold text-slate-700">{todayAllRecords.filter(r => r.clockOut).length}</p>
+                <p className="text-xl font-bold text-slate-700">{filteredTodayAllRecords.filter(r => r.clockOut).length}</p>
               </div>
               <div className="rounded-xl bg-red-50 p-3 text-center">
                 <p className="text-xs text-red-600 font-semibold">미출근</p>
-                <p className="text-xl font-bold text-red-700">{allNames.length - todayAllRecords.filter(r => r.clockIn).length}</p>
+                <p className="text-xl font-bold text-red-700">{filteredAllNames.length - filteredTodayAllRecords.filter(r => r.clockIn).length}</p>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -569,7 +647,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                   </tr>
                 </thead>
                 <tbody>
-                  {allNames.map(name => {
+                  {filteredAllNames.map(name => {
                     const rec = todayAllRecords.find(r => r.userName === name);
                     const member = teamMembers.find(m => m.name === name);
                     return (
@@ -644,7 +722,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                   </tr>
                 </thead>
                 <tbody>
-                  {teamWeekData.map(tw => (
+                  {filteredTeamWeekData.map(tw => (
                     <tr key={tw.name} className="border-b border-slate-50 hover:bg-slate-50/60">
                       <td className="py-2.5 px-3">
                         <span className="font-semibold text-slate-700">{displayName(tw.name)}</span>
@@ -687,7 +765,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                   </tr>
                 </thead>
                 <tbody>
-                  {teamWeekData.map(tw => (
+                  {filteredTeamWeekData.map(tw => (
                     <tr key={tw.name} className="border-b border-slate-50 hover:bg-slate-50/60">
                       <td className="py-2.5 px-3 font-semibold text-slate-700">{displayName(tw.name)}</td>
                       <td className="text-right py-2.5 px-3 text-emerald-600 font-semibold">{tw.monthStats.workDays}일</td>

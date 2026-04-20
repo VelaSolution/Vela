@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { ProjectReport } from "@/app/hq/types";
 import { I, C, L, B, B2, useTeamDisplayNames } from "@/app/hq/utils";
-import { StatusBadge, FeedbackSection, CommentSection } from "./ReportHelpers";
+import { StatusBadge, FeedbackSection, CommentSection, printProjectReport } from "./ReportHelpers";
 
 interface Props {
   projects: (ProjectReport & { author?: string; feedback?: string })[];
@@ -171,6 +171,7 @@ function ProjectList(props: Omit<Props, "pTitle" | "setPTitle" | "pProgress" | "
                       {(canDelete || p.author === userName) && deleteReport && (
                         <button onClick={() => deleteReport(p.id)} className="text-slate-400 hover:text-red-500 font-semibold">삭제</button>
                       )}
+                      <button onClick={() => printProjectReport(p)} className="text-slate-400 hover:text-[#3182F6] font-semibold">PDF 출력</button>
                     </div>
                   </>
                 )}

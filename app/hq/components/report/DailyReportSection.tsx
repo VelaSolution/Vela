@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { DailyReport } from "@/app/hq/types";
 import { I, C, L, B, B2, useTeamDisplayNames } from "@/app/hq/utils";
-import { StatusBadge, FeedbackSection, CommentSection } from "./ReportHelpers";
+import { StatusBadge, FeedbackSection, CommentSection, printDailyReport } from "./ReportHelpers";
 
 interface Props {
   dailies: (DailyReport & { author?: string; feedback?: string })[];
@@ -182,6 +182,7 @@ function DailyList(props: Omit<Props, "dDate" | "setDDate" | "dContent" | "setDC
                       {(canDelete || d.author === userName) && deleteReport && (
                         <button onClick={() => deleteReport(d.id)} className="text-xs text-slate-400 hover:text-red-500 font-semibold">삭제</button>
                       )}
+                      <button onClick={() => printDailyReport(d)} className="text-xs text-slate-400 hover:text-[#3182F6] font-semibold">PDF 출력</button>
                     </div>
                   </>
                 )}

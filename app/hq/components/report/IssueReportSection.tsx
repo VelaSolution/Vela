@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { IssueReport } from "@/app/hq/types";
 import { I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
-import { StatusBadge, FeedbackSection, CommentSection, priorityColor } from "./ReportHelpers";
+import { StatusBadge, FeedbackSection, CommentSection, priorityColor, printIssueReport } from "./ReportHelpers";
 
 interface Props {
   issues: (IssueReport & { author?: string; feedback?: string })[];
@@ -150,6 +150,7 @@ function IssueList(props: Omit<Props, "iTitle" | "setITitle" | "iDesc" | "setIDe
                       {(canDelete || iss.author === userName) && deleteReport && (
                         <button onClick={() => deleteReport(iss.id)} className="text-slate-400 hover:text-red-500 font-semibold">삭제</button>
                       )}
+                      <button onClick={() => printIssueReport(iss)} className="text-slate-400 hover:text-[#3182F6] font-semibold">PDF 출력</button>
                     </div>
                   </>
                 )}

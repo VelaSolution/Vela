@@ -125,6 +125,23 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     return extractHeadings(selected.content);
   }, [selected]);
 
+  // 문서 권한: 작성자 또는 대표/이사만 편집 가능
+  const canEdit = (article: WikiArticle): boolean => {
+    if (article.author === userName) return true;
+    if (myRole === "대표" || myRole === "이사") return true;
+    return false;
+  };
+
+  // 수정 이력 모달
+  const [showHistory, setShowHistory] = useState(false);
+  // 편집 확인 다이얼로그
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+
+  // 버전 이력 (컴포넌트 상태에서 관리)
+  const [versionHistory, setVersionHistory] = useState<Array<{
+    title: string; content: string; editor: string; timestamp: string;
+  }>>([]);
+
   const resetForm = () => { setFTitle(""); setFCategory("일반"); setFTags(""); setFContent(""); };
 
   const openCreate = () => {
@@ -149,11 +166,26 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
 
   const openEdit = () => {
     if (!selected) return;
+    if (!canEdit(selected)) {
+      flash("문서 권한이 없습니다. 작성자 또는 대표/이사만 편집할 수 있습니다.");
+      return;
+    }
+    // 대표/이사가 다른 사람의 문서를 편집할 경우 확인 다이얼로그
+    if (selected.author !== userName && (myRole === "대표" || myRole === "이사")) {
+      setShowEditConfirm(true);
+      return;
+    }
+    startEditing();
+  };
+
+  const startEditing = () => {
+    if (!selected) return;
     setFTitle(selected.title);
     setFCategory(selected.category);
     setFTags(selected.tags.join(", "));
     setFContent(selected.content);
     setView("edit");
+    setShowEditConfirm(false);
   };
 
   const saveArticle = async () => {
@@ -190,6 +222,15 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     const tags = fTags.split(",").map(t => t.trim()).filter(Boolean);
     const s = sb();
     if (!s) { flash("DB 연결 실패"); return; }
+
+    // 수정 전 현재 버전을 이력에 저장
+    setVersionHistory(prev => [...prev, {
+      title: selected.title,
+      content: selected.content,
+      editor: selected.lastEditor || selected.author,
+      timestamp: selected.updatedAt || selected.date,
+    }]);
+
     try {
       const { error } = await s.from("hq_wiki").update({
         title: fTitle.trim(),
@@ -299,8 +340,15 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={openEdit} className={B2}>편집</button>
-                  <button onClick={() => deleteArticle(selected.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors">삭제</button>
+                  <button onClick={() => setShowHistory(true)} className="text-xs px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 font-semibold hover:bg-slate-100 transition-colors border border-slate-200">수정 이력</button>
+                  {canEdit(selected) ? (
+                    <button onClick={openEdit} className={B2}>편집</button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 px-3 py-1.5 flex items-center">편집 권한 없음</span>
+                  )}
+                  {canEdit(selected) && (
+                    <button onClick={() => deleteArticle(selected.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors">삭제</button>
+                  )}
                 </div>
               </div>
 
@@ -336,6 +384,70 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
                 </div>
               </div>
             </div>
+
+            {/* 수정 이력 모달 */}
+            {showHistory && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowHistory(false)}>
+                <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-800">수정 이력</h3>
+                    <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+                  </div>
+                  {/* 현재 버전 */}
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-700">현재 버전</span>
+                        <span className="text-[10px] text-blue-500">{selected.updatedAt}</span>
+                      </div>
+                      <p className="text-xs text-blue-600 mt-1">
+                        마지막 수정자: <span className="font-semibold">{displayName(selected.lastEditor || selected.author)}</span>
+                      </p>
+                      <p className="text-xs text-blue-600">
+                        작성자: <span className="font-semibold">{displayName(selected.author)}</span> ({selected.date})
+                      </p>
+                    </div>
+
+                    {/* 이전 버전 이력 */}
+                    {versionHistory.filter(v => v.title === selected.title || v.content !== selected.content).length > 0 ? (
+                      [...versionHistory].reverse().map((ver, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-600">이전 버전 #{versionHistory.length - idx}</span>
+                            <span className="text-[10px] text-slate-400">{ver.timestamp}</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            수정자: <span className="font-semibold">{displayName(ver.editor)}</span>
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-3">{ver.content.slice(0, 200)}...</p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-slate-400 text-center py-4">이전 수정 이력이 없습니다</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 편집 확인 다이얼로그 (대표/이사가 타인 문서 편집 시) */}
+            {showEditConfirm && (
+              <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowEditConfirm(false)}>
+                <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+                  <h3 className="text-base font-bold text-slate-800 mb-2">문서 편집 확인</h3>
+                  <p className="text-sm text-slate-600 mb-1">
+                    이 문서는 <span className="font-semibold text-slate-800">{displayName(selected.author)}</span>님이 작성한 문서입니다.
+                  </p>
+                  <p className="text-sm text-slate-500 mb-5">
+                    {myRole} 권한으로 편집하시겠습니까?
+                  </p>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setShowEditConfirm(false)} className={B2}>취소</button>
+                    <button onClick={startEditing} className={B}>편집 진행</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Related articles */}
             {relatedArticles.length > 0 && (

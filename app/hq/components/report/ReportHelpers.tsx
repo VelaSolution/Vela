@@ -66,6 +66,115 @@ export function FeedbackSection({
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  submitted: "제출됨",
+  approved: "승인됨",
+  rejected: "반려됨",
+  draft: "임시저장",
+};
+
+export function printDailyReport(report: { date: string; content: string; problems?: string; nextSteps?: string; status?: string; author?: string }) {
+  const html = `
+    <html><head><title>일일 보고 - ${report.author ?? ""} (${report.date})</title>
+    <style>
+      body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; padding: 40px; color: #1e293b; max-width: 700px; margin: 0 auto; }
+      h1 { text-align: center; font-size: 22px; margin-bottom: 6px; }
+      .sub { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+      .section { margin-bottom: 20px; }
+      .section-title { font-weight: 700; font-size: 14px; color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
+      .section-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #475569; }
+      .meta { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 30px; }
+      .status { display: inline-block; padding: 2px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; background: #f1f5f9; }
+      @media print { body { padding: 20px; } }
+    </style></head><body>
+      <h1>일일 업무 보고</h1>
+      <p class="sub">${report.date} | ${report.author ?? ""}</p>
+      <div class="section">
+        <div class="section-title">업무 내용</div>
+        <div class="section-content">${report.content}</div>
+      </div>
+      ${report.problems ? `<div class="section"><div class="section-title">문제 / 이슈</div><div class="section-content">${report.problems}</div></div>` : ""}
+      ${report.nextSteps ? `<div class="section"><div class="section-title">내일 계획</div><div class="section-content">${report.nextSteps}</div></div>` : ""}
+      <div class="meta">
+        <span>작성자: ${report.author ?? ""}</span>
+        <span class="status">상태: ${STATUS_LABELS[report.status ?? "submitted"] ?? report.status}</span>
+      </div>
+    </body></html>
+  `;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); w.onafterprint = () => w.close(); setTimeout(() => w.print(), 300); }
+}
+
+export function printIssueReport(report: { title: string; description: string; priority: string; reportStatus?: string; author?: string }) {
+  const html = `
+    <html><head><title>이슈 보고 - ${report.title}</title>
+    <style>
+      body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; padding: 40px; color: #1e293b; max-width: 700px; margin: 0 auto; }
+      h1 { text-align: center; font-size: 22px; margin-bottom: 6px; }
+      .sub { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+      .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .info-table th, .info-table td { padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 14px; }
+      .info-table th { background: #f8fafc; text-align: left; font-weight: 600; width: 30%; }
+      .section { margin-bottom: 20px; }
+      .section-title { font-weight: 700; font-size: 14px; color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
+      .section-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #475569; }
+      @media print { body { padding: 20px; } }
+    </style></head><body>
+      <h1>이슈 보고</h1>
+      <p class="sub">${report.title}</p>
+      <table class="info-table">
+        <tr><th>작성자</th><td>${report.author ?? ""}</td></tr>
+        <tr><th>우선순위</th><td>${report.priority}</td></tr>
+        <tr><th>상태</th><td>${STATUS_LABELS[report.reportStatus ?? "submitted"] ?? report.reportStatus}</td></tr>
+      </table>
+      <div class="section">
+        <div class="section-title">상세 설명</div>
+        <div class="section-content">${report.description}</div>
+      </div>
+    </body></html>
+  `;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); w.onafterprint = () => w.close(); setTimeout(() => w.print(), 300); }
+}
+
+export function printProjectReport(report: { title: string; description: string; progress: number; deadline?: string; reportStatus?: string; author?: string }) {
+  const html = `
+    <html><head><title>프로젝트 보고 - ${report.title}</title>
+    <style>
+      body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; padding: 40px; color: #1e293b; max-width: 700px; margin: 0 auto; }
+      h1 { text-align: center; font-size: 22px; margin-bottom: 6px; }
+      .sub { text-align: center; color: #64748b; font-size: 13px; margin-bottom: 30px; }
+      .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .info-table th, .info-table td { padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 14px; }
+      .info-table th { background: #f8fafc; text-align: left; font-weight: 600; width: 30%; }
+      .progress-bar { height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden; margin-top: 4px; }
+      .progress-fill { height: 100%; background: #3182F6; border-radius: 6px; }
+      .section { margin-bottom: 20px; }
+      .section-title { font-weight: 700; font-size: 14px; color: #334155; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 10px; }
+      .section-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; color: #475569; }
+      @media print { body { padding: 20px; } }
+    </style></head><body>
+      <h1>프로젝트 보고</h1>
+      <p class="sub">${report.title}</p>
+      <table class="info-table">
+        <tr><th>작성자</th><td>${report.author ?? ""}</td></tr>
+        <tr><th>진행률</th><td>${report.progress}%</td></tr>
+        <tr><th>마감일</th><td>${report.deadline ?? "-"}</td></tr>
+        <tr><th>상태</th><td>${STATUS_LABELS[report.reportStatus ?? "submitted"] ?? report.reportStatus}</td></tr>
+      </table>
+      <div style="margin-bottom:20px">
+        <div class="progress-bar"><div class="progress-fill" style="width:${report.progress}%"></div></div>
+      </div>
+      <div class="section">
+        <div class="section-title">상세 설명</div>
+        <div class="section-content">${report.description}</div>
+      </div>
+    </body></html>
+  `;
+  const w = window.open("", "_blank");
+  if (w) { w.document.write(html); w.document.close(); w.onafterprint = () => w.close(); setTimeout(() => w.print(), 300); }
+}
+
 export function CommentSection({
   reportId, commentMap, commentTarget, commentText,
   setCommentTarget, setCommentText, addComment,
