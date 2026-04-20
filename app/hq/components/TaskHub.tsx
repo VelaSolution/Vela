@@ -14,7 +14,7 @@ const tabs = [
   { key: "task", label: "태스크" },
   { key: "calendar", label: "일정" },
   { key: "gantt", label: "간트" },
-  { key: "checkin", label: "업무일지" },
+  { key: "checkin", label: "체크아웃" },
 ] as const;
 
 type Sub = (typeof tabs)[number]["key"];
