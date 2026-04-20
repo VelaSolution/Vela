@@ -371,10 +371,15 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
           onToggleVisibility={toggleVisibility} onMoveWidget={moveWidget} isSectionVisible={isSectionVisible} />
       )}
 
-      {widgetPrefs.order.map(sectionKey => {
-        if (!isSectionVisible(sectionKey)) return null;
-        return renderSection(sectionKey);
-      })}
+      {/* 전폭 위젯 */}
+      {(["stats", "approvals_attendance"] as SectionKey[]).filter(k => widgetPrefs.order.includes(k) && isSectionVisible(k)).map(k => renderSection(k))}
+
+      {/* 2열 그리드 (데스크톱) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {widgetPrefs.order.filter(k => !["stats", "approvals_attendance"].includes(k) && isSectionVisible(k)).map(sectionKey => (
+          <div key={sectionKey}>{renderSection(sectionKey)}</div>
+        ))}
+      </div>
 
       {/* Weekly Directive */}
       <div className={`${C} !p-3`}>
