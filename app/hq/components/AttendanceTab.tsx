@@ -82,9 +82,9 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     if (!s) return;
     try {
       const { data, error } = await s.from("hq_settings").select("value").eq("key", "work_start_time").single();
-      if (error) { console.warn("hq_settings 로드 실패 (테이블 미생성?):", error.message); return; }
+      if (error) { console.error("hq_settings 로드 실패 (테이블 미생성?):", error.message); return; }
       if (data?.value) { setWorkStartTime(data.value); setTempStartTime(data.value); }
-    } catch (e) { console.warn("hq_settings 테이블 없음:", e); }
+    } catch (e) { console.error("hq_settings 테이블 없음:", e); }
   };
 
   const saveWorkStartTime = async () => {

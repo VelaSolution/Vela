@@ -75,7 +75,7 @@ export default function DemoPage() {
   body: JSON.stringify(${JSON.stringify({ industry: ind, seats, avgSpend: spend, turnover: turn, cogsRate: cogs, rent: PRESETS[ind].rent }, null, 4)}),
 });
 const data = await res.json();
-console.log(data.summary.netProfit); // ${result.netProfit}`,
+// data.summary.netProfit → ${result.netProfit}`,
     python: `import requests
 
 res = requests.post(
