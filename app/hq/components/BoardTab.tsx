@@ -59,21 +59,39 @@ export default function BoardTab({ userId, userName, myRole, flash }: Props) {
     try {
       const { data, error } = await s.from("hq_board").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false });
       if (error) throw error;
-      if (data) {
-        const mapped: BoardPost[] = data.map((d: any) => ({
-          id: d.id,
-          category: d.category ?? "자유",
-          title: d.title ?? "",
-          content: d.content ?? "",
-          author: d.author ?? "",
-          date: d.created_at?.slice(0, 10) ?? today(),
-          views: d.views ?? 0,
-          likes: d.likes ?? 0,
-          comments: 0,
-          pinned: d.pinned ?? false,
-        }));
-        setPosts(mapped);
-      }
+      const mapped: BoardPost[] = (data ?? []).map((d: any) => ({
+        id: d.id,
+        category: d.category ?? "자유",
+        title: d.title ?? "",
+        content: d.content ?? "",
+        author: d.author ?? "",
+        date: d.created_at?.slice(0, 10) ?? today(),
+        views: d.views ?? 0,
+        likes: d.likes ?? 0,
+        comments: 0,
+        pinned: d.pinned ?? false,
+      }));
+
+      // hq_feedback 데이터도 "버그"/"건의" 카테고리로 표시
+      const { data: fbData } = await s.from("hq_feedback").select("*").order("created_at", { ascending: false });
+      const feedbackPosts: BoardPost[] = (fbData ?? []).map((f: any) => ({
+        id: `fb-${f.id}`,
+        category: (f.type === "버그" || f.type === "bug") ? "버그" as const : "건의" as const,
+        title: f.title ?? "",
+        content: `${f.description ?? ""}\n\n우선순위: ${f.priority ?? "-"} | 상태: ${f.status ?? "-"}`,
+        author: f.author ?? "",
+        date: f.date ?? f.created_at?.slice(0, 10) ?? today(),
+        views: 0,
+        likes: 0,
+        comments: 0,
+        pinned: false,
+      }));
+
+      setPosts([...mapped, ...feedbackPosts].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return b.date.localeCompare(a.date);
+      }));
       // Load comments
       const { data: cData } = await s.from("hq_board_comments").select("*").order("created_at", { ascending: true });
       if (cData) {
