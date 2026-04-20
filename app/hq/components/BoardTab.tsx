@@ -10,7 +10,7 @@ interface Props {
   flash: (m: string) => void;
 }
 
-const CATEGORIES = ["전체", "자유", "공지", "질문", "정보", "부서"] as const;
+const CATEGORIES = ["전체", "자유", "공지", "질문", "정보", "부서", "버그", "건의"] as const;
 type Category = (typeof CATEGORIES)[number];
 
 const categoryColor: Record<string, string> = {
@@ -19,6 +19,8 @@ const categoryColor: Record<string, string> = {
   "질문": "bg-purple-50 text-purple-700",
   "정보": "bg-emerald-50 text-emerald-700",
   "부서": "bg-amber-50 text-amber-700",
+  "버그": "bg-rose-50 text-rose-700",
+  "건의": "bg-teal-50 text-teal-700",
 };
 
 export default function BoardTab({ userId, userName, myRole, flash }: Props) {
@@ -240,7 +242,7 @@ export default function BoardTab({ userId, userName, myRole, flash }: Props) {
     <div className="space-y-6">
       {/* Category tabs + New button */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 flex-1 mr-3">
+        <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 flex-1 mr-3">
           {CATEGORIES.map((cat) => (
             <button
               key={cat}

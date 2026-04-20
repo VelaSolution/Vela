@@ -240,10 +240,10 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
       {/* 헤더 + 서브탭 */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-bold text-slate-900">재무 관리</h2>
-        <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+        <div className="flex gap-1 bg-slate-100 rounded-2xl p-1">
           {SUB_TABS.map(t => (
             <button key={t.key} onClick={() => setSub(t.key)}
-              className={`px-3.5 py-2 text-sm font-semibold rounded-lg transition-all ${sub === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+              className={`px-3.5 py-2 text-sm font-semibold rounded-xl transition-all ${sub === t.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
               <span className="mr-1.5">{t.icon}</span>{t.label}
             </button>
           ))}
@@ -455,7 +455,7 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
                       </div>
                       <div className="space-y-2">
                         {items.map(f => (
-                          <div key={f.id} className={`flex items-center justify-between py-2.5 px-3 rounded-xl group transition-all ${f.active ? "bg-slate-50/50 hover:bg-slate-50" : "bg-slate-50/30 opacity-50"}`}>
+                          <div key={f.id} className={`flex items-center justify-between py-2.5 px-3 rounded-2xl group transition-all ${f.active ? "bg-slate-50/50 hover:bg-slate-50" : "bg-slate-50/30 opacity-50"}`}>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className={`text-sm font-semibold ${f.active ? "text-slate-800" : "text-slate-400 line-through"}`}>{f.name}</span>

@@ -232,7 +232,7 @@ export default function TaskTab({ userId, userName, flash }: Props) {
         <h2 className="text-xl font-bold text-slate-900">태스크 관리</h2>
         <div className="flex gap-2 items-center">
           {/* My tasks / All filter */}
-          <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+          <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             <button
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${filterMode === "all" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
               onClick={() => setFilterMode("all")}
@@ -247,7 +247,7 @@ export default function TaskTab({ userId, userName, flash }: Props) {
             </button>
           </div>
           {/* View toggle */}
-          <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+          <div className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             <button
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${view === "list" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
               onClick={() => setView("list")}
@@ -498,7 +498,7 @@ export default function TaskTab({ userId, userName, flash }: Props) {
                     const meta = parseResultMeta(t.result);
                     const overdue = isOverdue(t.deadline, t.status);
                     return (
-                      <div key={t.id} className={`rounded-xl border bg-white p-3 shadow-sm ${overdue ? "border-red-300 border-l-4" : "border-slate-200/60"}`}>
+                      <div key={t.id} className={`rounded-2xl border bg-white p-3 shadow-sm ${overdue ? "border-red-300 border-l-4" : "border-slate-200/60"}`}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-semibold text-slate-800">{t.title}</p>
                           {priorityBadge(meta.priority)}

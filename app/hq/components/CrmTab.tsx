@@ -167,7 +167,12 @@ export default function CrmTab({ userId, userName, myRole, flash }: Props) {
   const detailActs = detailCompId ? activities.filter(a => a.company_id === detailCompId) : [];
   const companyName = (id: string) => companies.find(c => c.id === id)?.name || "-";
 
-  if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
+  if (loading) return (
+    <div className="text-center py-20">
+      <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-[#3182F6] rounded-full animate-spin mb-3" />
+      <p className="text-sm text-slate-400">불러오는 중...</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -240,7 +245,12 @@ export default function CrmTab({ userId, userName, myRole, flash }: Props) {
               <button className={B2} onClick={() => setActCompanyId(null)}>취소</button>
             </div>
           )}
-          {detailActs.length === 0 ? <p className="text-sm text-slate-400">활동 기록이 없습니다</p> : (
+          {detailActs.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-slate-400">아직 활동 기록이 없어요</p>
+              <p className="text-xs text-slate-300 mt-1">위의 + 추가 버튼으로 활동을 기록하세요</p>
+            </div>
+          ) : (
             <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {detailActs.map(a => (
                 <div key={a.id} className="flex items-start gap-2 text-sm border-b border-slate-100 pb-2">
@@ -295,7 +305,12 @@ export default function CrmTab({ userId, userName, myRole, flash }: Props) {
 
           <div className={C}>
             <h3 className="font-bold text-slate-800 mb-3">거래처 목록 ({filteredCompanies.length}곳)</h3>
-            {filteredCompanies.length === 0 ? <p className="text-sm text-slate-400 text-center py-8">등록된 거래처가 없습니다</p> : (
+            {filteredCompanies.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm">{search || gradeFilter !== "전체" ? "조건에 맞는 거래처가 없어요" : "아직 등록된 거래처가 없어요"}</p>
+                <p className="text-slate-300 text-xs mt-1">{search || gradeFilter !== "전체" ? "검색 조건을 변경해보세요" : "첫 번째 거래처를 등록해보세요"}</p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-slate-200 text-left text-slate-500">
@@ -363,7 +378,12 @@ export default function CrmTab({ userId, userName, myRole, flash }: Props) {
           )}
 
           <div className={C}>
-            {deals.length === 0 ? <p className="text-sm text-slate-400 text-center py-8">등록된 딜이 없습니다</p> : (
+            {deals.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm">아직 등록된 딜이 없어요</p>
+                <p className="text-slate-300 text-xs mt-1">거래처를 먼저 등록한 뒤 딜을 추가하세요</p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-slate-200 text-left text-slate-500">
@@ -419,19 +439,30 @@ export default function CrmTab({ userId, userName, myRole, flash }: Props) {
             })}
           </div>
           {/* 파이프라인 딜 목록 */}
-          <div className="mt-6 space-y-2">
-            {STAGES.filter(st => pipeline.stageCounts[st].count > 0).map(stage => (
-              <div key={stage}>
-                <h4 className="text-sm font-semibold text-slate-600 mb-1">{stage}</h4>
-                {deals.filter(d => d.stage === stage).map(d => (
-                  <div key={d.id} className="flex items-center gap-3 text-sm pl-3 py-1 border-l-2 border-slate-200">
-                    <span className="font-medium text-slate-700">{d.title}</span>
-                    <span className="text-slate-400">{companyName(d.company_id)}</span>
-                    <span className="text-slate-500 ml-auto">{fmt(d.amount || 0)}원</span>
-                  </div>
-                ))}
+          <div className="mt-6 space-y-4">
+            {deals.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm text-slate-400">아직 등록된 딜이 없어요</p>
+                <p className="text-xs text-slate-300 mt-1">딜 관리 탭에서 딜을 추가하세요</p>
               </div>
-            ))}
+            ) : (
+              STAGES.filter(st => pipeline.stageCounts[st].count > 0).map(stage => (
+                <div key={stage}>
+                  <h4 className="text-sm font-semibold text-slate-600 mb-2">{stage} <span className="text-slate-400 font-normal">({pipeline.stageCounts[stage].count}건)</span></h4>
+                  <div className="space-y-1">
+                    {deals.filter(d => d.stage === stage).map(d => (
+                      <div key={d.id} className={`flex items-center gap-3 text-sm pl-3 py-2 border-l-2 rounded-r-lg bg-slate-50/50 ${
+                        stage === "완료" ? "border-emerald-400" : stage === "실패" ? "border-red-400" : "border-[#3182F6]"
+                      }`}>
+                        <span className="font-medium text-slate-700">{d.title}</span>
+                        <span className="text-slate-400">{companyName(d.company_id)}</span>
+                        <span className="text-slate-500 ml-auto">{fmt(d.amount || 0)}원</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

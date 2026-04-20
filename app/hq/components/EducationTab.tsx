@@ -139,7 +139,12 @@ export default function EducationTab({ userId, userName, myRole, flash }: Props)
     } catch (e) { flash("변경 실패"); }
   };
 
-  if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
+  if (loading) return (
+    <div className="text-center py-20">
+      <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-[#3182F6] rounded-full animate-spin mb-3" />
+      <p className="text-sm text-slate-400">불러오는 중...</p>
+    </div>
+  );
 
   // 과정 상세
   if (view === "detail" && selectedCourse) {
@@ -179,24 +184,35 @@ export default function EducationTab({ userId, userName, myRole, flash }: Props)
         {/* 수강 신청 / 진도 */}
         <div className={C}>
           {!myEnroll ? (
-            <button className={B} onClick={() => handleEnroll(selectedCourse.id)}>수강 신청</button>
+            <div className="text-center py-4">
+              <p className="text-sm text-slate-600 mb-3">이 과정을 수강하시겠어요?</p>
+              <button className={B} onClick={() => handleEnroll(selectedCourse.id)}>수강 신청하기</button>
+            </div>
           ) : (
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-slate-700">내 진도율</span>
                 <span className={`${BADGE} ${ENROLL_COLORS[myEnroll.status]}`}>{myEnroll.status}</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-1">
                 <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#3182F6] rounded-full transition-all" style={{ width: `${myEnroll.progress}%` }} />
+                  <div className={`h-full rounded-full transition-all ${myEnroll.progress >= 100 ? "bg-emerald-500" : "bg-[#3182F6]"}`} style={{ width: `${myEnroll.progress}%` }} />
                 </div>
                 <span className="text-sm font-semibold text-slate-700">{myEnroll.progress}%</span>
               </div>
+              {myEnroll.status === "완료" && myEnroll.completed_at && (
+                <p className="text-xs text-emerald-600 mt-2">완료일: {myEnroll.completed_at.slice(0, 10)}</p>
+              )}
               {myEnroll.status !== "완료" && (
-                <div className="flex gap-2 mt-3">
-                  {[25, 50, 75, 100].map(p => (
-                    <button key={p} className={B2} onClick={() => handleUpdateProgress(myEnroll.id, p)}>{p}%</button>
-                  ))}
+                <div className="mt-4">
+                  <p className="text-xs text-slate-400 mb-2">진도율을 업데이트하세요</p>
+                  <div className="flex gap-2">
+                    {[25, 50, 75, 100].map(p => (
+                      <button key={p} className={`${p <= myEnroll.progress ? "opacity-40 cursor-not-allowed" : ""} ${p === 100 ? B : B2}`} onClick={() => { if (p > myEnroll.progress) handleUpdateProgress(myEnroll.id, p); }} disabled={p <= myEnroll.progress}>
+                        {p === 100 ? "완료" : `${p}%`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -273,7 +289,12 @@ export default function EducationTab({ userId, userName, myRole, flash }: Props)
       <div className="space-y-5">
         <button className={B2} onClick={() => setView("list")}>← 목록</button>
         <h2 className="text-lg font-bold text-slate-800">내 학습 이력</h2>
-        {myCourses.length === 0 && <p className="text-sm text-slate-400">수강 이력이 없습니다</p>}
+        {myCourses.length === 0 && (
+          <div className={`${C} text-center py-10`}>
+            <p className="text-slate-400 text-sm">아직 수강 이력이 없어요</p>
+            <p className="text-slate-300 text-xs mt-1">관심있는 과정에 수강 신청해보세요</p>
+          </div>
+        )}
         <div className="space-y-3">
           {myCourses.map(e => (
             <div key={e.id} className={`${C} cursor-pointer`} onClick={() => { setSelectedId(e.course_id); setView("detail"); }}>
@@ -340,7 +361,12 @@ export default function EducationTab({ userId, userName, myRole, flash }: Props)
 
       {/* 과정 리스트 */}
       <div className="space-y-3">
-        {filteredCourses.length === 0 && <p className="text-sm text-slate-400">등록된 과정이 없습니다</p>}
+        {filteredCourses.length === 0 && (
+          <div className={`${C} text-center py-10`}>
+            <p className="text-slate-400 text-sm">{catFilter !== "전체" || statusFilter !== "전체" ? "조건에 맞는 과정이 없어요" : "아직 등록된 과정이 없어요"}</p>
+            <p className="text-slate-300 text-xs mt-1">{catFilter !== "전체" || statusFilter !== "전체" ? "필터 조건을 변경해보세요" : isAdmin ? "새 과정을 등록해보세요" : "관리자가 과정을 등록하면 여기에 표시됩니다"}</p>
+          </div>
+        )}
         {filteredCourses.map(c => {
           const cEnrolls = enrollments.filter(e => e.course_id === c.id);
           const completeCount = cEnrolls.filter(e => e.status === "완료").length;

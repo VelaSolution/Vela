@@ -159,7 +159,12 @@ export default function RecruitTab({ userId, userName, myRole, flash }: Props) {
     } catch (e) { flash("삭제 실패"); }
   };
 
-  if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
+  if (loading) return (
+    <div className="text-center py-20">
+      <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-[#3182F6] rounded-full animate-spin mb-3" />
+      <p className="text-sm text-slate-400">불러오는 중...</p>
+    </div>
+  );
 
   // 공고 등록/수정
   if (view === "create") {
@@ -273,18 +278,22 @@ export default function RecruitTab({ userId, userName, myRole, flash }: Props) {
               const stageApps = selectedApplicants.filter(a => a.stage === stage);
               return (
                 <div key={stage} className="min-w-[180px]">
-                  <div className={`${BADGE} ${STAGE_COLORS[stage]} mb-2 w-full justify-center`}>{stage} ({stageApps.length})</div>
-                  <div className="space-y-2">
-                    {stageApps.map(a => (
+                  <div className={`flex items-center justify-center text-xs font-medium px-2.5 py-1.5 rounded-lg ${STAGE_COLORS[stage]} mb-2`}>{stage} ({stageApps.length})</div>
+                  <div className="space-y-2 min-h-[80px]">
+                    {stageApps.length === 0 ? (
+                      <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center">
+                        <p className="text-xs text-slate-300">지원자 없음</p>
+                      </div>
+                    ) : stageApps.map(a => (
                       <div key={a.id} className={`${C} !p-3`}>
                         <p className="font-semibold text-sm text-slate-800">{a.name}</p>
                         <p className="text-xs text-slate-400">{a.email}</p>
                         <p className="text-xs text-slate-400">{a.phone}</p>
                         {a.notes && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{a.notes}</p>}
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {STAGES.filter(s => s !== stage).map(s => (
-                            <button key={s} className="text-[10px] text-[#3182F6] hover:underline" onClick={() => handleStageChange(a.id, s)}>{s}</button>
-                          ))}
+                        <div className="mt-2">
+                          <select value={stage} onChange={e => handleStageChange(a.id, e.target.value)} className={`${I} text-xs py-1 w-full`}>
+                            {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
                         </div>
                       </div>
                     ))}
@@ -295,7 +304,12 @@ export default function RecruitTab({ userId, userName, myRole, flash }: Props) {
           </div>
         ) : (
           <div className="space-y-2">
-            {selectedApplicants.length === 0 && <p className="text-sm text-slate-400">등록된 지원자가 없습니다</p>}
+            {selectedApplicants.length === 0 && (
+              <div className={`${C} text-center py-10`}>
+                <p className="text-slate-400 text-sm">아직 등록된 지원자가 없어요</p>
+                <p className="text-slate-300 text-xs mt-1">+ 지원자 등록 버튼으로 지원자를 추가하세요</p>
+              </div>
+            )}
             {selectedApplicants.map(a => (
               <div key={a.id} className={`${C} flex items-center justify-between`}>
                 <div className="flex items-center gap-3">
@@ -369,7 +383,12 @@ export default function RecruitTab({ userId, userName, myRole, flash }: Props) {
 
       {/* 공고 리스트 */}
       <div className="space-y-3">
-        {filteredPostings.length === 0 && <p className="text-sm text-slate-400">등록된 공고가 없습니다</p>}
+        {filteredPostings.length === 0 && (
+          <div className={`${C} text-center py-10`}>
+            <p className="text-slate-400 text-sm">{statusFilter !== "전체" ? "조건에 맞는 공고가 없어요" : "아직 등록된 공고가 없어요"}</p>
+            <p className="text-slate-300 text-xs mt-1">{statusFilter !== "전체" ? "필터 조건을 변경해보세요" : "첫 번째 채용 공고를 등록해보세요"}</p>
+          </div>
+        )}
         {filteredPostings.map(p => {
           const pApps = applicants.filter(a => a.posting_id === p.id);
           return (

@@ -28,6 +28,7 @@ const PERIOD_STATUS_COLORS: Record<string, string> = {
   "완료": "bg-emerald-50 text-emerald-700",
 };
 const SCORES = [1, 2, 3, 4, 5];
+const SCORE_LABELS: Record<number, string> = { 1: "매우 부족", 2: "부족", 3: "보통", 4: "우수", 5: "탁월" };
 
 const EMPTY_PERIOD = { name: "", start_date: today(), end_date: today(), type: "MBO" as string };
 const EMPTY_EVAL = { evaluatee: "", type: "자기" as "자기" | "상사" | "동료", goals_score: 3, competency_score: 3, comment: "" };
@@ -147,7 +148,12 @@ export default function EvaluationTab({ userId, userName, myRole, flash }: Props
     } catch (e) { flash("삭제 실패"); }
   };
 
-  if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
+  if (loading) return (
+    <div className="text-center py-20">
+      <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-[#3182F6] rounded-full animate-spin mb-3" />
+      <p className="text-sm text-slate-400">불러오는 중...</p>
+    </div>
+  );
 
   // 평가 기간 생성/수정 폼
   if (view === "create-period") {
@@ -200,17 +206,23 @@ export default function EvaluationTab({ userId, userName, myRole, flash }: Props
             )}
             <div>
               <label className={L}>목표 달성도 (1~5)</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 {SCORES.map(s => (
-                  <button key={s} className={`w-10 h-10 rounded-xl font-bold text-sm ${evalForm.goals_score === s ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-600"} cursor-pointer`} onClick={() => setEvalForm({ ...evalForm, goals_score: s })}>{s}</button>
+                  <div key={s} className="flex flex-col items-center gap-1">
+                    <button className={`w-11 h-11 rounded-xl font-bold text-sm transition-all ${evalForm.goals_score === s ? "bg-[#3182F6] text-white scale-110 shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200"} cursor-pointer`} onClick={() => setEvalForm({ ...evalForm, goals_score: s })}>{s}</button>
+                    <span className={`text-[10px] ${evalForm.goals_score === s ? "text-[#3182F6] font-medium" : "text-slate-400"}`}>{SCORE_LABELS[s]}</span>
+                  </div>
                 ))}
               </div>
             </div>
             <div>
               <label className={L}>역량 점수 (1~5)</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 {SCORES.map(s => (
-                  <button key={s} className={`w-10 h-10 rounded-xl font-bold text-sm ${evalForm.competency_score === s ? "bg-[#3182F6] text-white" : "bg-slate-100 text-slate-600"} cursor-pointer`} onClick={() => setEvalForm({ ...evalForm, competency_score: s })}>{s}</button>
+                  <div key={s} className="flex flex-col items-center gap-1">
+                    <button className={`w-11 h-11 rounded-xl font-bold text-sm transition-all ${evalForm.competency_score === s ? "bg-[#3182F6] text-white scale-110 shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200"} cursor-pointer`} onClick={() => setEvalForm({ ...evalForm, competency_score: s })}>{s}</button>
+                    <span className={`text-[10px] ${evalForm.competency_score === s ? "text-[#3182F6] font-medium" : "text-slate-400"}`}>{SCORE_LABELS[s]}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -254,9 +266,27 @@ export default function EvaluationTab({ userId, userName, myRole, flash }: Props
           <div className={C}><p className="text-xs text-slate-400">확정 완료</p><p className="text-2xl font-bold text-emerald-600">{periodEvals.filter(e => e.status === "확정").length}건</p></div>
         </div>
 
+        {/* 상태 흐름 안내 */}
+        <div className={C}>
+          <p className="text-xs text-slate-400 mb-2">평가 진행 흐름</p>
+          <div className="flex items-center gap-1 flex-wrap">
+            {STATUS_FLOW.map((st, i) => (
+              <span key={st} className="flex items-center gap-1">
+                <span className={`${BADGE} ${STATUS_COLORS[st]}`}>{st}</span>
+                {i < STATUS_FLOW.length - 1 && <span className="text-slate-300 text-xs mx-1">&rarr;</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* 평가 리스트 */}
         <div className="space-y-2">
-          {periodEvals.length === 0 && <p className="text-sm text-slate-400">작성된 평가가 없습니다</p>}
+          {periodEvals.length === 0 && (
+            <div className={`${C} text-center py-10`}>
+              <p className="text-slate-400 text-sm">아직 작성된 평가가 없어요</p>
+              <p className="text-slate-300 text-xs mt-1">위의 + 평가 작성 버튼을 눌러 시작하세요</p>
+            </div>
+          )}
           {periodEvals.map(ev => {
             const canEdit = ev.evaluator === userName && (ev.status === "작성중" || ev.status === "제출");
             return (
@@ -301,7 +331,12 @@ export default function EvaluationTab({ userId, userName, myRole, flash }: Props
       <div className="space-y-5">
         <button className={B2} onClick={() => setView("eval-list")}>← 돌아가기</button>
         <h2 className="text-lg font-bold text-slate-800">{selectedPeriod.name} — 결과</h2>
-        {Object.keys(byPerson).length === 0 && <p className="text-sm text-slate-400">확정된 평가가 없습니다</p>}
+        {Object.keys(byPerson).length === 0 && (
+          <div className={`${C} text-center py-10`}>
+            <p className="text-slate-400 text-sm">아직 확정된 평가가 없어요</p>
+            <p className="text-slate-300 text-xs mt-1">평가가 확정되면 여기에 결과가 표시됩니다</p>
+          </div>
+        )}
         {Object.entries(byPerson).map(([person, evals]) => {
           const avgG = (evals.reduce((s, e) => s + e.goals_score, 0) / evals.length).toFixed(1);
           const avgC = (evals.reduce((s, e) => s + e.competency_score, 0) / evals.length).toFixed(1);
@@ -345,7 +380,12 @@ export default function EvaluationTab({ userId, userName, myRole, flash }: Props
         {isAdmin && <button className={B} onClick={() => { setPeriodForm(EMPTY_PERIOD); setEditPeriodId(null); setView("create-period"); }}>+ 평가 기간 생성</button>}
       </div>
 
-      {periods.length === 0 && <p className="text-sm text-slate-400">등록된 평가 기간이 없습니다</p>}
+      {periods.length === 0 && (
+        <div className={`${C} text-center py-10`}>
+          <p className="text-slate-400 text-sm">등록된 평가 기간이 없어요</p>
+          <p className="text-slate-300 text-xs mt-1">{isAdmin ? "새 평가 기간을 생성해보세요" : "관리자가 평가 기간을 생성하면 여기에 표시됩니다"}</p>
+        </div>
+      )}
       <div className="space-y-3">
         {periods.map(p => {
           const pEvals = evaluations.filter(e => e.period_id === p.id);

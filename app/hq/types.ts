@@ -54,7 +54,7 @@ export type Contact = {
   profileImg?: string; manager?: string;
 };
 export type BoardPost = {
-  id: string; category: "자유" | "공지" | "질문" | "정보" | "부서";
+  id: string; category: "자유" | "공지" | "질문" | "정보" | "부서" | "버그" | "건의";
   title: string; content: string; author: string; date: string;
   views: number; likes: number; comments: number; pinned: boolean;
 };

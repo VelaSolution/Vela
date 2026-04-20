@@ -117,21 +117,30 @@ export default function CheckinTab({ userId, userName, myRole, flash }: Props) {
     return done;
   }, [checkins]);
 
-  if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
+  if (loading) return (
+    <div className="text-center py-20">
+      <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-[#3182F6] rounded-full animate-spin mb-3" />
+      <p className="text-sm text-slate-400">불러오는 중...</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
       {/* 상태 카드 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className={C}>
-          <p className="text-xs text-slate-400 mb-1">오늘 상태</p>
+        <div className={`${C} ${isDone ? "!bg-emerald-50 border border-emerald-200" : "!bg-amber-50 border border-amber-200"}`}>
+          <p className="text-xs text-slate-400 mb-1">오늘 체크인</p>
           <p className={`text-lg font-bold ${isDone ? "text-emerald-600" : "text-amber-600"}`}>
-            {isDone ? "체크인 완료" : "미완료"}
+            {isDone ? "완료" : "아직 안 했어요"}
           </p>
+          {!isDone && <p className="text-xs text-amber-500 mt-1">지금 바로 체크인하세요</p>}
         </div>
         <div className={C}>
           <p className="text-xs text-slate-400 mb-1">연속 체크인</p>
-          <p className="text-lg font-bold text-[#3182F6]">{streak}일</p>
+          <p className="text-lg font-bold text-[#3182F6]">
+            {streak}일 {streak >= 7 ? "연속" : streak >= 3 ? "연속" : ""}
+          </p>
+          {streak >= 5 && <p className="text-xs text-[#3182F6] mt-1">꾸준히 잘하고 있어요</p>}
         </div>
         <div className={C}>
           <p className="text-xs text-slate-400 mb-1">오늘 팀 체크인</p>
@@ -213,7 +222,10 @@ export default function CheckinTab({ userId, userName, myRole, flash }: Props) {
           <div className={C}>
             <h3 className="font-bold text-slate-800 mb-4">팀 체크인 피드 ({checkins.length}명)</h3>
             {checkins.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-8">아직 오늘 체크인한 팀원이 없습니다</p>
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm">아직 오늘 체크인한 팀원이 없어요</p>
+                <p className="text-slate-300 text-xs mt-1">첫 번째로 체크인해보세요</p>
+              </div>
             ) : (
               <div className="space-y-4">
                 {checkins.map(c => (
@@ -259,14 +271,19 @@ export default function CheckinTab({ userId, userName, myRole, flash }: Props) {
           </div>
 
           {filteredHistory.length === 0 ? (
-            <div className={C}><p className="text-sm text-slate-400 text-center py-8">해당 월의 체크인 기록이 없습니다</p></div>
+            <div className={C}>
+              <div className="text-center py-10">
+                <p className="text-slate-400 text-sm">해당 월의 체크인 기록이 없어요</p>
+                <p className="text-slate-300 text-xs mt-1">다른 월을 선택해보세요</p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               {filteredHistory.map(c => (
                 <div key={c.id} className={C}>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="font-semibold text-slate-800">{c.date}</span>
-                    <span className="text-xs text-slate-400">{new Date(c.date).toLocaleDateString("ko-KR", { weekday: "short" })}</span>
+                    <span className="font-semibold text-slate-800">{new Date(c.date).toLocaleDateString("ko-KR", { month: "long", day: "numeric" })}</span>
+                    <span className="text-xs text-slate-400">{new Date(c.date).toLocaleDateString("ko-KR", { weekday: "long" })}</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <div>
