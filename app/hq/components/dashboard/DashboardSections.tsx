@@ -265,6 +265,136 @@ export function FeedbackSectionDash({ feedbacks, comments, go, openFeedback }: S
   );
 }
 
+// ── Team Status ──
+export function TeamStatusSection({ teamMembers, attendanceData, go }: SharedProps & {
+  teamMembers: { name: string; role: string; status: string }[];
+  attendanceData: { userName: string; clockIn: string; clockOut: string; status: string }[];
+}) {
+  if (teamMembers.length === 0) return null;
+  return (
+    <div className={`${C} !p-4`}>
+      <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-1.5">
+        <span>👥</span> 팀 현황
+        <span className="text-[10px] text-slate-400 font-normal">({teamMembers.length}명)</span>
+      </h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {teamMembers.slice(0, 6).map(m => {
+          const att = attendanceData.find(a => a.userName === m.name);
+          const isIn = att && att.clockIn && !att.clockOut;
+          const isDone = att && att.clockOut;
+          return (
+            <div key={m.name} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50/80">
+              <div className="relative flex-shrink-0">
+                <div className="w-9 h-9 bg-gradient-to-br from-slate-200 to-slate-300 rounded-xl flex items-center justify-center">
+                  <span className="text-xs font-bold text-slate-600">{m.name[0]}</span>
+                </div>
+                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${isIn ? "bg-emerald-500" : isDone ? "bg-slate-300" : "bg-slate-200"}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-slate-800 truncate">{m.name}</p>
+                <p className="text-[10px] text-slate-400">{m.role} · {isIn ? "근무중" : isDone ? "퇴근" : "미출근"}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {teamMembers.length > 6 && (
+        <button onClick={() => go("team")} className="w-full text-center text-xs text-[#3182F6] font-semibold mt-2 hover:underline">
+          전체 {teamMembers.length}명 보기 →
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Recent Notices ──
+export function RecentNoticesSection({ notices, go }: SharedProps & {
+  notices: { id: string; title: string; date: string; pinned: boolean; author: string }[];
+}) {
+  if (notices.length === 0) return null;
+  return (
+    <div className={`${C} !p-4`}>
+      <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+        <span className="flex items-center gap-1.5"><span>📢</span> 최근 공지</span>
+        <button onClick={() => go("notice")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+      </h3>
+      <div className="space-y-1">
+        {notices.slice(0, 4).map(n => (
+          <div key={n.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("notice")}>
+            {n.pinned && <span className="text-[10px]">📌</span>}
+            <span className="text-sm text-slate-800 truncate flex-1">{n.title}</span>
+            <span className="text-[10px] text-slate-400 flex-shrink-0">{n.date?.slice(5, 10)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Upcoming Events ──
+export function UpcomingEventsSection({ events, go }: SharedProps & {
+  events: { id: string; title: string; date: string; author: string }[];
+}) {
+  if (events.length === 0) return null;
+  const DAY = ["일", "월", "화", "수", "목", "금", "토"];
+  return (
+    <div className={`${C} !p-4`}>
+      <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+        <span className="flex items-center gap-1.5"><span>📅</span> 다가오는 일정</span>
+        <button onClick={() => go("calendar")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+      </h3>
+      <div className="space-y-1.5">
+        {events.slice(0, 4).map(e => {
+          const d = new Date(e.date);
+          const dayLabel = DAY[d.getDay()];
+          const isToday = e.date === today();
+          return (
+            <div key={e.id} className={`flex items-center gap-3 p-2.5 rounded-xl transition ${isToday ? "bg-blue-50/60 ring-1 ring-blue-100" : "bg-slate-50/60"}`}>
+              <div className="text-center flex-shrink-0 w-10">
+                <p className={`text-lg font-bold ${isToday ? "text-[#3182F6]" : "text-slate-700"}`}>{d.getDate()}</p>
+                <p className={`text-[10px] ${isToday ? "text-[#3182F6]" : "text-slate-400"}`}>{dayLabel}</p>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-slate-800 truncate">{e.title}</p>
+                {isToday && <p className="text-[10px] text-[#3182F6] font-semibold">오늘</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Recent Reports ──
+export function RecentReportsSection({ reports, go }: SharedProps & {
+  reports: { id: string; title: string; content?: string; author: string; status: string; date: string; report_type: string }[];
+}) {
+  const { displayName } = useTeamDisplayNames();
+  if (reports.length === 0) return null;
+  const typeIcon: Record<string, string> = { daily: "📝", issue: "🚨", project: "📊" };
+  const statusStyle: Record<string, string> = { submitted: "bg-blue-50 text-blue-700", approved: "bg-emerald-50 text-emerald-700", rejected: "bg-red-50 text-red-600" };
+  const statusLabel: Record<string, string> = { submitted: "제출", approved: "승인", rejected: "반려" };
+  return (
+    <div className={`${C} !p-4`}>
+      <h3 className="text-sm font-bold text-slate-700 mb-2 flex items-center justify-between">
+        <span className="flex items-center gap-1.5"><span>📄</span> 최근 보고서</span>
+        <button onClick={() => go("report")} className="text-[10px] text-[#3182F6] font-semibold hover:underline">전체보기</button>
+      </h3>
+      <div className="space-y-1">
+        {reports.slice(0, 5).map(r => (
+          <div key={r.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("report")}>
+            <span className="text-sm flex-shrink-0">{typeIcon[r.report_type] ?? "📄"}</span>
+            <span className="text-sm text-slate-800 truncate flex-1">{r.title || r.content?.slice(0, 30) || "무제"}</span>
+            <span className="text-[10px] text-slate-400 flex-shrink-0">{displayName(r.author)}</span>
+            <span className={`${BADGE} text-[9px] ${statusStyle[r.status] ?? "bg-slate-50 text-slate-500"}`}>{statusLabel[r.status] ?? r.status}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── AARs ──
 export function AarsSection({ aars, go }: SharedProps & { aars: AAR[] }) {
   const monthAars = aars.filter((a) => a.date?.startsWith(today().slice(0, 7))).length;

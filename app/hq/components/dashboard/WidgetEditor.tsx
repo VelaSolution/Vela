@@ -1,12 +1,16 @@
 "use client";
 import { C } from "@/app/hq/utils";
 
-type SectionKey = "stats" | "todayTasks" | "approvals_attendance" | "recentActivity" | "kpi" | "goals" | "tasks" | "feedback" | "aars";
+type SectionKey = "stats" | "todayTasks" | "approvals_attendance" | "recentActivity" | "kpi" | "goals" | "tasks" | "feedback" | "aars" | "teamStatus" | "recentNotices" | "upcomingEvents" | "recentReports";
 
 const ALL_SECTIONS: { key: SectionKey; label: string; icon: string }[] = [
   { key: "stats", label: "플랫폼 통계", icon: "👥" },
   { key: "todayTasks", label: "오늘 할 일", icon: "📌" },
   { key: "approvals_attendance", label: "결재 & 출근", icon: "📋" },
+  { key: "teamStatus", label: "팀 현황", icon: "👥" },
+  { key: "recentNotices", label: "최근 공지", icon: "📢" },
+  { key: "upcomingEvents", label: "다가오는 일정", icon: "📅" },
+  { key: "recentReports", label: "최근 보고서", icon: "📄" },
   { key: "recentActivity", label: "최근 활동", icon: "🕐" },
   { key: "kpi", label: "KPI", icon: "📊" },
   { key: "goals", label: "목표", icon: "🏆" },

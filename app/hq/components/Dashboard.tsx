@@ -9,6 +9,7 @@ import {
   StatsSection, TodayTasksSection, ApprovalsAttendanceSection,
   RecentActivitySection, KpiSection, GoalsSection,
   TasksSection, FeedbackSectionDash, AarsSection,
+  TeamStatusSection, RecentNoticesSection, UpcomingEventsSection, RecentReportsSection,
 } from "@/app/hq/components/dashboard/DashboardSections";
 
 type Comment = { id: string; author: string; text: string; time: string };
@@ -22,7 +23,7 @@ interface Props {
   onNavigate?: (tab: Tab) => void;
 }
 
-const DEFAULT_ORDER: SectionKey[] = ["stats", "todayTasks", "approvals_attendance", "recentActivity", "kpi", "goals", "tasks", "feedback", "aars"];
+const DEFAULT_ORDER: SectionKey[] = ["stats", "todayTasks", "approvals_attendance", "teamStatus", "recentNotices", "upcomingEvents", "recentReports", "recentActivity", "kpi", "goals", "tasks", "feedback", "aars"];
 const LS_KEY = "vela_hq_dashboard_prefs";
 
 function loadWidgetPrefs(): WidgetPrefs {
@@ -66,6 +67,11 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const [attendanceIn, setAttendanceIn] = useState(0);
   const [attendanceOut, setAttendanceOut] = useState(0);
   const [recentActivity, setRecentActivity] = useState<{ type: string; icon: string; title: string; time: string; tab: Tab }[]>([]);
+  const [teamMembers, setTeamMembers] = useState<{ name: string; role: string; status: string }[]>([]);
+  const [todayAttRecords, setTodayAttRecords] = useState<{ userName: string; clockIn: string; clockOut: string; status: string }[]>([]);
+  const [recentNotices, setRecentNotices] = useState<{ id: string; title: string; date: string; pinned: boolean; author: string }[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; date: string; author: string }[]>([]);
+  const [recentReports, setRecentReports] = useState<{ id: string; title: string; content?: string; author: string; status: string; date: string; report_type: string }[]>([]);
 
   const [editMode, setEditMode] = useState(false);
   const [widgetPrefs, setWidgetPrefs] = useState<WidgetPrefs>(() => loadWidgetPrefs());
@@ -196,6 +202,41 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
           setComments(grouped);
         }
       } catch {}
+
+      // 팀원 현황
+      try {
+        const { data: td } = await s.from("hq_team").select("name, role, status").neq("approved", false);
+        if (td) setTeamMembers(td as any[]);
+      } catch {}
+
+      // 오늘 출퇴근 전체
+      try {
+        const { data: attAll } = await s.from("hq_attendance").select("user_name, clock_in, clock_out, status").eq("date", today());
+        if (attAll) setTodayAttRecords(attAll.map((a: any) => ({
+          userName: a.user_name,
+          clockIn: a.clock_in ? new Date(a.clock_in).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }) : "",
+          clockOut: a.clock_out ? new Date(a.clock_out).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }) : "",
+          status: a.status,
+        })));
+      } catch {}
+
+      // 최근 공지
+      try {
+        const { data: nd } = await s.from("hq_notices").select("id, title, date, pinned, author").order("pinned", { ascending: false }).order("date", { ascending: false }).limit(5);
+        if (nd) setRecentNotices(nd as any[]);
+      } catch {}
+
+      // 다가오는 일정
+      try {
+        const { data: ed } = await s.from("hq_calendar").select("id, title, date, author").gte("date", today()).order("date", { ascending: true }).limit(5);
+        if (ed) setUpcomingEvents(ed as any[]);
+      } catch {}
+
+      // 최근 보고서
+      try {
+        const { data: rd } = await s.from("hq_reports").select("id, title, content, author, status, date, report_type").order("created_at", { ascending: false }).limit(5);
+        if (rd) setRecentReports(rd as any[]);
+      } catch {}
     } catch { flash("보조 데이터 로딩 실패"); }
     finally { setSecondaryLoading(false); }
   }
@@ -269,6 +310,10 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
       case "tasks": return <TasksSection key="tasks" tasks={tasks} comments={comments} go={go} userName={userName} openTask={openTask} />;
       case "feedback": return <FeedbackSectionDash key="feedback" feedbacks={feedbacks} comments={comments} go={go} userName={userName} openFeedback={openFeedback} />;
       case "aars": return <AarsSection key="aars" aars={aars} go={go} userName={userName} />;
+      case "teamStatus": return <TeamStatusSection key="teamStatus" teamMembers={teamMembers} attendanceData={todayAttRecords} go={go} userName={userName} />;
+      case "recentNotices": return <RecentNoticesSection key="recentNotices" notices={recentNotices} go={go} userName={userName} />;
+      case "upcomingEvents": return <UpcomingEventsSection key="upcomingEvents" events={upcomingEvents} go={go} userName={userName} />;
+      case "recentReports": return <RecentReportsSection key="recentReports" reports={recentReports} go={go} userName={userName} />;
       default: return null;
     }
   };
