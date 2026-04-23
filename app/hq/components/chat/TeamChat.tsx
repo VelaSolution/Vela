@@ -1,13 +1,133 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { sb, I, B, useTeamDisplayNames } from "@/app/hq/utils";
-import { EnrichedMsg, TeamMemberSimple, mapRow, groupByDate } from "./chatHelpers";
+import { sb, I, B, B2, useTeamDisplayNames } from "@/app/hq/utils";
+import { EnrichedMsg, TeamMemberSimple, VoteData, mapRow, groupByDate } from "./chatHelpers";
 import MessageBubble from "./MessageBubble";
 
 interface Props {
   userName: string;
   allMembers: TeamMemberSimple[];
   flash: (m: string) => void;
+}
+
+function VoteModal({ userName, onClose, onSubmit }: {
+  userName: string;
+  onClose: () => void;
+  onSubmit: (vd: VoteData, question: string) => void;
+}) {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [anonymous, setAnonymous] = useState(false);
+  const [useDeadline, setUseDeadline] = useState(false);
+  const [deadline, setDeadline] = useState("");
+
+  const addOption = () => setOptions([...options, ""]);
+  const removeOption = (idx: number) => {
+    if (options.length <= 2) return;
+    setOptions(options.filter((_, i) => i !== idx));
+  };
+  const updateOption = (idx: number, val: string) => {
+    const next = [...options];
+    next[idx] = val;
+    setOptions(next);
+  };
+
+  const canSubmit = question.trim() && options.filter(o => o.trim()).length >= 2;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const cleanOptions = options.filter(o => o.trim());
+    const votes: Record<string, string[]> = {};
+    cleanOptions.forEach((_, i) => { votes[String(i)] = []; });
+    const vd: VoteData = {
+      question: question.trim(),
+      options: cleanOptions,
+      votes,
+      anonymous,
+      deadline: useDeadline && deadline ? deadline : undefined,
+    };
+    onSubmit(vd, question.trim());
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <span>📊</span> 투표 만들기
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1.5">질문</label>
+            <input
+              className={I}
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              placeholder="투표 질문을 입력하세요"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-600 mb-1.5">선택지</label>
+            <div className="space-y-2">
+              {options.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 w-5 text-center">{idx + 1}</span>
+                  <input
+                    className={`${I} flex-1`}
+                    value={opt}
+                    onChange={e => updateOption(idx, e.target.value)}
+                    placeholder={`선택지 ${idx + 1}`}
+                  />
+                  {options.length > 2 && (
+                    <button onClick={() => removeOption(idx)} className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {options.length < 8 && (
+              <button onClick={addOption} className="mt-2 text-sm text-[#3182F6] hover:text-[#2672DE] font-semibold transition-colors flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                선택지 추가
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]/20" />
+              <span className="text-sm text-slate-600">익명 투표</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={useDeadline} onChange={e => setUseDeadline(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]/20" />
+              <span className="text-sm text-slate-600">마감일 설정</span>
+            </label>
+          </div>
+
+          {useDeadline && (
+            <input type="datetime-local" className={I} value={deadline} onChange={e => setDeadline(e.target.value)} />
+          )}
+        </div>
+
+        <div className="flex gap-2 mt-6">
+          <button className={`${B2} flex-1`} onClick={onClose}>취소</button>
+          <button className={`${B} flex-1 ${!canSubmit ? "opacity-50 cursor-not-allowed" : ""}`} onClick={handleSubmit} disabled={!canSubmit}>
+            투표 게시
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function TeamChat({ userName, allMembers, flash }: Props) {
@@ -21,6 +141,7 @@ export default function TeamChat({ userName, allMembers, flash }: Props) {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [showVoteModal, setShowVoteModal] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -110,7 +231,7 @@ export default function TeamChat({ userName, allMembers, flash }: Props) {
     const s = sb();
     if (!s) return;
     const msgText = text.trim();
-    const payload: any = { sender: userName, text: msgText };
+    const payload: any = { sender: userName, text: msgText, type: "message" };
     if (replyTo) payload.reply_to = { sender: replyTo.sender, text: replyTo.text.slice(0, 100) };
     setText(""); setReplyTo(null); isAtBottom.current = true;
     const { data } = await s.from("hq_chat").insert(payload).select().single();
@@ -118,6 +239,53 @@ export default function TeamChat({ userName, allMembers, flash }: Props) {
       const newMsg = mapRow(data);
       setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
     }
+  };
+
+  const sendVote = async (vd: VoteData, question: string) => {
+    const s = sb();
+    if (!s) return;
+    const payload: any = {
+      sender: userName,
+      text: `📊 투표: ${question}`,
+      type: "vote",
+      vote_data: vd,
+    };
+    isAtBottom.current = true;
+    const { data } = await s.from("hq_chat").insert(payload).select().single();
+    if (data) {
+      const newMsg = mapRow(data);
+      setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
+    }
+    setShowVoteModal(false);
+    flash("투표가 게시되었습니다");
+  };
+
+  const handleVote = async (msgId: string, optionIdx: number) => {
+    const s = sb();
+    if (!s) return;
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg || !msg.vote_data) return;
+
+    const vd = JSON.parse(JSON.stringify(msg.vote_data)) as VoteData;
+    const optKey = String(optionIdx);
+
+    // Check if already voted on any option
+    const alreadyVotedKey = Object.entries(vd.votes).find(([, users]) => users.includes(userName))?.[0];
+    if (alreadyVotedKey !== undefined) {
+      // Toggle off if same option
+      if (alreadyVotedKey === optKey) {
+        vd.votes[optKey] = vd.votes[optKey].filter(u => u !== userName);
+      } else {
+        // Switch vote
+        vd.votes[alreadyVotedKey] = vd.votes[alreadyVotedKey].filter(u => u !== userName);
+        vd.votes[optKey] = [...(vd.votes[optKey] ?? []), userName];
+      }
+    } else {
+      vd.votes[optKey] = [...(vd.votes[optKey] ?? []), userName];
+    }
+
+    await s.from("hq_chat").update({ vote_data: vd }).eq("id", msgId);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, vote_data: vd } : m));
   };
 
   const deleteTeamMsg = async (id: string) => {
@@ -181,6 +349,7 @@ export default function TeamChat({ userName, allMembers, flash }: Props) {
               {group.msgs.map((m) => (
                 <MessageBubble key={m.id} m={m} userName={userName}
                   onReply={setReplyTo} onDelete={deleteTeamMsg} onReaction={toggleTeamReaction}
+                  onVote={handleVote}
                   showReactionPicker={showReactionPicker} setShowReactionPicker={setShowReactionPicker} />
               ))}
             </div>
@@ -229,9 +398,20 @@ export default function TeamChat({ userName, allMembers, flash }: Props) {
           <input ref={inputRef} className={`${I} flex-1`} value={text}
             onChange={(e) => handleTeamInput(e.target.value)} onKeyDown={handleTeamKeyDown}
             placeholder={replyTo ? `${displayName(replyTo.sender)}에게 답장...` : "메시지를 입력하세요... (@으로 멘션)"} />
+          <button
+            onClick={() => setShowVoteModal(true)}
+            className="flex-shrink-0 rounded-2xl bg-slate-100 text-slate-600 font-semibold px-3 py-3 text-sm hover:bg-slate-200 active:scale-[0.97] transition-all"
+            title="투표 만들기"
+          >
+            📊
+          </button>
           <button className={`${B} flex-shrink-0`} onClick={sendTeam}>전송</button>
         </div>
       </div>
+
+      {showVoteModal && (
+        <VoteModal userName={userName} onClose={() => setShowVoteModal(false)} onSubmit={sendVote} />
+      )}
     </div>
   );
 }

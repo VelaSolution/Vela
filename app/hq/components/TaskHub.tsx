@@ -7,11 +7,13 @@ const TaskTab = dynamic(() => import("./TaskTab"));
 const CalendarTab = dynamic(() => import("./CalendarTab"));
 const GanttTab = dynamic(() => import("./GanttTab"));
 const CheckinTab = dynamic(() => import("./CheckinTab"));
+const KanbanTab = dynamic(() => import("./KanbanTab"));
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
 const tabs = [
   { key: "task", label: "태스크" },
+  { key: "kanban", label: "칸반" },
   { key: "calendar", label: "일정" },
   { key: "gantt", label: "간트" },
   { key: "checkin", label: "체크아웃" },
@@ -36,6 +38,7 @@ export default function TaskHub({ userId, userName, myRole, flash }: Props) {
       </div>
 
       {sub === "task" && <TaskTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
+      {sub === "kanban" && <KanbanTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "calendar" && <CalendarTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "gantt" && <GanttTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "checkin" && <CheckinTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}

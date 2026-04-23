@@ -26,6 +26,19 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
 }
 
+/* ── 명함 데이터 타입 ── */
+interface BusinessCardData {
+  company: string;
+  name: string;
+  position: string;
+  department: string;
+  phone: string;
+  email: string;
+  address: string;
+  fax: string;
+  motto: string;
+}
+
 export default function ContactsTab({ userId, userName, myRole, flash }: Props) {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [search, setSearch] = useState("");
@@ -40,6 +53,18 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [extension, setExtension] = useState("");
+
+  // 명함 모달
+  const [cardContact, setCardContact] = useState<Contact | null>(null);
+  const [showCardModal, setShowCardModal] = useState(false);
+
+  // 내 명함 편집
+  const [showMyCardEdit, setShowMyCardEdit] = useState(false);
+  const [myCardData, setMyCardData] = useState<BusinessCardData>({
+    company: "VELA", name: "", position: "", department: "",
+    phone: "", email: "", address: "", fax: "", motto: "",
+  });
+  const [myCardLoading, setMyCardLoading] = useState(false);
 
   const load = async () => {
     const s = sb();
@@ -79,6 +104,134 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
   useEffect(() => {
     load();
   }, []);
+
+  /* ── 내 명함 데이터 로드 ── */
+  const loadMyCard = async () => {
+    const s = sb();
+    if (!s) return;
+    try {
+      const { data } = await s
+        .from("hq_settings")
+        .select("value")
+        .eq("key", `business_card_${userName}`)
+        .maybeSingle();
+      if (data?.value) {
+        const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+        setMyCardData({
+          company: parsed.company || "VELA",
+          name: parsed.name || userName,
+          position: parsed.position || "",
+          department: parsed.department || "",
+          phone: parsed.phone || "",
+          email: parsed.email || "",
+          address: parsed.address || "",
+          fax: parsed.fax || "",
+          motto: parsed.motto || "",
+        });
+      } else {
+        // 기본값: 연락처/팀 데이터에서 찾기
+        const me = contacts.find(c => c.name === userName);
+        setMyCardData({
+          company: "VELA",
+          name: userName,
+          position: me?.position || "",
+          department: me?.department || "",
+          phone: me?.phone || "",
+          email: me?.email || "",
+          address: "",
+          fax: "",
+          motto: "",
+        });
+      }
+    } catch (e) {
+      console.error("loadMyCard error:", e);
+    }
+  };
+
+  const saveMyCard = async () => {
+    const s = sb();
+    if (!s) { flash("DB 연결 실패"); return; }
+    setMyCardLoading(true);
+    try {
+      const { error } = await s.from("hq_settings").upsert({
+        key: `business_card_${userName}`,
+        value: JSON.stringify(myCardData),
+      }, { onConflict: "key" });
+      if (error) throw error;
+      flash("명함이 저장되었습니다");
+      setShowMyCardEdit(false);
+    } catch (e: any) {
+      console.error("saveMyCard error:", e);
+      flash("명함 저장 실패: " + (e?.message || ""));
+    }
+    setMyCardLoading(false);
+  };
+
+  /* ── 명함 보기 (다른 사람) ── */
+  const viewCard = async (c: Contact) => {
+    setCardContact(c);
+    setShowCardModal(true);
+    // hq_settings에서 커스텀 명함 데이터 로드 시도
+    const s = sb();
+    if (!s) return;
+    try {
+      const { data } = await s
+        .from("hq_settings")
+        .select("value")
+        .eq("key", `business_card_${c.name}`)
+        .maybeSingle();
+      if (data?.value) {
+        const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+        setCardContact({
+          ...c,
+          phone: parsed.phone || c.phone,
+          email: parsed.email || c.email,
+          department: parsed.department || c.department,
+          position: parsed.position || c.position,
+        });
+        // 추가 필드를 모달에서 사용하기 위해 별도 state
+        setCardExtraData({
+          address: parsed.address || "",
+          fax: parsed.fax || "",
+          motto: parsed.motto || "",
+          company: parsed.company || "VELA",
+        });
+      } else {
+        setCardExtraData({ address: "", fax: "", motto: "", company: "VELA" });
+      }
+    } catch {
+      setCardExtraData({ address: "", fax: "", motto: "", company: "VELA" });
+    }
+  };
+
+  const [cardExtraData, setCardExtraData] = useState<{ address: string; fax: string; motto: string; company: string }>({
+    address: "", fax: "", motto: "", company: "VELA",
+  });
+
+  /* ── 명함 공유 (클립보드 복사) ── */
+  const shareCard = (c: Contact, extra?: { address: string; fax: string; motto: string; company: string }) => {
+    const lines = [
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `  ${extra?.company || "VELA"}`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `  ${c.name}`,
+      c.position ? `  ${c.position}` : "",
+      c.department ? `  ${c.department}` : "",
+      ``,
+      c.phone ? `  TEL  ${c.phone}` : "",
+      c.email ? `  EMAIL  ${c.email}` : "",
+      extra?.fax ? `  FAX  ${extra.fax}` : "",
+      extra?.address ? `  ADDR  ${extra.address}` : "",
+      extra?.motto ? `\n  "${extra.motto}"` : "",
+      `━━━━━━━━━━━━━━━━━━━━`,
+    ].filter(Boolean).join("\n");
+
+    navigator.clipboard.writeText(lines).then(() => {
+      flash("명함 정보가 클립보드에 복사되었습니다");
+    }).catch(() => {
+      flash("복사 실패");
+    });
+  };
 
   const add = async () => {
     if (!name.trim()) return flash("이름을 입력하세요");
@@ -240,6 +393,165 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
 
   return (
     <div className="space-y-6">
+      {/* ── 명함 보기 모달 ── */}
+      {showCardModal && cardContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowCardModal(false)}>
+          <div className="w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            {/* 명함 카드 */}
+            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+              {/* 상단 파란 악센트 라인 */}
+              <div className="h-2 bg-gradient-to-r from-[#3182F6] to-[#1B64DA]" />
+              <div className="p-8">
+                {/* 회사명 */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-extrabold tracking-tight text-[#3182F6]">{cardExtraData.company}</h2>
+                </div>
+                {/* 이름/직책/부서 */}
+                <div className="mb-6">
+                  <p className="text-xl font-bold text-slate-900">{cardContact.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {cardContact.position && <span className="text-sm text-slate-600 font-medium">{cardContact.position}</span>}
+                    {cardContact.position && cardContact.department && <span className="text-slate-300">|</span>}
+                    {cardContact.department && <span className="text-sm text-slate-500">{cardContact.department}</span>}
+                  </div>
+                  {cardExtraData.motto && (
+                    <p className="text-xs text-slate-400 italic mt-2">&ldquo;{cardExtraData.motto}&rdquo;</p>
+                  )}
+                </div>
+                {/* 구분선 */}
+                <div className="border-t border-slate-100 mb-5" />
+                {/* 연락처 정보 */}
+                <div className="space-y-2.5 text-sm">
+                  {cardContact.phone && (
+                    <div className="flex items-center gap-3">
+                      <span className="w-14 text-xs font-semibold text-slate-400 uppercase tracking-wide">Tel</span>
+                      <span className="text-slate-700">{cardContact.phone}</span>
+                    </div>
+                  )}
+                  {cardContact.email && (
+                    <div className="flex items-center gap-3">
+                      <span className="w-14 text-xs font-semibold text-slate-400 uppercase tracking-wide">Email</span>
+                      <span className="text-slate-700">{cardContact.email}</span>
+                    </div>
+                  )}
+                  {cardExtraData.fax && (
+                    <div className="flex items-center gap-3">
+                      <span className="w-14 text-xs font-semibold text-slate-400 uppercase tracking-wide">Fax</span>
+                      <span className="text-slate-700">{cardExtraData.fax}</span>
+                    </div>
+                  )}
+                  {cardExtraData.address && (
+                    <div className="flex items-center gap-3">
+                      <span className="w-14 text-xs font-semibold text-slate-400 uppercase tracking-wide">Addr</span>
+                      <span className="text-slate-700">{cardExtraData.address}</span>
+                    </div>
+                  )}
+                </div>
+                {/* QR 코드 플레이스홀더 */}
+                <div className="mt-6 flex justify-end">
+                  <div className="w-16 h-16 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center">
+                    <span className="text-xs font-bold text-slate-300">QR</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* 모달 버튼 */}
+            <div className="flex gap-2 mt-4">
+              <button
+                className={`${B} flex-1 !text-sm !py-2.5`}
+                onClick={() => shareCard(cardContact, cardExtraData)}
+              >
+                명함 공유
+              </button>
+              <button
+                className={`${B2} flex-1 !text-sm !py-2.5`}
+                onClick={() => setShowCardModal(false)}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 내 명함 편집 모달 ── */}
+      {showMyCardEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowMyCardEdit(false)}>
+          <div className="w-full max-w-lg mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="h-2 bg-gradient-to-r from-[#3182F6] to-[#1B64DA]" />
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-5">내 명함 편집</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className={L}>회사명</label>
+                  <input className={I} value={myCardData.company} onChange={e => setMyCardData({ ...myCardData, company: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>이름</label>
+                  <input className={I} value={myCardData.name} onChange={e => setMyCardData({ ...myCardData, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>직책</label>
+                  <input className={I} value={myCardData.position} onChange={e => setMyCardData({ ...myCardData, position: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>부서</label>
+                  <input className={I} value={myCardData.department} onChange={e => setMyCardData({ ...myCardData, department: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>전화번호</label>
+                  <input className={I} placeholder="010-0000-0000" value={myCardData.phone} onChange={e => setMyCardData({ ...myCardData, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>이메일</label>
+                  <input className={I} placeholder="email@vela.com" value={myCardData.email} onChange={e => setMyCardData({ ...myCardData, email: e.target.value })} />
+                </div>
+                <div>
+                  <label className={L}>팩스</label>
+                  <input className={I} placeholder="02-000-0000" value={myCardData.fax} onChange={e => setMyCardData({ ...myCardData, fax: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className={L}>주소</label>
+                  <input className={I} placeholder="서울특별시..." value={myCardData.address} onChange={e => setMyCardData({ ...myCardData, address: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <label className={L}>좌우명</label>
+                  <input className={I} placeholder="나의 좌우명 / 한 마디" value={myCardData.motto} onChange={e => setMyCardData({ ...myCardData, motto: e.target.value })} />
+                </div>
+              </div>
+
+              {/* 미리보기 */}
+              <div className="mt-6 border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="h-1.5 bg-gradient-to-r from-[#3182F6] to-[#1B64DA]" />
+                <div className="p-5">
+                  <p className="text-lg font-extrabold text-[#3182F6] mb-2">{myCardData.company || "VELA"}</p>
+                  <p className="text-base font-bold text-slate-900">{myCardData.name || userName}</p>
+                  <p className="text-xs text-slate-500">
+                    {[myCardData.position, myCardData.department].filter(Boolean).join(" | ")}
+                  </p>
+                  <div className="mt-3 space-y-1 text-xs text-slate-600">
+                    {myCardData.phone && <p>TEL {myCardData.phone}</p>}
+                    {myCardData.email && <p>EMAIL {myCardData.email}</p>}
+                    {myCardData.fax && <p>FAX {myCardData.fax}</p>}
+                    {myCardData.address && <p>ADDR {myCardData.address}</p>}
+                  </div>
+                  {myCardData.motto && <p className="mt-2 text-[11px] text-slate-400 italic">&ldquo;{myCardData.motto}&rdquo;</p>}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-5">
+                <button className={`${B} flex-1`} onClick={saveMyCard} disabled={myCardLoading}>
+                  {myCardLoading ? "저장 중..." : "저장"}
+                </button>
+                <button className={`${B2} flex-1`} onClick={() => setShowMyCardEdit(false)}>
+                  취소
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search & Filter */}
       <div className={C}>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -264,6 +576,12 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
             ))}
           </select>
           <div className="flex items-center gap-2">
+            <button
+              className={B2}
+              onClick={() => { loadMyCard(); setShowMyCardEdit(true); }}
+            >
+              내 명함 편집
+            </button>
             <button
               className={B2}
               onClick={exportAll}
@@ -417,12 +735,20 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
                       {c.email && <div className="flex items-center gap-2"><span className="text-slate-300">✉️</span><span className="truncate">{c.email}</span></div>}
                       {c.extension && <div className="flex items-center gap-2"><span className="text-slate-300">☎️</span><span>내선 {c.extension}</span></div>}
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); exportSingle(c); }}
-                      className="mt-3 w-full text-xs font-semibold text-slate-400 hover:text-[#3182F6] bg-slate-50 hover:bg-blue-50 rounded-lg py-1.5 transition-colors"
-                    >
-                      내보내기
-                    </button>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); viewCard(c); }}
+                        className="flex-1 text-xs font-semibold text-[#3182F6] bg-blue-50 hover:bg-blue-100 rounded-lg py-1.5 transition-colors"
+                      >
+                        명함 보기
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); exportSingle(c); }}
+                        className="flex-1 text-xs font-semibold text-slate-400 hover:text-[#3182F6] bg-slate-50 hover:bg-blue-50 rounded-lg py-1.5 transition-colors"
+                      >
+                        내보내기
+                      </button>
+                    </div>
                   </>
                 )}
               </div>
@@ -450,7 +776,8 @@ export default function ContactsTab({ userId, userName, myRole, flash }: Props) 
                   {members.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                      onClick={() => viewCard(c)}
                     >
                       <div
                         className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${avatarColor(

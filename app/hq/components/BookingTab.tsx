@@ -10,7 +10,11 @@ type Resource = { id: string; name: string; type: SubTab; description: string; c
 type Booking = {
   id: string; resource_type: SubTab; resource_name: string; date: string;
   start_time: string; end_time: string; purpose: string; booker: string; status: string;
+  participants?: string[];
 };
+
+type TeamMember = { name: string; role: string };
+type BookingInvitation = { id: string; booking_id: string; target_user: string; response: string };
 
 const SUB_TABS: SubTab[] = ["회의실", "차량", "장비"];
 const STATUS_COLORS: Record<string, string> = {
@@ -21,7 +25,18 @@ const STATUS_COLORS: Record<string, string> = {
 };
 const HOURS = Array.from({ length: 13 }, (_, i) => `${String(i + 8).padStart(2, "0")}:00`);
 
-const EMPTY = { resource_name: "", date: today(), start_time: "09:00", end_time: "10:00", purpose: "" };
+const EMPTY = { resource_name: "", date: today(), start_time: "09:00", end_time: "10:00", purpose: "", participants: [] as string[] };
+
+const AVATAR_COLORS = [
+  "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-purple-500",
+  "bg-pink-500", "bg-cyan-500", "bg-rose-500", "bg-indigo-500",
+];
+
+function getAvatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export default function BookingTab({ userId, userName, myRole, flash }: Props) {
   const { displayName } = useTeamDisplayNames();
@@ -35,6 +50,8 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
   const [viewDate, setViewDate] = useState(today());
   const [showResForm, setShowResForm] = useState(false);
   const [resForm, setResForm] = useState({ name: "", description: "", capacity: "1" });
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [invitations, setInvitations] = useState<BookingInvitation[]>([]);
 
   const isAdmin = myRole === "대표" || myRole === "이사";
 
@@ -42,12 +59,20 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
     const s = sb(); if (!s) return;
     setLoading(true);
     try {
-      const [{ data: r }, { data: b }] = await Promise.all([
+      const [{ data: r }, { data: b }, { data: tm }] = await Promise.all([
         s.from("hq_resources").select("*").eq("active", true).order("name"),
         s.from("hq_bookings").select("*").order("date", { ascending: true }),
+        s.from("hq_team").select("name, role").neq("approved", false).order("name"),
       ]);
       if (r) setResources(r.map((d: any) => ({ id: d.id, name: d.name, type: d.type, description: d.description ?? "", capacity: d.capacity ?? 0, active: d.active ?? true })));
-      if (b) setBookings(b.map((d: any) => ({ id: d.id, resource_type: d.resource_type, resource_name: d.resource_name, date: d.date, start_time: d.start_time, end_time: d.end_time, purpose: d.purpose ?? "", booker: d.booker, status: d.status ?? "예약됨" })));
+      if (b) setBookings(b.map((d: any) => ({ id: d.id, resource_type: d.resource_type, resource_name: d.resource_name, date: d.date, start_time: d.start_time, end_time: d.end_time, purpose: d.purpose ?? "", booker: d.booker, status: d.status ?? "예약됨", participants: d.participants ?? [] })));
+      if (tm) setTeamMembers(tm as TeamMember[]);
+
+      // 초대 응답 로드
+      try {
+        const { data: inv } = await s.from("hq_booking_invitations").select("*");
+        if (inv) setInvitations(inv as BookingInvitation[]);
+      } catch {}
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -56,7 +81,16 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
 
   const filtered = useMemo(() => resources.filter(r => r.type === sub), [resources, sub]);
   const dayBookings = useMemo(() => bookings.filter(b => b.date === viewDate && b.resource_type === sub && b.status !== "취소"), [bookings, viewDate, sub]);
-  const myBookings = useMemo(() => bookings.filter(b => b.booker === userName && b.status !== "취소").sort((a, b) => b.date.localeCompare(a.date)), [bookings, userName]);
+  const myBookings = useMemo(() => bookings.filter(b => (b.booker === userName || (b.participants ?? []).includes(userName)) && b.status !== "취소").sort((a, b) => b.date.localeCompare(a.date)), [bookings, userName]);
+
+  const toggleParticipant = (name: string) => {
+    setForm(prev => {
+      const participants = prev.participants.includes(name)
+        ? prev.participants.filter(p => p !== name)
+        : [...prev.participants, name];
+      return { ...prev, participants };
+    });
+  };
 
   const handleBook = async () => {
     if (!form.resource_name || !form.date || !form.start_time || !form.end_time || !form.purpose) { flash("모든 항목을 입력하세요"); return; }
@@ -66,8 +100,34 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
     const s = sb(); if (!s) return;
     setSaving(true);
     try {
-      const { error } = await s.from("hq_bookings").insert({ resource_type: sub, resource_name: form.resource_name, date: form.date, start_time: form.start_time, end_time: form.end_time, purpose: form.purpose, booker: userName, status: "예약됨" });
+      const { data: inserted, error } = await s.from("hq_bookings").insert({
+        resource_type: sub, resource_name: form.resource_name, date: form.date,
+        start_time: form.start_time, end_time: form.end_time, purpose: form.purpose,
+        booker: userName, status: "예약됨", participants: form.participants,
+      }).select("id").single();
       if (error) throw error;
+
+      // 참석자에게 알림 생성
+      if (form.participants.length > 0 && inserted) {
+        const notifications = form.participants.map(p => ({
+          type: "booking",
+          message: `회의실 ${form.resource_name} 예약됨: ${form.start_time} ~ ${form.end_time}`,
+          target_user: p,
+          created_by: userName,
+          created_at: new Date().toISOString(),
+          read: false,
+        }));
+        await s.from("hq_notifications").insert(notifications).throwOnError().catch(() => {});
+
+        // 초대 엔트리 생성
+        const invEntries = form.participants.map(p => ({
+          booking_id: inserted.id,
+          target_user: p,
+          response: "대기",
+        }));
+        await s.from("hq_booking_invitations").insert(invEntries).throwOnError().catch(() => {});
+      }
+
       flash("예약이 완료되었습니다");
       setForm(EMPTY); setShowForm(false); load();
     } catch (e) { flash("예약 실패"); console.error(e); }
@@ -81,6 +141,19 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
       await s.from("hq_bookings").update({ status: "취소" }).eq("id", id);
       flash("예약이 취소되었습니다"); load();
     } catch (e) { flash("취소 실패"); }
+  };
+
+  const handleRespondInvitation = async (bookingId: string, response: "수락" | "거절") => {
+    const s = sb(); if (!s) return;
+    try {
+      const { error } = await s.from("hq_booking_invitations")
+        .update({ response })
+        .eq("booking_id", bookingId)
+        .eq("target_user", userName);
+      if (error) throw error;
+      flash(`예약 초대를 ${response}했습니다`);
+      load();
+    } catch (e) { flash("응답 실패"); console.error(e); }
   };
 
   const handleAddResource = async () => {
@@ -101,6 +174,9 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
       flash("삭제되었습니다"); load();
     } catch (e) { flash("삭제 실패"); }
   };
+
+  const getBookingInvitations = (bookingId: string) => invitations.filter(inv => inv.booking_id === bookingId);
+  const getMyInvitation = (bookingId: string) => invitations.find(inv => inv.booking_id === bookingId && inv.target_user === userName);
 
   if (loading) return <div className="text-center py-20 text-slate-400">불러오는 중...</div>;
 
@@ -135,7 +211,25 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
               {r.description && <p className="text-xs text-slate-500 mb-1">{r.description}</p>}
               {r.capacity > 0 && sub === "회의실" && <p className="text-xs text-slate-400">수용: {r.capacity}명</p>}
               {booked.map(b => (
-                <div key={b.id} className="mt-2 p-2 rounded-lg bg-blue-50 text-xs text-blue-700">{b.start_time}~{b.end_time} · {displayName(b.booker)} · {b.purpose}</div>
+                <div key={b.id} className="mt-2 p-2 rounded-lg bg-blue-50 text-xs text-blue-700">
+                  <div>{b.start_time}~{b.end_time} · {displayName(b.booker)} · {b.purpose}</div>
+                  {b.participants && b.participants.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1.5">
+                      <span className="text-[10px] text-blue-400 mr-1">참석자:</span>
+                      <div className="flex -space-x-1.5">
+                        {b.participants.map((p, idx) => {
+                          const inv = getBookingInvitations(b.id).find(i => i.target_user === p);
+                          const borderColor = inv?.response === "수락" ? "ring-emerald-400" : inv?.response === "거절" ? "ring-red-400" : "ring-slate-300";
+                          return (
+                            <div key={idx} className={`w-5 h-5 rounded-full ${getAvatarColor(p)} flex items-center justify-center text-[9px] text-white font-bold ring-2 ${borderColor}`} title={`${displayName(p)}${inv ? ` (${inv.response})` : ""}`}>
+                              {p[0]}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
               {isAdmin && <button onClick={() => handleDeleteResource(r.id)} className="mt-2 text-xs text-red-400 hover:text-red-600">삭제</button>}
             </div>
@@ -185,24 +279,58 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
         <h3 className="font-semibold text-slate-700 mb-3">내 예약 목록</h3>
         {myBookings.length === 0 && <p className="text-sm text-slate-400">예약 내역이 없습니다</p>}
         <div className="space-y-2">
-          {myBookings.map(b => (
-            <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-              <div>
-                <span className={`${BADGE} ${STATUS_COLORS[b.status] ?? "bg-slate-100 text-slate-600"} mr-2`}>{b.status}</span>
-                <span className="text-sm font-medium text-slate-700">[{b.resource_type}] {b.resource_name}</span>
-                <span className="text-xs text-slate-400 ml-2">{b.date} {b.start_time}~{b.end_time}</span>
-                <span className="text-xs text-slate-500 ml-2">{b.purpose}</span>
+          {myBookings.map(b => {
+            const myInv = getMyInvitation(b.id);
+            const bInvitations = getBookingInvitations(b.id);
+            const isParticipant = b.booker !== userName;
+            return (
+              <div key={b.id} className="p-3 rounded-xl bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`${BADGE} ${STATUS_COLORS[b.status] ?? "bg-slate-100 text-slate-600"}`}>{b.status}</span>
+                    {isParticipant && <span className={`${BADGE} bg-purple-50 text-purple-600`}>초대됨</span>}
+                    <span className="text-sm font-medium text-slate-700">[{b.resource_type}] {b.resource_name}</span>
+                    <span className="text-xs text-slate-400">{b.date} {b.start_time}~{b.end_time}</span>
+                    <span className="text-xs text-slate-500">{b.purpose}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* 참석자 아바타 */}
+                    {b.participants && b.participants.length > 0 && (
+                      <div className="flex -space-x-1.5 mr-2">
+                        {b.participants.map((p, idx) => {
+                          const inv = bInvitations.find(i => i.target_user === p);
+                          const borderColor = inv?.response === "수락" ? "ring-emerald-400" : inv?.response === "거절" ? "ring-red-400" : "ring-slate-300";
+                          return (
+                            <div key={idx} className={`w-6 h-6 rounded-full ${getAvatarColor(p)} flex items-center justify-center text-[10px] text-white font-bold ring-2 ${borderColor}`} title={`${displayName(p)}${inv ? ` (${inv.response})` : ""}`}>
+                              {p[0]}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {/* 초대 수락/거절 */}
+                    {isParticipant && myInv && myInv.response === "대기" && (
+                      <div className="flex gap-1">
+                        <button className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors" onClick={() => handleRespondInvitation(b.id, "수락")}>수락</button>
+                        <button className="text-xs font-semibold text-red-500 bg-red-50 px-2.5 py-1 rounded-lg hover:bg-red-100 transition-colors" onClick={() => handleRespondInvitation(b.id, "거절")}>거절</button>
+                      </div>
+                    )}
+                    {isParticipant && myInv && myInv.response !== "대기" && (
+                      <span className={`${BADGE} text-[10px] ${myInv.response === "수락" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"}`}>{myInv.response}</span>
+                    )}
+                    {b.status === "예약됨" && b.booker === userName && <button className="text-xs text-red-500 hover:text-red-700" onClick={() => handleCancel(b.id)}>취소</button>}
+                  </div>
+                </div>
               </div>
-              {b.status === "예약됨" && <button className="text-xs text-red-500 hover:text-red-700" onClick={() => handleCancel(b.id)}>취소</button>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {/* 예약 폼 모달 */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className={`${C} w-full max-w-md mx-4`} onClick={e => e.stopPropagation()}>
+          <div className={`${C} w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-800 mb-4">{sub} 예약</h3>
             <div className="space-y-3">
               <div>
@@ -229,6 +357,41 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
               <div>
                 <label className={L}>목적</label>
                 <input value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} className={I} placeholder="예약 목적을 입력하세요" />
+              </div>
+              {/* 참석자 선택 */}
+              <div>
+                <label className={L}>참석자</label>
+                <div className="rounded-xl border border-slate-200 p-3 max-h-40 overflow-y-auto space-y-1.5">
+                  {teamMembers.filter(m => m.name !== userName).length === 0 && (
+                    <p className="text-xs text-slate-400">팀원이 없습니다</p>
+                  )}
+                  {teamMembers.filter(m => m.name !== userName).map(m => (
+                    <label key={m.name} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-1.5 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={form.participants.includes(m.name)}
+                        onChange={() => toggleParticipant(m.name)}
+                        className="rounded border-slate-300 text-[#3182F6] focus:ring-[#3182F6]/30"
+                      />
+                      <div className={`w-5 h-5 rounded-full ${getAvatarColor(m.name)} flex items-center justify-center text-[9px] text-white font-bold`}>
+                        {m.name[0]}
+                      </div>
+                      <span className="text-sm text-slate-700">{displayName(m.name)}</span>
+                      {m.role && <span className="text-[10px] text-slate-400">{m.role}</span>}
+                    </label>
+                  ))}
+                </div>
+                {form.participants.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <span className="text-xs text-slate-400">선택됨:</span>
+                    {form.participants.map(p => (
+                      <span key={p} className="inline-flex items-center gap-1 bg-[#3182F6]/10 text-[#3182F6] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {displayName(p)}
+                        <button onClick={() => toggleParticipant(p)} className="hover:text-red-500 transition-colors">&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 pt-2">
                 <button className={B} onClick={handleBook} disabled={saving}>{saving ? "저장 중..." : "예약하기"}</button>

@@ -44,6 +44,8 @@ function saveWidgetPrefs(prefs: WidgetPrefs) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(prefs)); } catch {}
 }
 
+type ImportantNotice = { id: string; title: string; content: string; date: string };
+
 export default function Dashboard({ userId, userName, myRole, flash, onNavigate }: Props) {
   const { displayName } = useTeamDisplayNames();
   const go = (tab: Tab) => onNavigate?.(tab);
@@ -82,6 +84,64 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const [editMode, setEditMode] = useState(false);
   const [widgetPrefs, setWidgetPrefs] = useState<WidgetPrefs>(() => loadWidgetPrefs());
   const [dragItem, setDragItem] = useState<SectionKey | null>(null);
+
+  // 중요 공지 팝업 state
+  const [showNoticePopup, setShowNoticePopup] = useState(false);
+  const [importantNotices, setImportantNotices] = useState<ImportantNotice[]>([]);
+  const [expandedNoticeId, setExpandedNoticeId] = useState<string | null>(null);
+
+  // 중요 공지 확인
+  useEffect(() => {
+    checkImportantNotices();
+  }, []);
+
+  async function checkImportantNotices() {
+    // "오늘 하루 보지 않기" 체크
+    try {
+      const dismissedDate = localStorage.getItem("hq_notices_dismissed_date");
+      if (dismissedDate === today()) return;
+    } catch {}
+
+    const s = sb(); if (!s) return;
+    try {
+      const { data } = await s.from("hq_notices").select("id, title, content, date").eq("important", true).order("date", { ascending: false }).limit(10);
+      if (!data || data.length === 0) return;
+
+      // localStorage에서 이미 읽은 공지 ID 목록 확인
+      let dismissedIds: string[] = [];
+      try {
+        const raw = localStorage.getItem("hq_dismissed_notices");
+        if (raw) dismissedIds = JSON.parse(raw);
+      } catch {}
+
+      const unread = (data as ImportantNotice[]).filter(n => !dismissedIds.includes(n.id));
+      if (unread.length === 0) return;
+
+      // 최대 3개만 표시
+      setImportantNotices(unread.slice(0, 3));
+      setShowNoticePopup(true);
+    } catch {}
+  }
+
+  function handleDismissNotices() {
+    // 확인 버튼: 현재 표시된 공지를 읽음 처리
+    try {
+      const raw = localStorage.getItem("hq_dismissed_notices");
+      let dismissed: string[] = [];
+      if (raw) dismissed = JSON.parse(raw);
+      const newDismissed = [...new Set([...dismissed, ...importantNotices.map(n => n.id)])];
+      localStorage.setItem("hq_dismissed_notices", JSON.stringify(newDismissed));
+    } catch {}
+    setShowNoticePopup(false);
+  }
+
+  function handleDismissToday() {
+    // "오늘 하루 보지 않기"
+    try {
+      localStorage.setItem("hq_notices_dismissed_date", today());
+    } catch {}
+    setShowNoticePopup(false);
+  }
 
   const updatePrefs = useCallback((updater: (prev: WidgetPrefs) => WidgetPrefs) => {
     setWidgetPrefs(prev => { const next = updater(prev); saveWidgetPrefs(next); return next; });
@@ -365,6 +425,61 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
   return (
     <div className="space-y-4">
+      {/* 중요 공지 팝업 */}
+      {showNoticePopup && importantNotices.length > 0 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => setShowNoticePopup(false)}>
+          <div className={`${C} w-full max-w-lg mx-4 !p-0 overflow-hidden`} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#3182F6] to-[#1B64DA] px-6 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                📢 중요 공지
+              </h3>
+              <p className="text-blue-100 text-xs mt-1">확인하지 않은 중요 공지가 {importantNotices.length}건 있습니다</p>
+            </div>
+            {/* Notice List */}
+            <div className="px-6 py-4 space-y-3 max-h-80 overflow-y-auto">
+              {importantNotices.map(n => (
+                <div key={n.id} className="rounded-xl border border-slate-200 overflow-hidden">
+                  <button
+                    onClick={() => setExpandedNoticeId(expandedNoticeId === n.id ? null : n.id)}
+                    className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="shrink-0 w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-sm font-semibold text-slate-800 truncate">{n.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-slate-400">{n.date}</span>
+                      <span className={`text-slate-400 transition-transform ${expandedNoticeId === n.id ? "rotate-180" : ""}`}>▼</span>
+                    </div>
+                  </button>
+                  {expandedNoticeId === n.id && (
+                    <div className="px-4 pb-3 border-t border-slate-100">
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap pt-3">{n.content || "(내용 없음)"}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+              <button
+                onClick={handleDismissToday}
+                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                오늘 하루 보지 않기
+              </button>
+              <button
+                onClick={handleDismissNotices}
+                className="rounded-xl bg-[#3182F6] text-white font-semibold px-6 py-2.5 text-sm hover:bg-[#1B64DA] active:scale-[0.98] transition-all"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AttendanceBanner loading={loading} todayAttendance={todayAttendance} onClockIn={handleQuickClockIn} onNavigate={go} />
 
       {detail && (

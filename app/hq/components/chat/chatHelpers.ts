@@ -6,6 +6,8 @@ export interface EnrichedMsg extends ChatMsg {
   reply_to?: { sender: string; text: string } | null;
   reactions?: Record<string, string[]>;
   receiver?: string;
+  type?: "message" | "vote";
+  vote_data?: VoteData | null;
 }
 
 export interface TeamMemberSimple {
@@ -13,7 +15,24 @@ export interface TeamMemberSimple {
   name: string;
 }
 
-export const REACTIONS = ["👍", "❤️", "😂", "👏", "🔥"];
+export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+
+export interface VoteData {
+  question: string;
+  options: string[];
+  votes: Record<string, string[]>; // optionIndex -> userName[]
+  anonymous: boolean;
+  deadline?: string;
+}
+
+export type UserStatus = "접속중" | "자리비움" | "외근" | "휴가" | "오프라인";
+export const STATUS_CONFIG: Record<UserStatus, { color: string; dot: string; label: string }> = {
+  "접속중": { color: "bg-emerald-500", dot: "bg-emerald-400", label: "접속중" },
+  "자리비움": { color: "bg-amber-500", dot: "bg-amber-400", label: "자리비움" },
+  "외근": { color: "bg-blue-500", dot: "bg-blue-400", label: "외근" },
+  "휴가": { color: "bg-purple-500", dot: "bg-purple-400", label: "휴가" },
+  "오프라인": { color: "bg-slate-400", dot: "bg-slate-300", label: "오프라인" },
+};
 
 export function mapRow(d: any): EnrichedMsg {
   return {
@@ -25,6 +44,8 @@ export function mapRow(d: any): EnrichedMsg {
     time: d.created_at ? new Date(d.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }) : "",
     reply_to: d.reply_to ?? null,
     reactions: d.reactions ?? {},
+    type: d.type ?? "message",
+    vote_data: d.vote_data ?? null,
   };
 }
 

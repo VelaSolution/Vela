@@ -1,16 +1,17 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { sb, I, B, useTeamDisplayNames } from "@/app/hq/utils";
-import { EnrichedMsg, TeamMemberSimple, mapRow, groupByDate, avatarColor } from "./chatHelpers";
+import { EnrichedMsg, TeamMemberSimple, UserStatus, STATUS_CONFIG, mapRow, groupByDate, avatarColor } from "./chatHelpers";
 import MessageBubble from "./MessageBubble";
 
 interface Props {
   userName: string;
   teamMembers: TeamMemberSimple[];
   flash: (m: string) => void;
+  memberStatuses?: Record<string, UserStatus>;
 }
 
-export default function DmChat({ userName, teamMembers, flash }: Props) {
+export default function DmChat({ userName, teamMembers, flash, memberStatuses = {} }: Props) {
   const { displayName } = useTeamDisplayNames();
   const [dmTarget, setDmTarget] = useState<TeamMemberSimple | null>(null);
   const [dmMessages, setDmMessages] = useState<EnrichedMsg[]>([]);
@@ -151,32 +152,41 @@ export default function DmChat({ userName, teamMembers, flash }: Props) {
 
   return (
     <div className="flex flex-1 min-h-0 gap-3">
-      {/* Left: team member list */}
+      {/* Left: team member list with status dots */}
       <div className={`${dmTarget ? "hidden md:flex" : "flex"} flex-col w-full md:w-56 flex-shrink-0 border-r border-slate-100 pr-3`}>
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">팀원</p>
         <div className="flex-1 overflow-y-auto space-y-1">
           {teamMembers.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-8">팀원이 없습니다</p>
           ) : (
-            teamMembers.map((m) => (
-              <button key={m.id} onClick={() => { setDmTarget(m); setDmReplyTo(null); }}
-                className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition-all ${
-                  dmTarget?.id === m.id ? "bg-[#3182F6]/10" : "hover:bg-slate-50"
-                }`}>
-                <div className={`w-8 h-8 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                  {m.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate ${dmTarget?.id === m.id ? "text-[#3182F6]" : "text-slate-700"}`}>{displayName(m.name)}</p>
+            teamMembers.map((m) => {
+              const st = memberStatuses[m.name] || "오프라인";
+              const stCfg = STATUS_CONFIG[st];
+              return (
+                <button key={m.id} onClick={() => { setDmTarget(m); setDmReplyTo(null); }}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition-all ${
+                    dmTarget?.id === m.id ? "bg-[#3182F6]/10" : "hover:bg-slate-50"
+                  }`}>
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-white text-xs font-bold`}>
+                      {m.name.charAt(0)}
+                    </div>
+                    <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${stCfg.dot}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold truncate ${dmTarget?.id === m.id ? "text-[#3182F6]" : "text-slate-700"}`}>{displayName(m.name)}</p>
+                    {dmLastMsgs[m.name] ? (
+                      <p className="text-xs text-slate-400 truncate">{dmLastMsgs[m.name].text}</p>
+                    ) : (
+                      <p className="text-[10px] text-slate-300">{stCfg.label}</p>
+                    )}
+                  </div>
                   {dmLastMsgs[m.name] && (
-                    <p className="text-xs text-slate-400 truncate">{dmLastMsgs[m.name].text}</p>
+                    <span className="text-[10px] text-slate-300 flex-shrink-0">{dmLastMsgs[m.name].time}</span>
                   )}
-                </div>
-                {dmLastMsgs[m.name] && (
-                  <span className="text-[10px] text-slate-300 flex-shrink-0">{dmLastMsgs[m.name].time}</span>
-                )}
-              </button>
-            ))
+                </button>
+              );
+            })
           )}
         </div>
       </div>
@@ -192,15 +202,21 @@ export default function DmChat({ userName, teamMembers, flash }: Props) {
           </div>
         ) : (
           <>
-            {/* DM header */}
+            {/* DM header with status */}
             <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-100 flex-shrink-0">
               <button onClick={() => setDmTarget(null)} className="md:hidden w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 transition">
                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
-              <div className={`w-8 h-8 rounded-full ${avatarColor(dmTarget.name)} flex items-center justify-center text-white text-xs font-bold`}>
-                {dmTarget.name.charAt(0)}
+              <div className="relative">
+                <div className={`w-8 h-8 rounded-full ${avatarColor(dmTarget.name)} flex items-center justify-center text-white text-xs font-bold`}>
+                  {dmTarget.name.charAt(0)}
+                </div>
+                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${STATUS_CONFIG[memberStatuses[dmTarget.name] || "오프라인"].dot}`} />
               </div>
-              <span className="text-sm font-bold text-slate-800">{displayName(dmTarget.name)}</span>
+              <div>
+                <span className="text-sm font-bold text-slate-800">{displayName(dmTarget.name)}</span>
+                <p className="text-[10px] text-slate-400">{STATUS_CONFIG[memberStatuses[dmTarget.name] || "오프라인"].label}</p>
+              </div>
             </div>
 
             {/* DM messages */}

@@ -55,7 +55,35 @@ function getMonthDates(): string[] {
   return dates;
 }
 
+// GPS 거리 계산 (Haversine formula, 미터 단위)
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+type OfficeLocation = { lat: number; lng: number; radius: number; wifiSSID?: string };
+
 type TeamMember = { name: string; role: string };
+
+// 분기 계산 유틸
+function getQuarterDates(year: number, quarter: number): string[] {
+  const startMonth = (quarter - 1) * 3;
+  const first = new Date(year, startMonth, 1);
+  const last = new Date(year, startMonth + 3, 0);
+  const dates: string[] = [];
+  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
+
+function getCurrentQuarter(): number {
+  return Math.floor(new Date().getMonth() / 3) + 1;
+}
 
 export default function AttendanceTab({ userId, userName, myRole, flash }: Props) {
   const { displayName } = useTeamDisplayNames();
@@ -76,6 +104,20 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const [workStartTime, setWorkStartTime] = useState("09:00");
   const [editStartTime, setEditStartTime] = useState(false);
   const [tempStartTime, setTempStartTime] = useState("09:00");
+
+  // GPS/위치 기반 출퇴근
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [officeLocation, setOfficeLocation] = useState<OfficeLocation | null>(null);
+  const [distanceToOffice, setDistanceToOffice] = useState<number | null>(null);
+  const [showOfficeSettings, setShowOfficeSettings] = useState(false);
+  const [officeLat, setOfficeLat] = useState("");
+  const [officeLng, setOfficeLng] = useState("");
+  const [officeRadius, setOfficeRadius] = useState("200");
+  const [officeWifiSSID, setOfficeWifiSSID] = useState("");
+  const [currentWifi, setCurrentWifi] = useState<string | null>(null);
+
+  const canEditOffice = myRole === "대표" || myRole === "이사";
 
   const loadWorkStartTime = async () => {
     const s = sb();
@@ -109,6 +151,131 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     }
   };
 
+  // 사업장 위치 로드
+  const loadOfficeLocation = async () => {
+    const s = sb();
+    if (!s) return;
+    try {
+      const { data } = await s.from("hq_settings").select("value").eq("key", "office_location").single();
+      if (data?.value) {
+        const loc = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+        setOfficeLocation(loc);
+        setOfficeLat(String(loc.lat));
+        setOfficeLng(String(loc.lng));
+        setOfficeRadius(String(loc.radius));
+        setOfficeWifiSSID(loc.wifiSSID || "");
+      }
+    } catch (e) { console.error("사업장 위치 로드 실패:", e); }
+  };
+
+  // 사업장 위치 저장
+  const saveOfficeLocation = async () => {
+    const s = sb();
+    if (!s) return;
+    const lat = parseFloat(officeLat);
+    const lng = parseFloat(officeLng);
+    const radius = parseInt(officeRadius);
+    if (isNaN(lat) || isNaN(lng) || isNaN(radius)) { flash("위도, 경도, 반경을 올바르게 입력해주세요"); return; }
+    const value = JSON.stringify({ lat, lng, radius, wifiSSID: officeWifiSSID.trim() || undefined });
+    try {
+      const { data: existing } = await s.from("hq_settings").select("key").eq("key", "office_location").single();
+      let error;
+      if (existing) {
+        ({ error } = await s.from("hq_settings").update({ value, updated_by: userName, updated_at: new Date().toISOString() }).eq("key", "office_location"));
+      } else {
+        ({ error } = await s.from("hq_settings").insert({ key: "office_location", value, updated_by: userName, updated_at: new Date().toISOString() }));
+      }
+      if (error) { flash("저장 실패: " + error.message); return; }
+      setOfficeLocation({ lat, lng, radius, wifiSSID: officeWifiSSID.trim() || undefined });
+      setShowOfficeSettings(false);
+      flash("사업장 위치가 저장되었습니다");
+    } catch (e) {
+      flash("저장 실패");
+      console.error(e);
+    }
+  };
+
+  // GPS 위치 가져오기
+  const getGPSLocation = (): Promise<{ lat: number; lng: number }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) { reject(new Error("GPS를 지원하지 않는 브라우저입니다")); return; }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => {
+          if (err.code === 1) reject(new Error("위치 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요"));
+          else if (err.code === 2) reject(new Error("위치 정보를 사용할 수 없습니다"));
+          else reject(new Error("위치 요청 시간 초과"));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
+  // WiFi 정보 확인 (가능한 경우)
+  const checkWifi = () => {
+    try {
+      const conn = (navigator as any).connection;
+      if (conn && conn.type === "wifi") {
+        // WiFi SSID는 보안상 대부분의 브라우저에서 접근 불가
+        // Network Information API는 type만 제공
+        setCurrentWifi("WiFi 연결됨 (SSID 확인 불가 - 브라우저 제한)");
+      } else if (conn) {
+        setCurrentWifi(`${conn.type || "알 수 없음"} 연결`);
+      } else {
+        setCurrentWifi(null);
+      }
+    } catch {
+      setCurrentWifi(null);
+    }
+  };
+
+  // 위치 기반 출근
+  const clockInWithGPS = async () => {
+    if (todayRec?.clockIn) { flash("이미 출근 기록이 있습니다"); return; }
+    setGpsLoading(true);
+    try {
+      const loc = await getGPSLocation();
+      setUserLocation(loc);
+      let distance: number | null = null;
+      let isWithinRadius = false;
+      if (officeLocation) {
+        distance = haversineDistance(loc.lat, loc.lng, officeLocation.lat, officeLocation.lng);
+        setDistanceToOffice(distance);
+        isWithinRadius = distance <= officeLocation.radius;
+      }
+
+      const s = sb();
+      if (!s) { setGpsLoading(false); return; }
+      const time = now.toTimeString().slice(0, 5);
+      const isLate = time > workStartTime;
+      const timestamp = new Date().toISOString();
+
+      // 사업장 외부 경고
+      if (officeLocation && !isWithinRadius) {
+        const ok = confirm(`사업장 외부에서 출근합니다 (거리: ${Math.round(distance!)}m). 계속하시겠습니까?`);
+        if (!ok) { setGpsLoading(false); return; }
+      }
+
+      const { error } = await s.from("hq_attendance").upsert({
+        user_id: userId, user_name: userName, date: todayStr,
+        clock_in: timestamp, status: isLate ? "지각" : "정상", memo: memo.trim() || null,
+        latitude: loc.lat, longitude: loc.lng,
+      }, { onConflict: "user_id,date" });
+      if (error) { flash("저장 실패: " + error.message); setGpsLoading(false); return; }
+      const locationMsg = officeLocation
+        ? isWithinRadius
+          ? ` - 사업장 내 (${Math.round(distance!)}m)`
+          : ` - 사업장 외부 (${Math.round(distance!)}m)`
+        : "";
+      flash(`위치 기반 출근 완료 (${time})${locationMsg}`);
+      setMemo("");
+      loadData();
+    } catch (e: any) {
+      flash(e.message || "위치 정보 획득 실패");
+    }
+    setGpsLoading(false);
+  };
+
   // Live clock
   useEffect(() => {
     timerRef.current = setInterval(() => setNow(new Date()), 1000);
@@ -129,6 +296,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
         setRecords(data.map((r: any) => ({
           id: r.id, date: r.date, clockIn: toTime(r.clock_in), clockOut: toTime(r.clock_out),
           status: r.status || "정상", overtime: r.overtime || 0, memo: r.memo || "", userName: r.user_name || "",
+          latitude: r.latitude ?? null, longitude: r.longitude ?? null,
         })));
       }
     } catch {}
@@ -140,7 +308,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     }
   };
 
-  useEffect(() => { loadData(); loadWorkStartTime(); }, []);
+  useEffect(() => { loadData(); loadWorkStartTime(); loadOfficeLocation(); checkWifi(); }, []);
 
   const [editClockOut, setEditClockOut] = useState(false);
   const [editClockOutTime, setEditClockOutTime] = useState("");
@@ -326,6 +494,234 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     ? filteredRecords.filter(r => r.userName === userName).length
     : filteredRecords.length;
 
+  // 분기별 통계 계산
+  const currentYear = new Date().getFullYear();
+  const currentQuarter = getCurrentQuarter();
+  const quarterlyStats = useMemo(() => {
+    return [1, 2, 3, 4].map(q => {
+      const qDates = getQuarterDates(currentYear, q);
+      const qRecords = records.filter(r => qDates.includes(r.date) && r.userName === userName);
+      return {
+        quarter: q,
+        label: `${q}분기`,
+        workDays: qRecords.filter(r => r.clockIn).length,
+        late: qRecords.filter(r => r.status === "지각").length,
+        earlyLeave: qRecords.filter(r => r.status === "조퇴").length,
+        absence: qRecords.filter(r => r.status === "결근").length,
+        leave: qRecords.filter(r => r.status === "휴가").length,
+        overtime: qRecords.reduce((a, r) => a + r.overtime, 0),
+        isCurrent: q === currentQuarter,
+      };
+    });
+  }, [records, userName, currentYear, currentQuarter]);
+
+  // 월별 리포트 출력
+  const handlePrintReport = () => {
+    const nowDate = new Date();
+    const yyyy = nowDate.getFullYear();
+    const mm = String(nowDate.getMonth() + 1).padStart(2, "0");
+    const monthName = `${yyyy}년 ${Number(mm)}월`;
+    const generatedDate = nowDate.toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+
+    // 통계 계산
+    const earlyLeaveCount = monthRecords.filter(r => r.status === "조퇴").length;
+    const leaveCount = monthRecords.filter(r => r.status === "휴가").length;
+
+    // 일별 상세 데이터
+    const dailyRows = monthDates.map(d => {
+      const rec = monthRecords.find(r => r.date === d);
+      const dayOfWeek = new Date(d).toLocaleDateString("ko-KR", { weekday: "short" });
+      const isWeekend = [0, 6].includes(new Date(d).getDay());
+      if (!rec) {
+        return { date: d, dayOfWeek, clockIn: "-", clockOut: "-", hours: "-", status: isWeekend ? "-" : "미출근", memo: "", isWeekend };
+      }
+      const hours = rec.clockIn && rec.clockOut ? diffHours(rec.clockIn, rec.clockOut).toFixed(1) + "h" : "-";
+      return { date: d, dayOfWeek, clockIn: rec.clockIn || "-", clockOut: rec.clockOut || "-", hours, status: rec.status, memo: rec.memo || "", isWeekend };
+    });
+
+    const member = teamMembers.find(m => m.name === userName);
+    const department = member?.role ?? "-";
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) { flash("팝업이 차단되었습니다. 팝업을 허용해주세요."); return; }
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>근태 월별 리포트 - ${monthName}</title>
+  <style>
+    @media print {
+      @page { margin: 15mm 12mm; size: A4; }
+      body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .no-print { display: none !important; }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; line-height: 1.5; background: #fff; }
+    .container { max-width: 210mm; margin: 0 auto; padding: 20px; }
+    .header { text-align: center; border-bottom: 3px solid #3182F6; padding-bottom: 16px; margin-bottom: 24px; }
+    .header h1 { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .header .company { font-size: 14px; color: #3182F6; font-weight: 600; margin-bottom: 8px; }
+    .header .period { font-size: 13px; color: #64748b; }
+    .section { margin-bottom: 24px; }
+    .section h2 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; padding-left: 10px; border-left: 3px solid #3182F6; }
+    .summary-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 24px; }
+    .summary-item { text-align: center; padding: 12px 8px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .summary-item .label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+    .summary-item .value { font-size: 20px; font-weight: 800; }
+    .summary-item.green { background: #f0fdf4; } .summary-item.green .value { color: #16a34a; }
+    .summary-item.amber { background: #fffbeb; } .summary-item.amber .value { color: #d97706; }
+    .summary-item.orange { background: #fff7ed; } .summary-item.orange .value { color: #ea580c; }
+    .summary-item.red { background: #fef2f2; } .summary-item.red .value { color: #dc2626; }
+    .summary-item.blue { background: #eff6ff; } .summary-item.blue .value { color: #2563eb; }
+    .summary-item.purple { background: #faf5ff; } .summary-item.purple .value { color: #7c3aed; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #f1f5f9; color: #475569; font-weight: 600; padding: 8px 6px; text-align: center; border: 1px solid #e2e8f0; }
+    td { padding: 6px; text-align: center; border: 1px solid #e2e8f0; }
+    tr.weekend { background: #f8fafc; color: #94a3b8; }
+    .status-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+    .status-정상 { background: #dcfce7; color: #16a34a; }
+    .status-지각 { background: #fef3c7; color: #d97706; }
+    .status-조퇴 { background: #ffedd5; color: #ea580c; }
+    .status-결근 { background: #fee2e2; color: #dc2626; }
+    .status-휴가 { background: #dbeafe; color: #2563eb; }
+    .status-출장 { background: #f3e8ff; color: #7c3aed; }
+    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; }
+    .print-btn { display: block; margin: 20px auto; padding: 12px 32px; background: #3182F6; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .print-btn:hover { background: #1B64DA; }
+    .quarterly { margin-top: 8px; }
+    .quarterly table { font-size: 12px; }
+    .quarterly th { background: #eef2ff; color: #4338ca; }
+    .current-q { background: #eff6ff !important; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="company">VELA Bridge</p>
+      <h1>근태 월별 리포트</h1>
+      <p class="period">${monthName} | 생성일: ${generatedDate}</p>
+    </div>
+
+    <div class="section">
+      <h2>월간 요약</h2>
+      <div class="summary-grid">
+        <div class="summary-item green"><div class="label">출근일수</div><div class="value">${totalWorkDays}</div></div>
+        <div class="summary-item amber"><div class="label">지각</div><div class="value">${lateCount}</div></div>
+        <div class="summary-item orange"><div class="label">조퇴</div><div class="value">${earlyLeaveCount}</div></div>
+        <div class="summary-item red"><div class="label">결근</div><div class="value">${absenceCount}</div></div>
+        <div class="summary-item blue"><div class="label">휴가</div><div class="value">${leaveCount}</div></div>
+        <div class="summary-item purple"><div class="label">초과근무</div><div class="value">${overtimeTotal.toFixed(1)}h</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>일별 상세</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>날짜</th><th>요일</th><th>출근</th><th>퇴근</th><th>근무시간</th><th>상태</th><th>메모</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dailyRows.map(r => `
+          <tr class="${r.isWeekend ? "weekend" : ""}">
+            <td>${r.date.slice(5)}</td>
+            <td>${r.dayOfWeek}</td>
+            <td>${r.clockIn}</td>
+            <td>${r.clockOut}</td>
+            <td>${r.hours}</td>
+            <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+            <td style="text-align:left;font-size:10px;color:#64748b;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.memo}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section quarterly">
+      <h2>분기별 통계</h2>
+      <table>
+        <thead>
+          <tr><th>분기</th><th>출근일</th><th>지각</th><th>조퇴</th><th>결근</th><th>휴가</th><th>초과근무</th></tr>
+        </thead>
+        <tbody>
+          ${quarterlyStats.map(qs => `
+          <tr class="${qs.isCurrent ? "current-q" : ""}">
+            <td>${qs.label}${qs.isCurrent ? " (현재)" : ""}</td>
+            <td>${qs.workDays}일</td>
+            <td>${qs.late}</td>
+            <td>${qs.earlyLeave}</td>
+            <td>${qs.absence}</td>
+            <td>${qs.leave}</td>
+            <td>${qs.overtime.toFixed(1)}h</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer">
+      <div>직원: ${userName} | 부서/직책: ${department}</div>
+      <div>생성자: ${userName} | Generated by VELA Bridge</div>
+    </div>
+
+    <button class="print-btn no-print" onclick="window.print()">PDF로 인쇄</button>
+  </div>
+</body>
+</html>`);
+    printWindow.document.close();
+  };
+
+  // 위치 미니맵 컴포넌트
+  const LocationMiniMap = ({ userLat, userLng, officeLat: oLat, officeLng: oLng, radius }: {
+    userLat: number; userLng: number; officeLat?: number; officeLng?: number; radius?: number;
+  }) => {
+    const dist = oLat != null && oLng != null ? haversineDistance(userLat, userLng, oLat, oLng) : null;
+    const isInside = dist !== null && radius ? dist <= radius : false;
+    return (
+      <div className="relative w-full h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl overflow-hidden border border-slate-200">
+        {/* Grid lines */}
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(5)].map((_, i) => (
+            <div key={`h${i}`} className="absolute w-full border-b border-slate-300" style={{ top: `${(i + 1) * 20}%` }} />
+          ))}
+          {[...Array(5)].map((_, i) => (
+            <div key={`v${i}`} className="absolute h-full border-r border-slate-300" style={{ left: `${(i + 1) * 20}%` }} />
+          ))}
+        </div>
+        {/* Office location */}
+        {oLat != null && oLng != null && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            {/* Radius circle */}
+            <div className={`w-16 h-16 rounded-full border-2 border-dashed ${isInside ? "border-emerald-400 bg-emerald-50/50" : "border-slate-300 bg-slate-50/50"} flex items-center justify-center`}>
+              <div className="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-200" />
+            </div>
+            <p className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] text-slate-400 whitespace-nowrap">사업장</p>
+          </div>
+        )}
+        {/* User location */}
+        <div className={`absolute ${oLat != null ? (isInside ? "top-1/2 left-[52%]" : "top-[25%] left-[75%]") : "top-1/2 left-1/2"} -translate-x-1/2 -translate-y-1/2`}>
+          <div className="relative">
+            <div className={`w-4 h-4 rounded-full ${isInside ? "bg-emerald-500" : "bg-orange-500"} shadow-lg animate-pulse`} />
+            <div className={`absolute -inset-1.5 rounded-full ${isInside ? "bg-emerald-400/30" : "bg-orange-400/30"} animate-ping`} />
+          </div>
+          <p className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-semibold text-slate-500 whitespace-nowrap">내 위치</p>
+        </div>
+        {/* Distance label */}
+        {dist !== null && (
+          <div className="absolute bottom-2 right-2">
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isInside ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"}`}>
+              {Math.round(dist)}m {isInside ? "(범위 내)" : "(범위 외)"}
+            </span>
+          </div>
+        )}
+        {/* Coordinates */}
+        <div className="absolute top-2 left-2 text-[9px] text-slate-400 font-mono">
+          {userLat.toFixed(5)}, {userLng.toFixed(5)}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* 뷰 모드 토글 */}
@@ -420,6 +816,13 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
             🕘 출근하기
           </button>
           <button
+            onClick={clockInWithGPS}
+            disabled={!!todayRec?.clockIn || gpsLoading}
+            className={`rounded-2xl bg-emerald-600 text-white font-semibold px-6 py-3 text-base hover:bg-emerald-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            {gpsLoading ? "위치 확인중..." : "📍 위치 기반 출근"}
+          </button>
+          <button
             onClick={clockOut}
             disabled={!todayRec?.clockIn || !!todayRec?.clockOut}
             className={`rounded-2xl bg-slate-700 text-white font-semibold px-8 py-3 text-base hover:bg-slate-800 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
@@ -436,7 +839,114 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
             className={`${I} text-center max-w-xs mx-auto block`}
           />
         </div>
+
+        {/* WiFi 연결 정보 */}
+        {currentWifi && (
+          <div className="mt-3 text-center">
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              {currentWifi}
+              {officeLocation?.wifiSSID && (
+                <span className="text-slate-300 ml-1">| 사업장 SSID: {officeLocation.wifiSSID}</span>
+              )}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* GPS 위치 미니맵 & 결과 */}
+      {userLocation && (
+        <div className={C}>
+          <h3 className="text-sm font-bold text-slate-700 mb-3">현재 위치 정보</h3>
+          <LocationMiniMap
+            userLat={userLocation.lat}
+            userLng={userLocation.lng}
+            officeLat={officeLocation?.lat}
+            officeLng={officeLocation?.lng}
+            radius={officeLocation?.radius}
+          />
+          <div className="mt-3 flex flex-wrap gap-3 text-xs">
+            <span className="bg-slate-50 px-3 py-1.5 rounded-lg text-slate-600">
+              위도: <span className="font-mono font-semibold">{userLocation.lat.toFixed(6)}</span>
+            </span>
+            <span className="bg-slate-50 px-3 py-1.5 rounded-lg text-slate-600">
+              경도: <span className="font-mono font-semibold">{userLocation.lng.toFixed(6)}</span>
+            </span>
+            {distanceToOffice !== null && (
+              <span className={`px-3 py-1.5 rounded-lg font-semibold ${
+                officeLocation && distanceToOffice <= officeLocation.radius
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-orange-50 text-orange-700"
+              }`}>
+                사업장까지: {Math.round(distanceToOffice)}m
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 사업장 위치 설정 (대표/이사 전용) */}
+      {canEditOffice && (
+        <div className={C}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-slate-700">사업장 위치 설정</h3>
+            <button
+              onClick={() => setShowOfficeSettings(!showOfficeSettings)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${showOfficeSettings ? "bg-slate-200 text-slate-600" : "bg-[#3182F6]/10 text-[#3182F6] hover:bg-[#3182F6]/20"}`}
+            >
+              {showOfficeSettings ? "닫기" : "설정"}
+            </button>
+          </div>
+          {officeLocation && !showOfficeSettings && (
+            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+              <span className="bg-slate-50 px-3 py-1.5 rounded-lg">위도: {officeLocation.lat}</span>
+              <span className="bg-slate-50 px-3 py-1.5 rounded-lg">경도: {officeLocation.lng}</span>
+              <span className="bg-slate-50 px-3 py-1.5 rounded-lg">반경: {officeLocation.radius}m</span>
+              {officeLocation.wifiSSID && <span className="bg-slate-50 px-3 py-1.5 rounded-lg">WiFi: {officeLocation.wifiSSID}</span>}
+            </div>
+          )}
+          {showOfficeSettings && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className={L}>위도 (Latitude)</label>
+                  <input type="text" className={I} value={officeLat} onChange={e => setOfficeLat(e.target.value)} placeholder="37.5665" />
+                </div>
+                <div>
+                  <label className={L}>경도 (Longitude)</label>
+                  <input type="text" className={I} value={officeLng} onChange={e => setOfficeLng(e.target.value)} placeholder="126.9780" />
+                </div>
+                <div>
+                  <label className={L}>반경 (m)</label>
+                  <input type="number" className={I} value={officeRadius} onChange={e => setOfficeRadius(e.target.value)} placeholder="200" />
+                </div>
+                <div>
+                  <label className={L}>WiFi SSID (선택)</label>
+                  <input type="text" className={I} value={officeWifiSSID} onChange={e => setOfficeWifiSSID(e.target.value)} placeholder="Office_WiFi" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const loc = await getGPSLocation();
+                      setOfficeLat(String(loc.lat));
+                      setOfficeLng(String(loc.lng));
+                      flash("현재 위치가 입력되었습니다");
+                    } catch (e: any) { flash(e.message); }
+                  }}
+                  className={`${B2} text-xs`}
+                >
+                  📍 현재 위치 사용
+                </button>
+                <button onClick={saveOfficeLocation} className={`${B} text-xs px-4 py-2`}>
+                  저장
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Today's status */}
       <div className={C}>
@@ -497,12 +1007,14 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                 <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">출근</th>
                 <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">퇴근</th>
                 <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">상태</th>
+                <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">위치</th>
                 <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">초과근무</th>
               </tr>
             </thead>
             <tbody>
               {weekDates.map((d, i) => {
                 const r = weekRecords[i];
+                const hasLocation = r && (r as any).latitude != null;
                 return (
                   <tr key={d} className={`border-b border-slate-50 ${d === todayStr ? "bg-blue-50/40" : ""}`}>
                     <td className="py-2.5 px-3 font-semibold text-slate-600">{DAY_LABELS[i]}</td>
@@ -550,6 +1062,15 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                         <span className={`${BADGE} text-[11px] bg-slate-100 text-slate-400`}>-</span>
                       ) : null}
                     </td>
+                    <td className="py-2.5 px-3 text-xs text-slate-400">
+                      {hasLocation ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600" title={`${(r as any).latitude?.toFixed(4)}, ${(r as any).longitude?.toFixed(4)}`}>
+                          📍 GPS
+                        </span>
+                      ) : r?.clockIn ? (
+                        <span className="text-slate-300">-</span>
+                      ) : null}
+                    </td>
                     <td className="py-2.5 px-3 text-right text-slate-500">
                       {r?.overtime ? `+${r.overtime}h` : "-"}
                     </td>
@@ -566,28 +1087,36 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
         <div className={C}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-700">월간 통계</h3>
-            <button
-              onClick={() => {
-                const now = new Date();
-                const yyyy = now.getFullYear();
-                const mm = String(now.getMonth() + 1).padStart(2, "0");
-                const header = "이름,날짜,출근시간,퇴근시간,상태,초과근무,메모";
-                const rows = monthRecords.map(r =>
-                  [r.userName, r.date, r.clockIn || "", r.clockOut || "", r.status, r.overtime, `"${(r.memo || "").replace(/"/g, '""')}"`].join(",")
-                );
-                const csv = "﻿" + [header, ...rows].join("\n");
-                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `근태현황_${yyyy}-${mm}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center gap-1.5 rounded-2xl bg-emerald-50 text-emerald-700 font-semibold px-4 py-2 text-xs hover:bg-emerald-100 transition-all"
-            >
-              📥 엑셀 다운로드
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrintReport}
+                className="flex items-center gap-1.5 rounded-2xl bg-indigo-50 text-indigo-700 font-semibold px-4 py-2 text-xs hover:bg-indigo-100 transition-all"
+              >
+                🖨️ 월별 리포트 출력
+              </button>
+              <button
+                onClick={() => {
+                  const now = new Date();
+                  const yyyy = now.getFullYear();
+                  const mm = String(now.getMonth() + 1).padStart(2, "0");
+                  const header = "이름,날짜,출근시간,퇴근시간,상태,초과근무,메모";
+                  const rows = monthRecords.map(r =>
+                    [r.userName, r.date, r.clockIn || "", r.clockOut || "", r.status, r.overtime, `"${(r.memo || "").replace(/"/g, '""')}"`].join(",")
+                  );
+                  const csv = "﻿" + [header, ...rows].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `근태현황_${yyyy}-${mm}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-1.5 rounded-2xl bg-emerald-50 text-emerald-700 font-semibold px-4 py-2 text-xs hover:bg-emerald-100 transition-all"
+              >
+                📥 엑셀 다운로드
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="rounded-2xl bg-emerald-50 p-4 text-center">
@@ -605,6 +1134,42 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
             <div className="rounded-2xl bg-red-50 p-4 text-center">
               <p className="text-xs text-red-600 font-semibold mb-1">결근</p>
               <p className="text-2xl font-bold text-red-700">{absenceCount}</p>
+            </div>
+          </div>
+
+          {/* 분기별 통계 */}
+          <div className="mt-6">
+            <h4 className="text-sm font-bold text-slate-700 mb-3">분기별 통계</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">분기</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">출근일</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">지각</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">조퇴</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">결근</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">휴가</th>
+                    <th className="text-right py-2 px-3 text-xs text-slate-400 font-semibold">초과근무</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quarterlyStats.map(qs => (
+                    <tr key={qs.quarter} className={`border-b border-slate-50 ${qs.isCurrent ? "bg-blue-50/40" : ""}`}>
+                      <td className="py-2.5 px-3 font-semibold text-slate-700">
+                        {qs.label}
+                        {qs.isCurrent && <span className="ml-1 text-[10px] text-[#3182F6] font-bold">(현재)</span>}
+                      </td>
+                      <td className="text-right py-2.5 px-3 text-emerald-600 font-semibold">{qs.workDays}일</td>
+                      <td className="text-right py-2.5 px-3 text-amber-600 font-semibold">{qs.late}</td>
+                      <td className="text-right py-2.5 px-3 text-orange-600 font-semibold">{qs.earlyLeave}</td>
+                      <td className="text-right py-2.5 px-3 text-red-600 font-semibold">{qs.absence}</td>
+                      <td className="text-right py-2.5 px-3 text-blue-600 font-semibold">{qs.leave}</td>
+                      <td className="text-right py-2.5 px-3 text-purple-600 font-semibold">{qs.overtime.toFixed(1)}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -643,6 +1208,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                     <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">출근</th>
                     <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">퇴근</th>
                     <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">상태</th>
+                    <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">위치</th>
                     <th className="text-left py-2 px-3 text-xs text-slate-400 font-semibold">메모</th>
                   </tr>
                 </thead>
@@ -650,6 +1216,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                   {filteredAllNames.map(name => {
                     const rec = todayAllRecords.find(r => r.userName === name);
                     const member = teamMembers.find(m => m.name === name);
+                    const hasLoc = rec && (rec as any).latitude != null;
                     return (
                       <tr key={name} className="border-b border-slate-50 hover:bg-slate-50/60">
                         <td className="py-2.5 px-3 font-semibold text-slate-700">{displayName(name)}</td>
@@ -695,6 +1262,15 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                             <span className={`${BADGE} text-[11px] ${STATUS_COLOR[rec.status]}`}>{rec.status}</span>
                           ) : (
                             <span className={`${BADGE} text-[11px] bg-red-50 text-red-500`}>미출근</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-xs">
+                          {hasLoc ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600" title={`${(rec as any).latitude?.toFixed(4)}, ${(rec as any).longitude?.toFixed(4)}`}>
+                              📍 GPS
+                            </span>
+                          ) : (
+                            <span className="text-slate-300">-</span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-xs text-slate-400">{rec?.memo || "-"}</td>

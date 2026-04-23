@@ -30,11 +30,13 @@ export const metadata: Metadata = {
     siteName: "VELA",
     locale: "ko_KR",
     type: "website",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "VELA - 외식업 AI 경영 분석 플랫폼" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "VELA - 외식업 AI 경영 분석 | 매장 수익 시뮬레이터",
     description: "좌석 수, 객단가, 비용만 입력하면 AI가 수익성을 분석합니다. 30개 이상의 외식업 경영 도구를 무료로 시작하세요.",
+    images: ["/opengraph-image"],
   },
   verification: {
     other: { "naver-site-verification": "3b2c975d045ec02419fee6551e887b0ab4fa11ea" },

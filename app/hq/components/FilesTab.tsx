@@ -27,6 +27,19 @@ interface Props {
 }
 
 /* ================================================================
+   File Version type
+   ================================================================ */
+type FileVersion = {
+  id: string;
+  file_id: string;
+  version_number: number;
+  url: string;
+  size: number;
+  uploaded_by: string;
+  created_at: string;
+};
+
+/* ================================================================
    Context Menu component
    ================================================================ */
 function ContextMenu({ x, y, items, onClose }: { x: number; y: number; items: CtxMenuItem[]; onClose: () => void }) {
@@ -111,6 +124,12 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
   const [bulkSecurityOpen, setBulkSecurityOpen] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
+  // 버전 관리 state
+  const [versionHistoryFileId, setVersionHistoryFileId] = useState<string | null>(null);
+  const [fileVersions, setFileVersions] = useState<FileVersion[]>([]);
+  const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
+  const [loadingVersions, setLoadingVersions] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const newFolderRef = useRef<HTMLInputElement>(null);
   const renameRef = useRef<HTMLInputElement>(null);
@@ -145,10 +164,79 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
     if (allF.data)
       setAllFolders(allF.data.map((r: Record<string, unknown>) => ({ id: r.id as string, name: r.name as string, parentId: r.parent_id as string | undefined })));
 
+    // 버전 카운트 로드
+    try {
+      const fileIds = fileRes.data?.map((r: any) => r.id as string) || [];
+      if (fileIds.length > 0) {
+        const { data: vData } = await s.from("hq_file_versions").select("file_id").in("file_id", fileIds);
+        if (vData) {
+          const counts: Record<string, number> = {};
+          for (const v of vData) {
+            counts[v.file_id] = (counts[v.file_id] || 0) + 1;
+          }
+          setVersionCounts(counts);
+        }
+      } else {
+        setVersionCounts({});
+      }
+    } catch {
+      // hq_file_versions 테이블이 없을 수 있음
+      setVersionCounts({});
+    }
+
     setLoading(false);
   }, []);
 
   useEffect(() => { load(currentFolder); }, [currentFolder, load]);
+
+  /* -- version management -- */
+  const loadVersionHistory = useCallback(async (fileId: string) => {
+    setLoadingVersions(true);
+    setVersionHistoryFileId(fileId);
+    const s = sb();
+    if (!s) { setLoadingVersions(false); return; }
+    try {
+      const { data } = await s.from("hq_file_versions").select("*").eq("file_id", fileId).order("version_number", { ascending: false });
+      if (data) {
+        setFileVersions(data as FileVersion[]);
+      } else {
+        setFileVersions([]);
+      }
+    } catch {
+      setFileVersions([]);
+    }
+    setLoadingVersions(false);
+  }, []);
+
+  const restoreVersion = useCallback(async (version: FileVersion) => {
+    const s = sb();
+    if (!s) return;
+    const file = files.find(f => f.id === version.file_id);
+    if (!file) return;
+
+    // 현재 버전을 버전 이력에 저장
+    const currentVersionNumber = (versionCounts[version.file_id] || 0) + 1;
+    try {
+      await s.from("hq_file_versions").insert({
+        file_id: version.file_id,
+        version_number: currentVersionNumber,
+        url: file.url,
+        size: parseBytes(file.size),
+        uploaded_by: file.uploadedBy,
+        created_at: file.uploadedAt || new Date().toISOString(),
+      });
+    } catch {}
+
+    // 선택한 버전의 URL과 크기로 현재 파일 업데이트
+    const { error } = await s.from("hq_files").update({
+      url: version.url,
+      size: version.size,
+    }).eq("id", version.file_id);
+    if (error) { flash("복원 실패: " + error.message); return; }
+    flash(`v${version.version_number} 버전으로 복원되었습니다`);
+    loadVersionHistory(version.file_id);
+    load(currentFolder);
+  }, [files, versionCounts, flash, load, currentFolder, loadVersionHistory]);
 
   /* -- navigation -- */
   const openFolder = useCallback((f: Folder) => {
@@ -202,6 +290,8 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
     } else if (f.url.includes("supabase")) {
       try { const path = f.url.split("/hq-files/")[1]; if (path) await s.storage.from("hq-files").remove([decodeURIComponent(path)]); } catch {}
     }
+    // 버전 이력도 삭제
+    try { await s.from("hq_file_versions").delete().eq("file_id", f.id); } catch {}
     await s.from("hq_files").delete().eq("id", f.id);
   }, []);
 
@@ -359,9 +449,12 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
   /* -- context menu builders -- */
   const buildFileCtx = useCallback((f: FileItem, x: number, y: number) => {
     const perm = getPermissions(myRole, f.uploadedBy, userName);
+    const vCount = versionCounts[f.id] || 0;
     const items: CtxMenuItem[] = [
       { label: "열기", icon: "👁", onClick: () => setPreview(f) },
       { label: "다운로드", icon: "⬇", onClick: () => window.open(f.url, "_blank") },
+      { label: "", icon: "", divider: true, onClick: () => {} },
+      { label: `버전 이력${vCount > 0 ? ` (${vCount + 1}개)` : ""}`, icon: "🔄", onClick: () => loadVersionHistory(f.id) },
       { label: "", icon: "", divider: true, onClick: () => {} },
       { label: "이름 변경", icon: "✏", disabled: !perm.canRename, onClick: () => { setRenamingFile(f.id); setRenameValue(f.name); } },
       { label: "이동", icon: "📂", disabled: !perm.canMove, onClick: () => setMovingFile(movingFile === f.id ? null : f.id) },
@@ -373,7 +466,7 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
       { label: "삭제", icon: "🗑", danger: true, disabled: !perm.canDelete, onClick: () => setConfirmDelete({ type: "file", id: f.id, name: f.name }) },
     ];
     setCtxMenu({ x, y, items });
-  }, [myRole, userName, isAdmin, movingFile, changeSecurity]);
+  }, [myRole, userName, isAdmin, movingFile, changeSecurity, versionCounts, loadVersionHistory]);
 
   const buildFolderCtx = useCallback((f: Folder, x: number, y: number) => {
     const items: CtxMenuItem[] = [
@@ -547,52 +640,74 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
 
   /* -- render file items using extracted components -- */
   const renderFileRow = (f: FileItem) => (
-    <FileRow
-      key={f.id}
-      file={f}
-      myRole={myRole}
-      userName={userName}
-      isSelected={selectedFiles.has(f.id)}
-      isRenaming={renamingFile === f.id}
-      isMoving={movingFile === f.id}
-      renameValue={renameValue}
-      movingFile={movingFile}
-      currentFolder={currentFolder}
-      allFolders={allFolders}
-      isAdmin={isAdmin}
-      onPreview={setPreview}
-      onToggleSelect={toggleFileSelect}
-      onDragStart={handleDragStart}
-      onContextMenu={buildFileCtx}
-      onRenameChange={setRenameValue}
-      onRenameConfirm={renameFile}
-      onRenameCancel={() => { setRenamingFile(null); setRenameValue(""); }}
-      onChangeSecurity={changeSecurity}
-      onMoveFile={moveFile}
-      onSetMovingFile={setMovingFile}
-      onSetConfirmDelete={setConfirmDelete}
-      renameRef={renameRef}
-    />
+    <div key={f.id} className="relative">
+      <FileRow
+        file={f}
+        myRole={myRole}
+        userName={userName}
+        isSelected={selectedFiles.has(f.id)}
+        isRenaming={renamingFile === f.id}
+        isMoving={movingFile === f.id}
+        renameValue={renameValue}
+        movingFile={movingFile}
+        currentFolder={currentFolder}
+        allFolders={allFolders}
+        isAdmin={isAdmin}
+        onPreview={setPreview}
+        onToggleSelect={toggleFileSelect}
+        onDragStart={handleDragStart}
+        onContextMenu={buildFileCtx}
+        onRenameChange={setRenameValue}
+        onRenameConfirm={renameFile}
+        onRenameCancel={() => { setRenamingFile(null); setRenameValue(""); }}
+        onChangeSecurity={changeSecurity}
+        onMoveFile={moveFile}
+        onSetMovingFile={setMovingFile}
+        onSetConfirmDelete={setConfirmDelete}
+        renameRef={renameRef}
+      />
+      {/* 버전 배지 */}
+      {(versionCounts[f.id] || 0) > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); loadVersionHistory(f.id); }}
+          className="absolute top-1/2 -translate-y-1/2 right-24 z-10 text-[10px] font-bold bg-[#3182F6]/10 text-[#3182F6] px-1.5 py-0.5 rounded-md hover:bg-[#3182F6]/20 transition-all"
+          title="버전 이력 보기"
+        >
+          v{(versionCounts[f.id] || 0) + 1}
+        </button>
+      )}
+    </div>
   );
 
   const renderFileCard = (f: FileItem) => (
-    <FileCard
-      key={f.id}
-      file={f}
-      myRole={myRole}
-      userName={userName}
-      isSelected={selectedFiles.has(f.id)}
-      isRenaming={renamingFile === f.id}
-      renameValue={renameValue}
-      onPreview={setPreview}
-      onToggleSelect={toggleFileSelect}
-      onDragStart={handleDragStart}
-      onContextMenu={buildFileCtx}
-      onRenameChange={setRenameValue}
-      onRenameConfirm={renameFile}
-      onRenameCancel={() => { setRenamingFile(null); setRenameValue(""); }}
-      renameRef={renameRef}
-    />
+    <div key={f.id} className="relative">
+      <FileCard
+        file={f}
+        myRole={myRole}
+        userName={userName}
+        isSelected={selectedFiles.has(f.id)}
+        isRenaming={renamingFile === f.id}
+        renameValue={renameValue}
+        onPreview={setPreview}
+        onToggleSelect={toggleFileSelect}
+        onDragStart={handleDragStart}
+        onContextMenu={buildFileCtx}
+        onRenameChange={setRenameValue}
+        onRenameConfirm={renameFile}
+        onRenameCancel={() => { setRenamingFile(null); setRenameValue(""); }}
+        renameRef={renameRef}
+      />
+      {/* 버전 배지 (그리드) */}
+      {(versionCounts[f.id] || 0) > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); loadVersionHistory(f.id); }}
+          className="absolute top-2 right-2 z-10 text-[10px] font-bold bg-[#3182F6]/10 text-[#3182F6] px-1.5 py-0.5 rounded-md hover:bg-[#3182F6]/20 transition-all"
+          title="버전 이력 보기"
+        >
+          v{(versionCounts[f.id] || 0) + 1}
+        </button>
+      )}
+    </div>
   );
 
   /* -- main render -- */
@@ -638,6 +753,103 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
 
       {/* Preview modal */}
       {preview && <FilePreview file={preview} onClose={() => setPreview(null)} />}
+
+      {/* Version history modal */}
+      {versionHistoryFileId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setVersionHistoryFileId(null); setFileVersions([]); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">버전 이력</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {files.find(f => f.id === versionHistoryFileId)?.name}
+                </p>
+              </div>
+              <button
+                onClick={() => { setVersionHistoryFileId(null); setFileVersions([]); }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+              >
+                <IconX />
+              </button>
+            </div>
+
+            {loadingVersions ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-[#3182F6] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : fileVersions.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <p className="text-sm text-slate-500">이전 버전이 없습니다</p>
+                <p className="text-xs text-slate-400 mt-1">같은 이름의 파일을 업로드하면 자동으로 버전이 생성됩니다</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {/* 현재 버전 */}
+                {(() => {
+                  const currentFile = files.find(f => f.id === versionHistoryFileId);
+                  if (!currentFile) return null;
+                  return (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[#3182F6]/5 border border-[#3182F6]/20">
+                      <div className="flex-shrink-0">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#3182F6] text-white text-xs font-bold">
+                          v{(versionCounts[versionHistoryFileId] || 0) + 1}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-800 truncate">{currentFile.name}</span>
+                          <span className="text-[10px] font-semibold text-[#3182F6] bg-[#3182F6]/10 px-1.5 py-0.5 rounded">현재</span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-400">
+                          <span>{currentFile.uploadedBy}</span>
+                          <span>{currentFile.size}</span>
+                          <span>{currentFile.uploadedAt ? new Date(currentFile.uploadedAt).toLocaleDateString("ko-KR") : "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {/* 이전 버전들 */}
+                {fileVersions.map(v => (
+                  <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
+                    <div className="flex-shrink-0">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold">
+                        v{v.version_number}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span className="font-medium">{v.uploaded_by}</span>
+                        <span>{formatSize(v.size)}</span>
+                        <span>{new Date(v.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => window.open(v.url, "_blank")}
+                        className="text-xs text-slate-400 hover:text-[#3182F6] font-medium px-2 py-1 rounded-lg hover:bg-[#3182F6]/5 transition-all"
+                      >
+                        다운로드
+                      </button>
+                      <button
+                        onClick={() => restoreVersion(v)}
+                        className="text-xs text-[#3182F6] font-semibold px-2.5 py-1 rounded-lg bg-[#3182F6]/5 hover:bg-[#3182F6]/10 transition-all"
+                      >
+                        복원
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bulk move modal */}
       {bulkMoveOpen && (

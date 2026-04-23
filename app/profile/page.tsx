@@ -174,6 +174,9 @@ export default function ProfilePage() {
   const handleAvatar = async(e:React.ChangeEvent<HTMLInputElement>)=>{
     const f=e.target.files?.[0];
     if(!f||!user||!sb)return;
+    const allowedTypes=["image/jpeg","image/png","image/gif","image/webp"];
+    if(!allowedTypes.includes(f.type)){alert("이미지 파일만 업로드 가능합니다.");return;}
+    if(f.size>5*1024*1024){alert("5MB 이하 파일만 업로드 가능합니다.");return;}
     const ext=f.name.split(".").pop();
     const path=`avatars/${user.id}.${ext}`;
     const {error}=await sb.storage.from("avatars").upload(path,f,{upsert:true});
@@ -213,11 +216,15 @@ export default function ProfilePage() {
     if(!confirm(`${labels[type]}을 모두 삭제할까요?\n이 작업은 되돌릴 수 없어요.`)) return;
     const {data:{user}}=await sb.auth.getUser();
     if(!user)return;
-    if(type==="simulations"||type==="all") await sb.from("simulation_history").delete().eq("user_id",user.id);
-    if(type==="monthly"||type==="all")    await sb.from("monthly_snapshots").delete().eq("user_id",user.id);
-    if(type==="menus"||type==="all")      await sb.from("menu_costs").delete().eq("user_id",user.id);
-    if(type==="simulations"||type==="all") setHistory([]);
-    setResetMsg(`✅ ${labels[type]} 초기화 완료`);
+    try{
+      if(type==="simulations"||type==="all"){const{error}=await sb.from("simulation_history").delete().eq("user_id",user.id);if(error)throw error;}
+      if(type==="monthly"||type==="all"){const{error}=await sb.from("monthly_snapshots").delete().eq("user_id",user.id);if(error)throw error;}
+      if(type==="menus"||type==="all"){const{error}=await sb.from("menu_costs").delete().eq("user_id",user.id);if(error)throw error;}
+      if(type==="simulations"||type==="all") setHistory([]);
+      setResetMsg(`✅ ${labels[type]} 초기화 완료`);
+    }catch(e:unknown){
+      setResetMsg(`❌ 삭제 실패: ${e instanceof Error?e.message:"알 수 없는 오류"}`);
+    }
     setTimeout(()=>setResetMsg(""),3000);
   };
 

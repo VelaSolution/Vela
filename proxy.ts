@@ -11,6 +11,10 @@ const PROTECTED_PATHS = [
   "/payment",
   "/stores",
   "/team",
+  "/hq",
+  "/home",
+  "/notes",
+  "/sales-connect",
 ];
 
 // 관리자만 접근 가능

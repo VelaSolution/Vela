@@ -67,18 +67,19 @@ export default function NavBar() {
   const [isHqMember, setIsHqMember] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocaleState] = useState<Locale>("ko");
+  const isHq = pathname?.startsWith("/hq");
+
   useEffect(() => { setLocaleState(getLocale()); }, []);
 
-  if (pathname?.startsWith("/hq")) return null;
-
   useEffect(() => {
+    if (isHq) return;
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
       setUser(data.user);
       // HQ 팀원 여부 확인
       if (data.user?.email) {
-        const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
-        if (adminEmails.includes(data.user.email)) {
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
+        if (adminEmails.includes(data.user.email.toLowerCase())) {
           setIsHqMember(true);
         } else {
           supabase.from("hq_team").select("email, approved").then(({ data: td }: { data: any[] | null }) => {
@@ -95,7 +96,9 @@ export default function NavBar() {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isHq]);
+
+  if (isHq) return null;
 
   const handleLogout = async () => {
     const supabase = createSupabaseBrowserClient();

@@ -177,7 +177,7 @@ export default function PricingPage() {
           <div className="plans-grid">
             {PLANS.map((plan) => {
               const isAnnual = billingCycle === "annual";
-              const displayPrice = plan.price === 0 ? 0 : (isAnnual ? (plan as any).annualPriceNum ?? plan.price : plan.price);
+              const displayPrice = plan.price === 0 ? 0 : (isAnnual ? (("annualPriceNum" in plan ? plan.annualPriceNum : plan.price) ?? plan.price) : plan.price);
               const displayPriceStr = plan.price === 0 ? "무료" : displayPrice.toLocaleString("ko-KR");
               const unitStr = plan.price === 0 ? "" : (isAnnual ? "원/월 (연간 결제)" : "원/월");
               return (

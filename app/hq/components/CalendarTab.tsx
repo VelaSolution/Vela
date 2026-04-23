@@ -11,6 +11,8 @@ interface Props {
   flash: (m: string) => void;
 }
 
+type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
+
 type CalEvent = {
   id: string;
   title: string;
@@ -20,6 +22,13 @@ type CalEvent = {
   author: string;
   memo?: string;
   eventType?: "calendar" | "booking" | "shift";
+  recurrence?: Recurrence;
+  recurrence_end?: string;
+  is_exception?: boolean;
+  original_event_id?: string;
+  original_date?: string;
+  _instanceDate?: string;
+  _isRecurring?: boolean;
 };
 
 type ViewMode = "month" | "week";
@@ -41,6 +50,50 @@ const colorLight = (c: string) => EXTRA_COLORS[c]?.light ?? COLORS.find(x => x.v
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+const RECURRENCE_OPTIONS: { value: Recurrence; label: string }[] = [
+  { value: "none", label: "없음" },
+  { value: "daily", label: "매일" },
+  { value: "weekly", label: "매주" },
+  { value: "monthly", label: "매월" },
+  { value: "yearly", label: "매년" },
+];
+
+function addRecurrence(dateStr: string, recurrence: Recurrence, count: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  switch (recurrence) {
+    case "daily": d.setDate(d.getDate() + count); break;
+    case "weekly": d.setDate(d.getDate() + count * 7); break;
+    case "monthly": d.setMonth(d.getMonth() + count); break;
+    case "yearly": d.setFullYear(d.getFullYear() + count); break;
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+function generateRecurringInstances(event: CalEvent, rangeStart: string, rangeEnd: string, exceptions: CalEvent[]): CalEvent[] {
+  if (!event.recurrence || event.recurrence === "none") return [];
+  const instances: CalEvent[] = [];
+  const exceptionDates = new Set(
+    exceptions.filter(ex => ex.original_event_id === event.id).map(ex => ex.original_date)
+  );
+
+  for (let i = 1; i < 366; i++) {
+    const instanceDate = addRecurrence(event.date, event.recurrence, i);
+    if (instanceDate > rangeEnd) break;
+    if (event.recurrence_end && instanceDate > event.recurrence_end) break;
+    if (instanceDate < rangeStart) continue;
+    if (exceptionDates.has(instanceDate)) continue;
+
+    instances.push({
+      ...event,
+      _instanceDate: instanceDate,
+      _isRecurring: true,
+      date: instanceDate,
+      end_date: undefined,
+    });
+  }
+  return instances;
+}
+
 export default function CalendarTab({ userId, userName, myRole, flash }: Props) {
   const { displayName } = useTeamDisplayNames();
   const [year, setYear] = useState(new Date().getFullYear());
@@ -53,13 +106,16 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalEvent | null>(null);
-  const [form, setForm] = useState({ title: "", date: "", end_date: "", color: "blue", memo: "" });
+  const [form, setForm] = useState({ title: "", date: "", end_date: "", color: "blue", memo: "", recurrence: "none" as Recurrence, recurrence_end: "" });
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [weekStart, setWeekStart] = useState<Date>(() => {
     const d = new Date();
     d.setDate(d.getDate() - d.getDay());
     return d;
   });
+  const [editRecurringMode, setEditRecurringMode] = useState<"this" | "all" | null>(null);
+  const [deleteRecurringMode, setDeleteRecurringMode] = useState<"this" | "all" | null>(null);
+  const [pendingDeleteEvent, setPendingDeleteEvent] = useState<CalEvent | null>(null);
 
   const load = async () => {
     const s = sb();
@@ -78,6 +134,9 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
     if (eRes.data) setEvents(eRes.data.map((r: any) => ({
       id: r.id, title: r.title ?? "", date: r.date ?? "", end_date: r.end_date,
       color: r.color ?? "blue", author: r.author ?? "", memo: r.memo ?? "", eventType: "calendar" as const,
+      recurrence: r.recurrence ?? "none", recurrence_end: r.recurrence_end ?? undefined,
+      is_exception: r.is_exception ?? false, original_event_id: r.original_event_id ?? undefined,
+      original_date: r.original_date ?? undefined,
     })));
     if (bRes.data) setBookingEvents(bRes.data.map((r: any) => ({
       id: r.id, title: r.title || r.resource_name || "예약", date: r.date ?? "",
@@ -97,38 +156,113 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
     if (!s) return;
 
     if (editingEvent) {
-      const { error } = await s.from("hq_events").update({
-        title: form.title, date: form.date, end_date: form.end_date || null,
-        color: form.color, memo: form.memo || null,
-      }).eq("id", editingEvent.id);
-      if (error) return flash("수정 실패: " + error.message);
-      flash("일정이 수정되었습니다");
+      if (editingEvent._isRecurring && editRecurringMode === "this") {
+        // Create exception for this specific date
+        const { error: exErr } = await s.from("hq_events").insert({
+          title: form.title, date: form.date, end_date: form.end_date || null,
+          color: form.color, author: editingEvent.author, memo: form.memo || null,
+          recurrence: "none", is_exception: true,
+          original_event_id: editingEvent.id, original_date: editingEvent._instanceDate || editingEvent.date,
+        });
+        if (exErr) return flash("수정 실패: " + exErr.message);
+        flash("이 일정만 수정되었습니다");
+      } else {
+        // Update the original event (all instances)
+        const updateData: any = {
+          title: form.title, date: form.date, end_date: form.end_date || null,
+          color: form.color, memo: form.memo || null,
+          recurrence: form.recurrence, recurrence_end: form.recurrence_end || null,
+        };
+        const targetId = editingEvent.original_event_id || editingEvent.id;
+        const { error } = await s.from("hq_events").update(updateData).eq("id", targetId);
+        if (error) return flash("수정 실패: " + error.message);
+        flash("일정이 수정되었습니다");
+      }
     } else {
       const { error } = await s.from("hq_events").insert({
         title: form.title, date: form.date, end_date: form.end_date || null,
         color: form.color, author: userName, memo: form.memo || null,
+        recurrence: form.recurrence, recurrence_end: form.recurrence_end || null,
       });
       if (error) return flash("저장 실패: " + error.message);
       flash("일정이 추가되었습니다");
     }
-    setForm({ title: "", date: "", end_date: "", color: "blue", memo: "" });
+    setForm({ title: "", date: "", end_date: "", color: "blue", memo: "", recurrence: "none", recurrence_end: "" });
     setShowForm(false);
     setEditingEvent(null);
+    setEditRecurringMode(null);
     load();
   };
 
-  const delEvent = async (id: string) => {
+  const delEvent = async (ev: CalEvent) => {
+    if (ev._isRecurring || (ev.recurrence && ev.recurrence !== "none")) {
+      setPendingDeleteEvent(ev);
+      setDeleteRecurringMode(null);
+      return;
+    }
     if (!confirm("삭제하시겠습니까?")) return;
     const s = sb();
     if (!s) return;
-    await s.from("hq_events").delete().eq("id", id);
+    await s.from("hq_events").delete().eq("id", ev.id);
     flash("일정이 삭제되었습니다");
     load();
   };
 
+  const confirmDeleteRecurring = async (mode: "this" | "all") => {
+    const ev = pendingDeleteEvent;
+    if (!ev) return;
+    const s = sb();
+    if (!s) return;
+
+    if (mode === "this") {
+      // Create an exception entry that "deletes" this instance
+      const { error } = await s.from("hq_events").insert({
+        title: "[삭제됨]", date: ev._instanceDate || ev.date,
+        color: ev.color, author: ev.author,
+        recurrence: "none", is_exception: true,
+        original_event_id: ev.original_event_id || ev.id,
+        original_date: ev._instanceDate || ev.date,
+      });
+      // Also delete the exception entry we just created (effectively blocking that date)
+      // Better approach: we keep a hidden exception record
+      if (error) flash("삭제 실패: " + error.message);
+      else flash("이 일정만 삭제되었습니다");
+    } else {
+      // Delete original + all exceptions
+      const targetId = ev.original_event_id || ev.id;
+      await s.from("hq_events").delete().eq("original_event_id", targetId);
+      await s.from("hq_events").delete().eq("id", targetId);
+      flash("모든 반복 일정이 삭제되었습니다");
+    }
+    setPendingDeleteEvent(null);
+    setDeleteRecurringMode(null);
+    load();
+  };
+
   const openEditEvent = (e: CalEvent) => {
+    if (e._isRecurring || (e.recurrence && e.recurrence !== "none")) {
+      setEditingEvent(e);
+      setForm({
+        title: e.title, date: e._instanceDate || e.date, end_date: e.end_date || "",
+        color: e.color, memo: e.memo || "",
+        recurrence: e.recurrence || "none", recurrence_end: e.recurrence_end || "",
+      });
+      setEditRecurringMode(null);
+      setShowForm(false);
+      return;
+    }
     setEditingEvent(e);
-    setForm({ title: e.title, date: e.date, end_date: e.end_date || "", color: e.color, memo: e.memo || "" });
+    setForm({
+      title: e.title, date: e.date, end_date: e.end_date || "",
+      color: e.color, memo: e.memo || "",
+      recurrence: e.recurrence || "none", recurrence_end: e.recurrence_end || "",
+    });
+    setEditRecurringMode(null);
+    setShowForm(true);
+  };
+
+  const chooseEditRecurringMode = (mode: "this" | "all") => {
+    setEditRecurringMode(mode);
     setShowForm(true);
   };
 
@@ -172,8 +306,38 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
   };
   const dateStr = (d: number) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
+  // Range for recurring instance generation
+  const rangeStart = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const rangeEnd = `${year}-${String(month + 1).padStart(2, "0")}-${new Date(year, month + 1, 0).getDate()}`;
+
+  // Build expanded events including recurring instances
+  const expandedEvents = useMemo(() => {
+    const baseEvents = events.filter(e => !e.is_exception);
+    const exceptions = events.filter(e => e.is_exception);
+    const allInstances: CalEvent[] = [];
+
+    for (const ev of baseEvents) {
+      // Add the original event itself
+      allInstances.push(ev);
+      // Generate recurring instances
+      if (ev.recurrence && ev.recurrence !== "none") {
+        const instances = generateRecurringInstances(ev, rangeStart, rangeEnd, exceptions);
+        allInstances.push(...instances);
+      }
+    }
+
+    // Also add exception events that have actual content (not just deletion markers)
+    for (const ex of exceptions) {
+      if (ex.title !== "[삭제됨]") {
+        allInstances.push(ex);
+      }
+    }
+
+    return allInstances;
+  }, [events, rangeStart, rangeEnd]);
+
   const eventsOnDate = (ds: string): CalEvent[] => {
-    const calEvents = events.filter(e => {
+    const calEvents = expandedEvents.filter(e => {
       if (e.end_date && e.end_date >= ds && e.date <= ds) return true;
       return e.date === ds;
     });
@@ -200,6 +364,11 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
     const end = weekDays[6];
     return `${start.slice(0, 7)} ${start.slice(8)}일 ~ ${end.slice(8)}일`;
   }, [weekDays]);
+
+  const recurrenceLabel = (r: Recurrence | undefined) => {
+    const opt = RECURRENCE_OPTIONS.find(o => o.value === r);
+    return opt?.label || "없음";
+  };
 
   return (
     <div className="space-y-5">
@@ -258,7 +427,7 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
                 return (
                   <div
                     key={ds}
-                    onClick={() => { setSelectedDate(ds); setShowForm(false); setEditingEvent(null); }}
+                    onClick={() => { setSelectedDate(ds); setShowForm(false); setEditingEvent(null); setEditRecurringMode(null); }}
                     className={`h-24 flex flex-col pt-1 px-0.5 rounded-xl transition-all cursor-pointer border ${
                       isSelected ? "bg-[#3182F6]/5 border-[#3182F6]/30" : isToday ? "bg-blue-50/50 border-transparent" : "hover:bg-slate-50 border-transparent"
                     }`}
@@ -269,9 +438,9 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
                     }`}>{d}</span>
                     {/* Event titles in cells */}
                     <div className="flex-1 overflow-hidden space-y-0.5 min-h-0">
-                      {dayEvents.slice(0, 2).map(e => (
-                        <div key={e.id} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium ${colorLight(e.color)}`}>
-                          {e.title}
+                      {dayEvents.slice(0, 2).map((e, idx) => (
+                        <div key={`${e.id}-${idx}`} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium ${colorLight(e.color)}`}>
+                          {(e._isRecurring || (e.recurrence && e.recurrence !== "none")) ? "🔄 " : ""}{e.title}
                         </div>
                       ))}
                       {dayEvents.length > 2 && (
@@ -325,12 +494,12 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
                     return (
                       <div
                         key={ds}
-                        onClick={() => { setSelectedDate(ds); setShowForm(false); setEditingEvent(null); }}
+                        onClick={() => { setSelectedDate(ds); setShowForm(false); setEditingEvent(null); setEditRecurringMode(null); }}
                         className={`border-l border-slate-100 px-0.5 py-0.5 cursor-pointer hover:bg-slate-50 transition-colors ${isSelected ? "bg-[#3182F6]/5" : ""}`}
                       >
-                        {hour === 8 && dayEvents.slice(0, 2).map(e => (
-                          <div key={e.id} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium mb-0.5 ${colorLight(e.color)}`}>
-                            {e.title}
+                        {hour === 8 && dayEvents.slice(0, 2).map((e, idx) => (
+                          <div key={`${e.id}-${idx}`} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium mb-0.5 ${colorLight(e.color)}`}>
+                            {(e._isRecurring || (e.recurrence && e.recurrence !== "none")) ? "🔄 " : ""}{e.title}
                           </div>
                         ))}
                         {hour === 8 && dayEvents.length > 2 && (
@@ -354,6 +523,7 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
           <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-emerald-400" />목표</div>
           <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-purple-500" />자원예약</div>
           <div className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-2 h-2 rounded-full bg-teal-500" />근무</div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">🔄 반복</div>
           {COLORS.map(c => (
             <div key={c.value} className="flex items-center gap-1.5 text-xs text-slate-500"><span className={`w-2 h-2 rounded-full ${c.bg}`} />{c.label}</div>
           ))}
@@ -367,15 +537,31 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
             <h3 className="text-sm font-bold text-slate-800">
               {new Date(selectedDate + "T00:00:00").toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "long" })}
             </h3>
-            <button onClick={() => { setShowForm(true); setEditingEvent(null); setForm({ title: "", date: selectedDate, end_date: "", color: "blue", memo: "" }); }} className={B}>
+            <button onClick={() => { setShowForm(true); setEditingEvent(null); setEditRecurringMode(null); setForm({ title: "", date: selectedDate, end_date: "", color: "blue", memo: "", recurrence: "none", recurrence_end: "" }); }} className={B}>
               + 일정 추가
             </button>
           </div>
 
+          {/* Recurring edit mode chooser */}
+          {editingEvent && (editingEvent._isRecurring || (editingEvent.recurrence && editingEvent.recurrence !== "none")) && !editRecurringMode && !showForm && (
+            <div className="bg-amber-50/80 rounded-xl p-4 mb-4 border border-amber-200/60">
+              <p className="text-sm font-semibold text-amber-800 mb-3">반복 일정입니다. 수정 범위를 선택하세요.</p>
+              <div className="flex gap-2">
+                <button onClick={() => chooseEditRecurringMode("this")} className={B2 + " !text-sm"}>이 일정만 수정</button>
+                <button onClick={() => chooseEditRecurringMode("all")} className={B + " !text-sm"}>모든 반복 일정 수정</button>
+                <button onClick={() => { setEditingEvent(null); setEditRecurringMode(null); }} className="text-sm text-slate-400 hover:text-slate-600 px-3">취소</button>
+              </div>
+            </div>
+          )}
+
           {/* 일정 추가/편집 폼 */}
           {showForm && (
             <div className="bg-slate-50/80 rounded-xl p-4 mb-4 space-y-3 border border-slate-200/60">
-              <h4 className="text-xs font-bold text-slate-600">{editingEvent ? "일정 수정" : "새 일정"}</h4>
+              <h4 className="text-xs font-bold text-slate-600">
+                {editingEvent
+                  ? editRecurringMode === "this" ? "이 일정만 수정" : editRecurringMode === "all" ? "모든 반복 일정 수정" : "일정 수정"
+                  : "새 일정"}
+              </h4>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">제목</label>
                 <input className={I} placeholder="일정 제목" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
@@ -389,6 +575,23 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
                   <label className="block text-xs font-semibold text-slate-500 mb-1">종료일 (선택)</label>
                   <input type="date" className={I} value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} />
                 </div>
+              </div>
+              {/* Recurrence */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">반복</label>
+                  <select className={I} value={form.recurrence} onChange={e => setForm({ ...form, recurrence: e.target.value as Recurrence })}>
+                    {RECURRENCE_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {form.recurrence !== "none" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-1">종료일 (선택)</label>
+                    <input type="date" className={I} value={form.recurrence_end} onChange={e => setForm({ ...form, recurrence_end: e.target.value })} />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">색상</label>
@@ -405,7 +608,19 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
               </div>
               <div className="flex gap-2">
                 <button onClick={saveEvent} className={B}>{editingEvent ? "수정 완료" : "저장"}</button>
-                <button onClick={() => { setShowForm(false); setEditingEvent(null); }} className={B2}>취소</button>
+                <button onClick={() => { setShowForm(false); setEditingEvent(null); setEditRecurringMode(null); }} className={B2}>취소</button>
+              </div>
+            </div>
+          )}
+
+          {/* Delete recurring modal */}
+          {pendingDeleteEvent && (
+            <div className="bg-red-50/80 rounded-xl p-4 mb-4 border border-red-200/60">
+              <p className="text-sm font-semibold text-red-800 mb-3">반복 일정입니다. 삭제 범위를 선택하세요.</p>
+              <div className="flex gap-2">
+                <button onClick={() => confirmDeleteRecurring("this")} className={B2 + " !text-sm"}>이 일정만 삭제</button>
+                <button onClick={() => confirmDeleteRecurring("all")} className="rounded-2xl bg-red-500 text-white font-semibold px-5 py-2.5 text-sm hover:bg-red-600 transition-all">모든 반복 일정 삭제</button>
+                <button onClick={() => { setPendingDeleteEvent(null); setDeleteRecurringMode(null); }} className="text-sm text-slate-400 hover:text-slate-600 px-3">취소</button>
               </div>
             </div>
           )}
@@ -426,14 +641,19 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
           {selectedEvents.length === 0 && !selectedHasTask && !selectedHasGoal && !showForm && (
             <p className="text-sm text-slate-400 text-center py-4">등록된 일정이 없습니다</p>
           )}
-          {selectedEvents.map(e => (
-            <div key={`${e.eventType ?? "cal"}-${e.id}`} className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors group">
+          {selectedEvents.map((e, idx) => (
+            <div key={`${e.eventType ?? "cal"}-${e.id}-${idx}`} className="flex items-start gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors group">
               <span className={`w-3 h-3 rounded-full mt-0.5 flex-shrink-0 ${colorBg(e.color)}`} />
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { if (!e.eventType || e.eventType === "calendar") openEditEvent(e); }}>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold text-slate-800">{e.title}</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {(e._isRecurring || (e.recurrence && e.recurrence !== "none")) ? "🔄 " : ""}{e.title}
+                  </p>
                   {e.eventType === "booking" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 font-semibold">예약</span>}
                   {e.eventType === "shift" && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold">근무</span>}
+                  {e.recurrence && e.recurrence !== "none" && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 font-semibold">{recurrenceLabel(e.recurrence)}</span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400">
                   {e.date}{e.end_date && e.end_date !== e.date ? ` ~ ${e.end_date}` : ""}
@@ -444,7 +664,7 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
               {(!e.eventType || e.eventType === "calendar") && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                   <button onClick={() => openEditEvent(e)} className="text-xs text-slate-400 hover:text-[#3182F6]">수정</button>
-                  <button onClick={() => delEvent(e.id)} className="text-xs text-slate-300 hover:text-red-500">삭제</button>
+                  <button onClick={() => delEvent(e)} className="text-xs text-slate-300 hover:text-red-500">삭제</button>
                 </div>
               )}
             </div>

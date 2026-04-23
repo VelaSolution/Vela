@@ -1,15 +1,9 @@
 // app/api/contact/route.ts
 import { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-error";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
 
 function esc(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -21,6 +15,10 @@ export async function POST(req: NextRequest) {
 
     if (!name || !email || !message) {
       return apiError("필드를 모두 입력해 주세요.", 400);
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+      return apiError("올바른 이메일 형식을 입력해 주세요.", 400);
     }
 
     const safeName = String(name).slice(0, 100);

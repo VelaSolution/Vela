@@ -9,8 +9,7 @@ export const dynamic = "force-dynamic";
  * 여신금융협회 카드매출 조회
  * body: { bizNumber: string }
  *
- * TODO: 여신금융협회 API 키 발급 후 실제 연동
- * 현재는 데모 데이터 반환
+ * 여신금융협회 API 키 발급 전까지 데모 데이터 반환
  */
 export async function POST(req: NextRequest) {
   try {
@@ -27,21 +26,7 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.CREFIA_API_KEY; // 여신금융협회 API 키
 
     if (apiKey) {
-      // === 실제 API 연동 ===
-      // 여신금융협회 가맹점매출 조회 API
-      // https://www.crefia.or.kr 에서 API 키 발급 필요
-      //
-      // const now = new Date();
-      // const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10).replace(/-/g,"");
-      // const endDate = now.toISOString().slice(0,10).replace(/-/g,"");
-      //
-      // const res = await fetch(`https://api.crefia.or.kr/v1/merchant/sales`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      //   body: JSON.stringify({ bizNo: bizNumber, startDate, endDate }),
-      // });
-      // const data = await res.json();
-      // return NextResponse.json(transformCrefiaData(data));
+      // 여신금융협회 API 키 발급 후 실제 연동 예정
     }
 
     // === 데모 데이터 (API 연동 전) ===

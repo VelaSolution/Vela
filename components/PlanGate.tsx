@@ -10,8 +10,9 @@ export default function PlanGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
-    sb.auth.getUser().then(({ data: { user } }: { data: { user: { id: string } | null } }) => {
-      if (!user) { setPlan("free"); return; }
+    sb.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
+      if (!data?.user) { setPlan("free"); return; }
+      const user = data.user;
 
       Promise.all([
         sb.from("payments").select("plan").eq("user_id", user.id).eq("status", "done")
@@ -21,8 +22,8 @@ export default function PlanGate({ children }: { children: React.ReactNode }) {
         const paymentPlan = paymentsRes.data?.[0]?.plan;
         const profilePlan = profileRes.data?.plan;
         setPlan(paymentPlan ?? profilePlan ?? "free");
-      });
-    });
+      }).catch(() => setPlan("free"));
+    }).catch(() => setPlan("free"));
   }, []);
 
   if (plan === null) return null; // 로딩 중

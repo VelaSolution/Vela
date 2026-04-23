@@ -230,7 +230,7 @@ export default function OnboardingPage() {
             </div>
 
             <button
-              onClick={() => setStep(2)}
+              onClick={() => { setStep(2); window.scrollTo(0, 0); }}
               className="w-full rounded-2xl bg-slate-900 text-white py-4 text-sm font-bold active:scale-[0.98] transition"
             >
               다음
@@ -270,13 +270,13 @@ export default function OnboardingPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep(1)}
+                onClick={() => { setStep(1); window.scrollTo(0, 0); }}
                 className="rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700 transition"
               >
                 이전
               </button>
               <button
-                onClick={() => setStep(3)}
+                onClick={() => { setStep(3); window.scrollTo(0, 0); }}
                 className="flex-1 rounded-2xl bg-slate-900 text-white py-4 text-sm font-bold active:scale-[0.98] transition"
               >
                 다음
@@ -332,7 +332,7 @@ export default function OnboardingPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setStep(2)}
+                onClick={() => { setStep(2); window.scrollTo(0, 0); }}
                 className="rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700 transition"
               >
                 이전

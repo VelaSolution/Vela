@@ -118,6 +118,16 @@ async function getNews() {
   }
 }
 
+// ── 사용자 수 ─────────────────────────────────────────
+async function getUserCount() {
+  const admin = getAdmin();
+  if (!admin) return 0;
+  try {
+    const { count } = await admin.from("profiles").select("*", { count: "exact", head: true });
+    return count ?? 0;
+  } catch { return 0; }
+}
+
 // ── 지수 캐시 (서버 메모리, 30분) ─────────────────────
 let stocksCache: { data: Awaited<ReturnType<typeof getStocks>>; ts: number } | null = null;
 const STOCKS_TTL = 30 * 60 * 1000; // 30분
@@ -142,6 +152,6 @@ export async function GET(request: Request) {
     return apiSuccess({ news });
   }
 
-  const [stocks, news] = await Promise.all([getStocksCached(), getNews()]);
-  return apiSuccess({ stocks, news });
+  const [stocks, news, userCount] = await Promise.all([getStocksCached(), getNews(), getUserCount()]);
+  return apiSuccess({ stocks, news, userCount });
 }

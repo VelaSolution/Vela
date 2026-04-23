@@ -187,12 +187,25 @@ export default function SalesConnectPage() {
   const [showGuide, setShowGuide] = useState(false);
 
   const handleFile = (f: File | null) => {
-    if (f) {
-      setFile(f);
-      setDResult(null);
-      setDError("");
-      setDSaved(false);
+    if (!f) return;
+    const validTypes = [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.ms-excel",
+      "text/csv",
+    ];
+    const validExt = /\.(xlsx|xls|csv)$/i.test(f.name);
+    if (!validTypes.includes(f.type) && !validExt) {
+      setDError("엑셀 또는 CSV 파일만 업로드 가능합니다.");
+      return;
     }
+    if (f.size > 10 * 1024 * 1024) {
+      setDError("파일 크기는 10MB 이하만 가능합니다.");
+      return;
+    }
+    setFile(f);
+    setDResult(null);
+    setDError("");
+    setDSaved(false);
   };
 
   const onDrop = (e: React.DragEvent) => {

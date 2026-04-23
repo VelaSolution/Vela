@@ -228,9 +228,8 @@ export default function DashboardHome() {
   };
   const w = (key: WidgetKey) => widgets[key];
 
-  const sb = typeof window !== "undefined" ? createSupabaseBrowserClient() : null;
-
   useEffect(() => {
+    const sb = createSupabaseBrowserClient();
     if (!sb) return;
     sb.auth.getUser().then(async ({ data }: { data: { user: User | null } }) => {
       const user = data.user;
@@ -248,7 +247,7 @@ export default function DashboardHome() {
       setFeed((posts ?? []) as FeedPost[]);
       setLoading(false);
     });
-  }, [sb]);
+  }, []);
 
   // 목표 달성 게이지: localStorage에서 목표 불러오기
   useEffect(() => {

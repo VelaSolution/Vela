@@ -18,9 +18,12 @@ export default function MobileTabBar() {
   const [isHqMember, setIsHqMember] = useState(false);
   const [open, setOpen] = useState(false);
 
-  if (pathname?.startsWith("/hq")) return null;
+  const isHidden = pathname?.startsWith("/hq") || pathname?.startsWith("/game") ||
+    pathname?.startsWith("/login") || pathname?.startsWith("/signup") ||
+    pathname?.startsWith("/reset-password");
 
   useEffect(() => {
+    if (isHidden) return;
     (async () => {
       try {
         const sb = createSupabaseBrowserClient();
@@ -28,8 +31,8 @@ export default function MobileTabBar() {
         const { data: { user } } = await sb.auth.getUser();
         if (!user?.email) return;
 
-        const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
-        if (adminEmails.includes(user.email)) { setIsHqMember(true); return; }
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
+        if (adminEmails.includes(user.email.toLowerCase())) { setIsHqMember(true); return; }
 
         const { data: td } = await sb.from("hq_team").select("email, approved");
         if (td) {
@@ -39,13 +42,9 @@ export default function MobileTabBar() {
         }
       } catch {}
     })();
-  }, []);
+  }, [isHidden]);
 
-  if (pathname.startsWith("/game")) return null;
-  if (pathname.startsWith("/login")) return null;
-  if (pathname.startsWith("/signup")) return null;
-  if (pathname.startsWith("/reset-password")) return null;
-  if (pathname.startsWith("/hq")) return null;
+  if (isHidden) return null;
 
   const tabs = isHqMember
     ? [...TABS.slice(0, 3), { href: "/hq", icon: "⚓", label: "Bridge" }, ...TABS.slice(3)]

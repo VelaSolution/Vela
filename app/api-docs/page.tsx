@@ -248,8 +248,8 @@ export default function ApiDocsPage() {
         if (!sb) { setLoading(false); return; }
         const { data: { user } } = await sb.auth.getUser();
         if (!user) { setLoading(false); return; }
-        const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
-        if (adminEmails.includes(user.email ?? "")) setAuthorized(true);
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
+        if (adminEmails.includes((user.email ?? "").toLowerCase())) setAuthorized(true);
       } catch (e) {
         console.error("Auth check failed:", e);
       }

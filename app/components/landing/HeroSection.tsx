@@ -20,6 +20,15 @@ function AnimatedCounter({ target, duration = 2000, suffix = "" }: { target: num
 }
 
 export function HeroSection() {
+  const [userCount, setUserCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/home")
+      .then(r => r.json())
+      .then(d => { if (d.userCount) setUserCount(d.userCount); })
+      .catch(() => {});
+  }, []);
+
   return (
     <section className="hero" id="home">
       <style>{`
@@ -47,7 +56,7 @@ export function HeroSection() {
             <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, background: "#22C55E", borderRadius: "50%", boxShadow: "0 0 8px rgba(34,197,94,0.5)" }} />
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--gray-600)" }}>
-                지금까지 <span style={{ color: "var(--blue)", fontWeight: 800 }}><AnimatedCounter target={2847} suffix="명" /></span>의 사장님이 사용 중
+                지금까지 <span style={{ color: "var(--blue)", fontWeight: 800 }}><AnimatedCounter target={userCount} suffix="명" /></span>의 사장님이 사용 중
               </span>
             </div>
 

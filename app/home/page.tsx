@@ -75,31 +75,36 @@ export default function HomePage() {
   const [snap, setSnap] = useState<{ total_sales: number; net_profit: number; month: string } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const sb = createSupabaseBrowserClient();
     sb.auth.getUser().then(async ({ data }: { data: { user: User | null } }) => {
+      if (cancelled) return;
       if (!data.user) { router.replace("/login"); return; }
       setUser(data.user);
       const m = new Date().toISOString().slice(0, 7);
       const { data: s } = await sb.from("monthly_snapshots")
         .select("total_sales,net_profit,month").eq("user_id", data.user.id).eq("month", m).maybeSingle();
-      if (s) setSnap(s);
-      setLoading(false);
-    });
+      if (!cancelled) {
+        if (s) setSnap(s);
+        setLoading(false);
+      }
+    }).catch(() => { if (!cancelled) { setLoading(false); router.replace("/login"); } });
+    return () => { cancelled = true; };
   }, [router]);
 
   // 지수와 뉴스를 독립적으로 로드 (지수 먼저, 뉴스 나중에)
   useEffect(() => {
-    // 지수: 빠르게
-    fetch("/api/home?only=stocks")
+    const controller = new AbortController();
+    fetch("/api/home?only=stocks", { signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(d => { if (d.stocks) setStocks(d.stocks); })
-      .catch((e) => console.error("API error:", e));
-    // 뉴스: 느릴 수 있음
-    fetch("/api/home?only=news")
+      .catch((e) => { if (e.name !== "AbortError") console.error("API error:", e); });
+    fetch("/api/home?only=news", { signal: controller.signal })
       .then(r => { if (!r.ok) throw new Error(); return r.json(); })
       .then(d => { if (d.news) setNews(d.news); })
-      .catch((e) => console.error("API error:", e))
+      .catch((e) => { if (e.name !== "AbortError") console.error("API error:", e); })
       .finally(() => setNewsLoad(false));
+    return () => controller.abort();
   }, []);
 
   const name = user?.user_metadata?.nickname || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "사장님";

@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import type { HQRole, Expense, FixedCost } from "@/app/hq/types";
 import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames } from "@/app/hq/utils";
-import * as XLSX from "xlsx";
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
@@ -114,7 +113,8 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
     setSelected(prev => prev.size === filteredExpenses.length ? new Set() : new Set(filteredExpenses.map(e => e.id)));
   }, [filteredExpenses]);
 
-  function exportExcel() {
+  async function exportExcel() {
+    const XLSX = await import("xlsx");
     const target = selected.size > 0
       ? filteredExpenses.filter(e => selected.has(e.id))
       : filteredExpenses;

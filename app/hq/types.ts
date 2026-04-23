@@ -3,7 +3,7 @@
 export type Tab =
   | "dashboard" | "attendance" | "task" | "board" | "chat"
   | "docs" | "approval" | "finance" | "team" | "resource"
-  | "performance" | "admin";
+  | "performance" | "admin" | "mail";
 
 export type HQRole = "대표" | "이사" | "팀장" | "팀원";
 
@@ -86,34 +86,35 @@ export type FixedCost = {
   created_at: string;
 };
 
-// ── 탭 설정 (12탭) ────────────────────────────────────
+// ── 탭 설정 (13탭) ────────────────────────────────────
 export const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: "dashboard", label: "홈", icon: "🏠" },
-  { key: "attendance", label: "근태", icon: "⏰" },
-  { key: "task", label: "업무", icon: "✅" },
-  { key: "board", label: "게시판", icon: "💬" },
-  { key: "chat", label: "채팅", icon: "💬" },
-  { key: "docs", label: "문서", icon: "📁" },
-  { key: "approval", label: "결재", icon: "✍️" },
-  { key: "finance", label: "재무", icon: "💰" },
-  { key: "team", label: "팀", icon: "👥" },
-  { key: "resource", label: "자원", icon: "🏢" },
-  { key: "performance", label: "성과", icon: "📊" },
-  { key: "admin", label: "관리", icon: "⚙️" },
+  { key: "dashboard", label: "홈", icon: "dashboard" },
+  { key: "mail", label: "메일", icon: "mail" },
+  { key: "attendance", label: "근태관리", icon: "clock" },
+  { key: "task", label: "업무", icon: "check-square" },
+  { key: "board", label: "게시판", icon: "message-square" },
+  { key: "chat", label: "메신저", icon: "message-circle" },
+  { key: "docs", label: "문서관리", icon: "folder" },
+  { key: "approval", label: "전자결재", icon: "file-check" },
+  { key: "finance", label: "경리관리", icon: "wallet" },
+  { key: "team", label: "인사관리", icon: "users" },
+  { key: "resource", label: "예약", icon: "calendar-check" },
+  { key: "performance", label: "성과관리", icon: "bar-chart" },
+  { key: "admin", label: "설정", icon: "settings" },
 ];
 
 export const SIDEBAR_GROUPS: { label: string; items: Tab[] }[] = [
-  { label: "메인", items: ["dashboard", "task", "chat"] },
-  { label: "근무", items: ["attendance", "board"] },
-  { label: "업무", items: ["approval", "docs", "performance"] },
-  { label: "경영", items: ["finance", "team", "resource", "admin"] },
+  { label: "홈", items: ["dashboard"] },
+  { label: "협업", items: ["mail", "approval", "task", "docs", "board"] },
+  { label: "소통", items: ["chat", "attendance", "resource"] },
+  { label: "경영", items: ["finance", "team", "performance", "admin"] },
 ];
 
 export const ROLE_PERMISSIONS: Record<HQRole, Tab[]> = {
   "대표": TABS.map(t => t.key),
   "이사": TABS.map(t => t.key).filter(k => k !== "team"),
-  "팀장": ["dashboard", "attendance", "task", "board", "chat", "docs", "approval", "finance", "team", "resource", "performance", "admin"],
-  "팀원": ["dashboard", "attendance", "task", "board", "chat", "docs", "finance", "resource", "performance"],
+  "팀장": ["dashboard", "mail", "attendance", "task", "board", "chat", "docs", "approval", "finance", "team", "resource", "performance", "admin"],
+  "팀원": ["dashboard", "mail", "attendance", "task", "board", "chat", "docs", "finance", "resource", "performance"],
 };
 
 export const TAB_MAP = Object.fromEntries(TABS.map(t => [t.key, t]));

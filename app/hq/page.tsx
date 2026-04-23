@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -16,6 +16,7 @@ import SearchModal from "./components/SearchModal";
 
 // ── 탭 컴포넌트 (12탭 — lazy loaded) ─────────────────
 const Dashboard = dynamic(() => import("./components/Dashboard"));
+const MailTab = dynamic(() => import("./components/MailTab"));
 const AttendanceHub = dynamic(() => import("./components/AttendanceHub"));
 const TaskHub = dynamic(() => import("./components/TaskHub"));
 const BoardHub = dynamic(() => import("./components/BoardHub"));
@@ -28,24 +29,54 @@ const ResourceTab = dynamic(() => import("./components/ResourceTab"));
 const PerformanceHub = dynamic(() => import("./components/PerformanceHub"));
 const AdminHub = dynamic(() => import("./components/AdminHub"));
 
-// ── 탭 → 컴포넌트 매핑 (12탭) ────────────────────────
+// ── 탭 → 컴포넌트 매핑 (13탭) ────────────────────────
 const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }>> = {
-  dashboard: Dashboard, attendance: AttendanceHub, task: TaskHub,
+  dashboard: Dashboard, mail: MailTab, attendance: AttendanceHub, task: TaskHub,
   board: BoardHub, chat: ChatTab, docs: DocsHub,
   approval: ApprovalHub, finance: FinanceHub, team: TeamHub,
   resource: ResourceTab, performance: PerformanceHub, admin: AdminHub,
 };
 
+// ── 아이콘 색상 (다우오피스식 컬러 아이콘) ──────────────
+const ICON_COLORS: Record<string, string> = {
+  dashboard: "#2D84FF", mail: "#3B82F6", clock: "#F59E0B", "check-square": "#10B981",
+  "message-square": "#8B5CF6", "message-circle": "#3B82F6", folder: "#F97316",
+  "file-check": "#EC4899", wallet: "#059669", users: "#6366F1",
+  "calendar-check": "#14B8A6", "bar-chart": "#EF4444", settings: "#64748B",
+};
+
+// ── SVG 아이콘 ────────────────────────────────────────
+function TabIcon({ name, size = 18, className = "", colored = false }: { name: string; size?: number; className?: string; colored?: boolean }) {
+  const color = colored ? ICON_COLORS[name] : undefined;
+  const s = { width: size, height: size, fill: "none", stroke: color || "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const icons: Record<string, React.ReactNode> = {
+    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+    mail: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><path d="M22 6l-10 7L2 6" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></>,
+    "check-square": <><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 12l2 2 4-4" /></>,
+    "message-square": <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></>,
+    "message-circle": <><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></>,
+    folder: <><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" /></>,
+    "file-check": <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M9 15l2 2 4-4" /></>,
+    wallet: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /><circle cx="17" cy="14" r="1" /></>,
+    users: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" /></>,
+    "calendar-check": <><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><path d="M9 16l2 2 4-4" /></>,
+    "bar-chart": <><rect x="3" y="12" width="4" height="9" rx="1" /><rect x="10" y="7" width="4" height="14" rx="1" /><rect x="17" y="3" width="4" height="18" rx="1" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" /></>,
+  };
+  return <svg {...s} viewBox="0 0 24 24" className={className}>{icons[name]}</svg>;
+}
+
 // 모바일 하단 고정 5탭
-const MOBILE_NAV: { key: Tab; label: string; icon: string }[] = [
-  { key: "dashboard", label: "홈", icon: "🏠" },
-  { key: "task", label: "업무", icon: "✅" },
-  { key: "chat", label: "채팅", icon: "💬" },
-  { key: "board", label: "게시판", icon: "💬" },
-  { key: "finance", label: "재무", icon: "💰" },
+const MOBILE_NAV: { key: Tab; label: string }[] = [
+  { key: "dashboard", label: "홈" },
+  { key: "approval", label: "결재" },
+  { key: "chat", label: "메신저" },
+  { key: "task", label: "업무" },
+  { key: "finance", label: "경리" },
 ];
 
-export default function HQPage() {
+function HQPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get("tab") as Tab | null;
@@ -60,15 +91,18 @@ export default function HQPage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  const [notices, setNotices] = useState<{ id: string; title: string; category: string }[]>([]);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem("hq_dark_mode");
       if (saved === "true") setDarkMode(true);
-      const collapsed = localStorage.getItem("hq_collapsed_groups");
-      if (collapsed) setCollapsedGroups(new Set(JSON.parse(collapsed)));
+      const collapsed = localStorage.getItem("hq_sidebar_collapsed");
+      if (collapsed === "true") setSidebarCollapsed(true);
     } catch {}
   }, []);
 
@@ -105,12 +139,10 @@ export default function HQPage() {
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2500); };
 
-  const toggleGroup = (label: string) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label); else next.add(label);
-      try { localStorage.setItem("hq_collapsed_groups", JSON.stringify([...next])); } catch {}
-      return next;
+  const toggleSidebarCollapse = () => {
+    setSidebarCollapsed(prev => {
+      try { localStorage.setItem("hq_sidebar_collapsed", String(!prev)); } catch {}
+      return !prev;
     });
   };
 
@@ -125,7 +157,7 @@ export default function HQPage() {
         setUserId(user.id);
         const uName = user.user_metadata?.nickname ?? user.user_metadata?.full_name ?? user.email?.split("@")[0] ?? "관리자";
         setUserName(uName);
-        const adminEmails = ["mnhyuk@velaanalytics.com", "mnhyuk0213@gmail.com"];
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
         let teamData: { email: string; hq_role: string; approved: boolean }[] = [];
         try {
           const { data: td } = await sb.from("hq_team").select("email, hq_role, approved").order("created_at", { ascending: true });
@@ -140,7 +172,7 @@ export default function HQPage() {
             if (inserted) teamData = inserted as { email: string; hq_role: string; approved: boolean }[];
           }
         } catch {}
-        if (adminEmails.includes(user.email ?? "")) {
+        if (adminEmails.includes((user.email ?? "").toLowerCase())) {
           setAuthorized(true); setMyRole("대표");
         } else {
           const userEmail = (user.email ?? "").trim().toLowerCase();
@@ -153,22 +185,66 @@ export default function HQPage() {
     })();
   }, []);
 
+  // ── 뱃지 카운트 & 공지사항 로드 ──────────────────────
+  useEffect(() => {
+    if (!userId || !authorized) return;
+    const sb = createSupabaseBrowserClient();
+    if (!sb) return;
+    let cancelled = false;
+
+    async function loadBadges() {
+      try {
+        const [approvals, tasks, chats, boards, leaves] = await Promise.all([
+          sb.from("hq_approvals").select("id", { count: "exact", head: true }).eq("status", "대기"),
+          sb.from("hq_tasks").select("id", { count: "exact", head: true }).eq("status", "active"),
+          sb.from("hq_chat").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 3600_000).toISOString()),
+          sb.from("hq_board").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 86400_000).toISOString()),
+          sb.from("hq_leave").select("id", { count: "exact", head: true }).eq("status", "대기"),
+        ]);
+        if (cancelled) return;
+        setBadges({
+          approval: approvals.count ?? 0,
+          task: tasks.count ?? 0,
+          chat: chats.count ?? 0,
+          board: boards.count ?? 0,
+          attendance: leaves.count ?? 0,
+        });
+      } catch {}
+    }
+
+    async function loadNotices() {
+      try {
+        const { data } = await sb.from("hq_notices")
+          .select("id, title, category")
+          .eq("important", true)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (!cancelled && data) setNotices(data);
+      } catch {}
+    }
+
+    loadBadges();
+    loadNotices();
+    const interval = setInterval(loadBadges, 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [userId, authorized]);
+
   // ── 로딩 ──────────────────────────────────────────────
   if (loading) return (
     <div className="min-h-dvh bg-[#F7F8FA] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1a1a2e] to-[#2d2b55] shadow-lg flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <div className="w-11 h-11 rounded-xl bg-[#2D84FF] shadow-lg shadow-[#2D84FF]/30 flex items-center justify-center">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 20l1-2a7 7 0 0 1 7-5h6a7 7 0 0 1 7 5l1 2" />
               <path d="M12 3v12" />
               <path d="M12 3c0 0 5 2 5 7H12" />
             </svg>
           </div>
-          <div className="absolute -inset-1 rounded-2xl border-2 border-[#3182F6]/30 animate-ping" />
+          <div className="absolute -inset-1 rounded-xl border-2 border-[#2D84FF]/30 animate-ping" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-semibold text-slate-700">VELA Bridge</p>
+          <p className="text-sm font-bold text-slate-700">VELA Bridge</p>
           <p className="text-xs text-slate-400 mt-0.5">로딩 중...</p>
         </div>
       </div>
@@ -178,14 +254,13 @@ export default function HQPage() {
   // ── 미인증 ────────────────────────────────────────────
   if (!authorized) return (
     <main className="min-h-dvh bg-[#F7F8FA] flex items-center justify-center px-4">
-      <div className="text-center bg-white rounded-3xl p-10 shadow-lg border border-slate-200/60 max-w-sm w-full">
+      <div className="text-center bg-white rounded-2xl p-10 shadow-lg border border-slate-200/60 max-w-sm w-full">
         <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
           <span className="text-3xl">🔒</span>
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">브릿�� 접근 권한 필요</h2>
-        <p className="text-sm text-slate-500 mb-2">선장의 승인이 필요합니다.</p>
-        <p className="text-xs text-slate-400 mb-6">승인 후 브��지에 탑승할 수 있습니다.</p>
-        <Link href="/" className="inline-block rounded-xl bg-slate-900 text-white font-semibold px-6 py-3 text-sm hover:bg-slate-800 transition-all active:scale-[0.98]">
+        <h2 className="text-xl font-bold text-slate-900 mb-2">접근 권한이 필요합니다</h2>
+        <p className="text-sm text-slate-500 mb-6">관리자의 승인이 필요합니다.</p>
+        <Link href="/" className="inline-block rounded-xl bg-[#2D84FF] text-white font-semibold px-6 py-3 text-sm hover:bg-[#1a6fef] transition-all active:scale-[0.98]">
           홈으로 돌아가기
         </Link>
       </div>
@@ -193,202 +268,155 @@ export default function HQPage() {
   );
 
   const allowedTabs = TABS.filter(t => ROLE_PERMISSIONS[myRole]?.includes(t.key));
-  const todayDate = new Date().toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" });
+  const todayDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
   const ActiveComponent = TAB_COMPONENTS[tab];
   const activeTabInfo = TAB_MAP[tab];
 
-  // 사이드바 렌더링 함수 (데스크톱/모바일 공용, Toss style)
-  const renderNav = (isMobile: boolean) => (
-    <nav className="flex-1 px-3 py-4 overflow-y-auto">
-      {SIDEBAR_GROUPS.map(g => {
-        const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
-        if (groupTabs.length === 0) return null;
-        const isCollapsed = collapsedGroups.has(g.label);
-        const hasActive = groupTabs.includes(tab);
-        return (
-          <div key={g.label} className="mb-2">
-            <button
-              onClick={() => toggleGroup(g.label)}
-              className={`w-full flex items-center justify-between px-3 py-2.5 text-[13px] font-bold rounded-xl transition-colors border-b border-slate-100 ${
-                hasActive && isCollapsed ? "text-[#3182F6]" : "text-slate-800 hover:text-slate-900"
-              }`}
-            >
-              <span>{g.label}</span>
-              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                className={`transition-transform duration-200 text-slate-300 ${isCollapsed ? "-rotate-90" : ""}`}>
-                <path d="M3 4.5l3 3 3-3" />
-              </svg>
-            </button>
-            {!isCollapsed && (
-              <div className="mt-1 space-y-0.5">
-                {groupTabs.map(k => {
-                  const t = TAB_MAP[k]; if (!t) return null;
-                  const isActive = tab === k;
-                  return (
-                    <button key={k} onClick={() => { setTab(k); if (isMobile) setSidebarOpen(false); }}
-                      className={`hq-sidebar-item w-full text-left px-4 py-3 text-[14px] rounded-2xl flex items-center ${
-                        isActive
-                          ? "text-[#3182F6] font-bold bg-[#3182F6]/5 border-l-[3px] border-[#3182F6]"
-                          : "text-slate-600 hover:bg-slate-50 font-medium border-l-[3px] border-transparent"
-                      }`}>
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </nav>
-  );
-
   return (
     <TeamDisplayProvider>
-    <div className={`h-dvh flex flex-col overflow-hidden bg-[#F7F8FA]${darkMode ? " hq-dark" : ""}`}>
-      <meta name="theme-color" content={darkMode ? "#0F172A" : "#ffffff"} />
+    <div className={`hq-root h-dvh flex flex-col overflow-hidden${darkMode ? " hq-dark" : ""}`}>
+      <meta name="theme-color" content={darkMode ? "#0F172A" : "#20202D"} />
       <style>{`
+        .hq-root { background: #F0F2F5; color: #20202D; }
         .hq-dark { background: #0F172A !important; color: #E2E8F0 !important; }
+        .hq-dark .hq-sidebar { background: #0B1120 !important; }
+        .hq-dark .hq-header { background: #0F172A !important; border-color: #1E293B !important; }
         .hq-dark .bg-white { background: #1E293B !important; }
-        .hq-dark .bg-\\[\\#F7F8FA\\] { background: #0F172A !important; }
+        .hq-dark .hq-content { background: #0F172A !important; }
         .hq-dark .text-slate-900, .hq-dark .text-slate-800, .hq-dark .text-slate-700 { color: #E2E8F0 !important; }
         .hq-dark .text-slate-600, .hq-dark .text-slate-500 { color: #94A3B8 !important; }
         .hq-dark .text-slate-400 { color: #64748B !important; }
         .hq-dark .border-slate-200, .hq-dark .border-slate-100 { border-color: #1E293B !important; }
         .hq-dark .bg-slate-50, .hq-dark .bg-slate-100 { background: #1E293B !important; }
-        .hq-dark .shadow-\\[0_2px_8px_rgba\\(0\\,0\\,0\\,0\\.04\\)\\] { box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important; }
         .hq-dark input, .hq-dark textarea, .hq-dark select { background: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
-        .hq-dark .hq-header-inner { background: rgba(15,23,42,0.97) !important; border-color: #1E293B !important; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .hq-more-sheet { animation: slideUp 0.25s ease-out; }
-        .hq-fade-in { animation: fadeIn 0.3s ease-out; }
+        .hq-fade-in { animation: fadeIn 0.2s ease-out; }
         .hq-toast { animation: toastIn 0.3s ease-out; }
-        .hq-sidebar-item { transition: all 0.15s ease; }
-        .hq-sidebar-item:hover { transform: translateX(2px); }
       `}</style>
 
-      {/* ── 헤더 (Toss style: clean, minimal) ────────── */}
-      <header className="sticky top-0 z-50 h-16 flex-shrink-0">
-        <div className="hq-header-inner h-full bg-white/97 backdrop-blur-xl border-b border-slate-100 flex items-center px-4 lg:px-6">
-          <div className="flex items-center justify-between w-full">
-            {/* 좌측: 메뉴 + 로고 */}
-            <div className="flex items-center gap-3 min-w-0">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-slate-50 transition active:scale-95 flex-shrink-0">
-                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg>
-              </button>
-              <button onClick={() => setTab("dashboard")} className="flex items-center gap-2.5 flex-shrink-0">
-                <div className="w-9 h-9 bg-gradient-to-br from-[#1a1a2e] to-[#2d2b55] rounded-xl flex items-center justify-center shadow-sm">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M2 20l1-2a7 7 0 0 1 7-5h6a7 7 0 0 1 7 5l1 2" />
-                    <path d="M12 3v12" />
-                    <path d="M12 3c0 0 5 2 5 7H12" />
-                  </svg>
-                </div>
-                <span className="text-[16px] font-bold text-slate-800 hidden sm:block tracking-tight">Bridge</span>
-              </button>
-            </div>
+      {/* ── 헤더 (다우오피스 스타일: 다크 네이비) ──────── */}
+      <header className="hq-header sticky top-0 z-50 h-[52px] flex-shrink-0 bg-[#20202D] border-b border-[#2a2a3d]">
+        <div className="h-full flex items-center px-4 lg:px-5">
+          {/* 좌측: 메뉴 + 로고 */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white/70 active:scale-95">
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg>
+            </button>
+            <button onClick={() => setTab("dashboard")} className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-[#2D84FF] rounded-lg flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 20l1-2a7 7 0 0 1 7-5h6a7 7 0 0 1 7 5l1 2" />
+                  <path d="M12 3v12" />
+                  <path d="M12 3c0 0 5 2 5 7H12" />
+                </svg>
+              </div>
+              <span className="text-[15px] font-bold text-white hidden sm:block tracking-tight">VELA Bridge</span>
+            </button>
+          </div>
 
-            {/* 중앙: 검색바 (데스크톱) */}
-            <div className="hidden lg:flex flex-1 justify-center max-w-md mx-8">
-              <button onClick={() => setSearchOpen(true)}
-                className="w-full flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100 rounded-2xl px-4 py-2.5 text-sm text-slate-400 transition">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6" cy="6" r="4.5" /><path d="M13 13l-3-3" /></svg>
-                <span>검색...</span>
-                <kbd className="ml-auto text-[10px] bg-white rounded-lg px-1.5 py-0.5 text-slate-300 font-mono shadow-sm">⌘K</kbd>
-              </button>
-            </div>
+          {/* 중앙: 검색바 */}
+          <div className="hidden lg:flex flex-1 justify-center max-w-md mx-8">
+            <button onClick={() => setSearchOpen(true)}
+              className="w-full flex items-center gap-2.5 bg-white/8 hover:bg-white/12 rounded-lg px-4 py-2 text-sm text-white/50 transition border border-white/5">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6" cy="6" r="4.5" /><path d="M13 13l-3-3" /></svg>
+              <span>통합 검색</span>
+              <kbd className="ml-auto text-[10px] bg-white/10 rounded px-1.5 py-0.5 text-white/30 font-mono">⌘K</kbd>
+            </button>
+          </div>
 
-            {/* 우측: 시간 · 알림 · 다크모드 · 프로필 */}
-            <div className="flex items-center gap-1.5 lg:gap-2.5">
-              <span className="text-[12px] text-slate-400 hidden xl:block tabular-nums whitespace-nowrap font-medium">{todayDate} {currentTime}</span>
-              {/* 모바일 검색 버튼 */}
-              <button onClick={() => setSearchOpen(true)}
-                className="lg:hidden w-9 h-9 flex items-center justify-center rounded-2xl hover:bg-slate-50 transition text-slate-400 active:scale-95"
-                title="검색">
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="7" cy="7" r="5" /><path d="M15 15l-3.5-3.5" /></svg>
-              </button>
-              {userId && <NotificationBell userId={userId} userName={userName} myRole={myRole} onNavigate={(t) => setTab(t as Tab)} />}
-              <button onClick={() => setDarkMode(!darkMode)}
-                className="w-9 h-9 flex items-center justify-center rounded-2xl hover:bg-slate-50 transition text-slate-400 active:scale-95 hidden sm:flex">
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-              <div className="hidden lg:block w-px h-5 bg-slate-100 mx-1" />
-              <button onClick={() => setTab("dashboard")} className="flex items-center gap-2.5">
-                <div className="w-9 h-9 bg-gradient-to-br from-[#3182F6] to-[#7C3AED] rounded-2xl flex items-center justify-center shadow-sm">
-                  <span className="text-sm font-bold text-white">{userName[0]}</span>
-                </div>
-                <div className="hidden lg:block text-left">
-                  <p className="text-[13px] font-bold text-slate-800 leading-tight">{userName}</p>
-                  <p className="text-[11px] text-slate-400 leading-tight">{myRole}</p>
-                </div>
-              </button>
-            </div>
+          {/* 우측: 날짜 · 알림 · 다크모드 · 프로필 */}
+          <div className="flex items-center gap-1 lg:gap-2 ml-auto">
+            <span className="text-[11px] text-white/40 hidden xl:block tabular-nums whitespace-nowrap font-medium">{todayDate} {currentTime}</span>
+            <button onClick={() => setSearchOpen(true)}
+              className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white/50 active:scale-95">
+              <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="6.5" cy="6.5" r="4.5" /><path d="M14 14l-3-3" /></svg>
+            </button>
+            {userId && <NotificationBell userId={userId} userName={userName} myRole={myRole} onNavigate={(t) => setTab(t as Tab)} />}
+            <button onClick={() => setDarkMode(!darkMode)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition text-white/50 active:scale-95 hidden sm:flex text-sm">
+              {darkMode ? "☀️" : "🌙"}
+            </button>
+            <div className="hidden lg:block w-px h-5 bg-white/10 mx-1" />
+            <button onClick={() => setTab("dashboard")} className="flex items-center gap-2.5 ml-1">
+              <div className="w-8 h-8 bg-[#2D84FF] rounded-lg flex items-center justify-center">
+                <span className="text-xs font-bold text-white">{userName[0]}</span>
+              </div>
+              <div className="hidden lg:block text-left">
+                <p className="text-[12px] font-semibold text-white/90 leading-tight">{userName}</p>
+                <p className="text-[10px] text-white/40 leading-tight">{myRole}</p>
+              </div>
+            </button>
           </div>
         </div>
       </header>
 
       {/* ── 모바일 사이드바 오버레이 ──────────────────── */}
       <div className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} onClick={() => setSidebarOpen(false)}>
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-black/40" />
         <aside
-          className={`absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`hq-sidebar absolute left-0 top-0 bottom-0 w-[260px] bg-[#20202D] flex flex-col transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
           style={{ paddingTop: "env(safe-area-inset-top)" }}
           onClick={e => e.stopPropagation()}>
-          {/* 사이드바 헤더 */}
-          <div className="px-5 py-5 border-b border-slate-50 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 bg-gradient-to-br from-[#3182F6] to-[#7C3AED] rounded-xl flex items-center justify-center">
+          {/* 프로필 */}
+          <div className="px-4 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-[#2D84FF] rounded-lg flex items-center justify-center">
                 <span className="text-sm font-bold text-white">{userName[0]}</span>
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-900">{userName}</p>
-                <p className="text-[11px] text-slate-400">{myRole}</p>
+                <p className="text-sm font-semibold text-white">{userName}</p>
+                <p className="text-[11px] text-white/40">{myRole}</p>
               </div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400">
-              ✕
-            </button>
+            <button onClick={() => setSidebarOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/40 text-xs">✕</button>
           </div>
-          {renderNav(true)}
-          <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0">
-            <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium" onClick={() => setSidebarOpen(false)}>
-              <span>←</span><span>갑판으로 나가기</span>
+          {renderSidebar(true)}
+          <div className="px-4 py-3 border-t border-white/5 flex-shrink-0">
+            <Link href="/" className="flex items-center gap-2 text-xs text-white/30 hover:text-white/60 transition font-medium" onClick={() => setSidebarOpen(false)}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+              <span>홈으로 나가기</span>
             </Link>
           </div>
         </aside>
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* ── 데스크톱 사이드바 (Toss style: no border, subtle shadow) ── */}
-        <aside className="hidden md:flex flex-col w-[230px] lg:w-[250px] bg-white shadow-[1px_0_8px_rgba(0,0,0,0.03)] flex-shrink-0">
-          {renderNav(false)}
-          <div className="px-4 py-3 border-t border-slate-100 space-y-2 flex-shrink-0">
-            <div className="flex items-center gap-2 px-1">
-              <div className="w-7 h-7 bg-gradient-to-br from-[#3182F6] to-[#7C3AED] rounded-lg flex items-center justify-center">
-                <span className="text-[10px] font-bold text-white">{userName[0]}</span>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-700">{userName}</p>
-                <p className="text-[10px] text-slate-400">{myRole}</p>
-              </div>
-            </div>
-            <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium px-1">
-              <span>←</span><span>갑판으로 나가기</span>
-            </Link>
+        {/* ── 데스크톱 사이드바 (다우오피스 스타일: 다크) ── */}
+        <aside className={`hq-sidebar hidden md:flex flex-col bg-[#20202D] flex-shrink-0 transition-all duration-200 ${sidebarCollapsed ? "w-[60px]" : "w-[220px]"}`}>
+          {/* 접기 버튼 */}
+          <div className={`flex items-center px-2 py-2 ${sidebarCollapsed ? "justify-center" : "justify-end"}`}>
+            <button onClick={toggleSidebarCollapse}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/8 text-white/30 transition">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                className={`transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`}>
+                <path d="M11 4L5 8l6 4" />
+              </svg>
+            </button>
           </div>
+          {renderSidebar(false)}
+          {!sidebarCollapsed && (
+            <div className="px-3 py-3 border-t border-white/5 flex-shrink-0">
+              <Link href="/" className="flex items-center gap-2 text-[11px] text-white/25 hover:text-white/50 transition font-medium px-2">
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4L5 7l6 3"/></svg>
+                <span>홈으로</span>
+              </Link>
+            </div>
+          )}
         </aside>
 
         {/* ── 메인 콘텐츠 ──────────────────────────────── */}
-        <main className="flex-1 min-w-0 pb-20 md:pb-0 overflow-y-auto">
+        <main className="hq-content flex-1 min-w-0 pb-20 md:pb-0 overflow-y-auto bg-[#F0F2F5]">
           {/* 모바일 현재 탭 표시 */}
           {tab !== "dashboard" && (
-            <div className="md:hidden px-4 pt-4 pb-1">
+            <div className="md:hidden px-4 pt-4 pb-1 flex items-center gap-2">
+              <TabIcon name={activeTabInfo?.icon ?? "dashboard"} size={18} className="text-[#2D84FF]" />
               <h2 className="text-lg font-bold text-slate-900">{activeTabInfo?.label}</h2>
             </div>
           )}
-          <div className="px-4 lg:px-8 pt-4 lg:pt-5 pb-10">
+          <div className="px-4 lg:px-6 pt-4 lg:pt-5 pb-10">
             <div key={tab} className="hq-fade-in">
               {userId && tab === "dashboard" ? (
                 <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
@@ -400,9 +428,9 @@ export default function HQPage() {
         </main>
       </div>
 
-      {/* ── 토스트 알림 (bottom-center, Toss style) ──────── */}
+      {/* ── 토스트 알림 ──────────────────────────────────── */}
       {msg && (
-        <div className="hq-toast fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[14px] font-semibold shadow-2xl flex items-center gap-2.5">
+        <div className="hq-toast fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-[#20202D] text-white px-5 py-3 rounded-xl text-[13px] font-semibold shadow-2xl flex items-center gap-2.5">
           <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
             <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-6"/></svg>
           </div>
@@ -411,26 +439,25 @@ export default function HQPage() {
       )}
 
       {/* ── 모바일 하단 탭바 ──────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/97 backdrop-blur-2xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="flex items-center h-[58px]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center h-[56px]">
           {MOBILE_NAV.map(item => {
             const isActive = tab === item.key;
+            const tabInfo = TAB_MAP[item.key];
             return (
               <button key={item.key} onClick={() => setTab(item.key)}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all active:scale-90 ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>
-                <div className={`transition-transform ${isActive ? "scale-110" : ""}`}>
-                  <span className="text-[18px] leading-none">{item.icon}</span>
-                </div>
-                <span className={`text-[10px] font-bold ${isActive ? "text-[#3182F6]" : "text-slate-400"}`}>{item.label}</span>
-                {isActive && <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-[#3182F6]" />}
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-all active:scale-90 ${isActive ? "text-[#2D84FF]" : "text-slate-400"}`}>
+                <TabIcon name={tabInfo?.icon ?? "dashboard"} size={20} className={isActive ? "text-[#2D84FF]" : "text-slate-400"} />
+                <span className={`text-[10px] font-semibold ${isActive ? "text-[#2D84FF]" : "text-slate-400"}`}>{item.label}</span>
               </button>
             );
           })}
-          {/* 더보기 */}
           <button onClick={() => setMoreOpen(!moreOpen)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors active:scale-95 ${moreOpen ? "text-[#3182F6]" : "text-slate-400"}`}>
-            <span className="text-lg leading-none">☰</span>
-            <span className={`text-[10px] font-semibold ${moreOpen ? "text-[#3182F6]" : "text-slate-400"}`}>더보기</span>
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-colors active:scale-95 ${moreOpen ? "text-[#2D84FF]" : "text-slate-400"}`}>
+            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span className={`text-[10px] font-semibold ${moreOpen ? "text-[#2D84FF]" : "text-slate-400"}`}>더보기</span>
           </button>
         </div>
       </nav>
@@ -439,7 +466,7 @@ export default function HQPage() {
       {moreOpen && (
         <div className="md:hidden fixed inset-0 z-[60]" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-black/30" />
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl hq-more-sheet" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} onClick={e => e.stopPropagation()}>
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl hq-more-sheet" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-2">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
@@ -448,10 +475,10 @@ export default function HQPage() {
               <div className="grid grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pb-4">
                 {allowedTabs.filter(t => !MOBILE_NAV.some(m => m.key === t.key)).map(t => (
                   <button key={t.key} onClick={() => setTab(t.key)}
-                    className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all active:scale-95 ${
-                      tab === t.key ? "bg-[#3182F6]/10 text-[#3182F6]" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all active:scale-95 ${
+                      tab === t.key ? "bg-[#2D84FF]/10 text-[#2D84FF]" : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                     }`}>
-                    <span className="text-xl">{t.icon}</span>
+                    <TabIcon name={t.icon} size={22} />
                     <span className="text-[11px] font-semibold">{t.label}</span>
                   </button>
                 ))}
@@ -467,5 +494,60 @@ export default function HQPage() {
       )}
     </div>
     </TeamDisplayProvider>
+  );
+
+  // ── 사이드바 렌더링 (다우오피스 스타일: 다크 + SVG 아이콘) ──
+  function renderSidebar(isMobile: boolean) {
+    const collapsed = !isMobile && sidebarCollapsed;
+    return (
+      <nav className="flex-1 overflow-y-auto py-2">
+        {SIDEBAR_GROUPS.map(g => {
+          const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
+          if (groupTabs.length === 0) return null;
+          return (
+            <div key={g.label} className="mb-1">
+              {!collapsed && g.label !== "홈" && (
+                <div className="px-4 pt-3 pb-1">
+                  <span className="text-[10px] font-bold text-white/25 uppercase tracking-widest">{g.label}</span>
+                </div>
+              )}
+              {collapsed && g.label !== "홈" && <div className="mx-2 my-1 border-t border-white/5" />}
+              <div className="space-y-0.5 px-2">
+                {groupTabs.map(k => {
+                  const t = TAB_MAP[k]; if (!t) return null;
+                  const isActive = tab === k;
+                  return (
+                    <button key={k} onClick={() => { setTab(k); if (isMobile) setSidebarOpen(false); }}
+                      title={collapsed ? t.label : undefined}
+                      className={`w-full text-left rounded-lg flex items-center transition-all duration-150 ${
+                        collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
+                      } ${
+                        isActive
+                          ? "bg-[#2D84FF] text-white shadow-md shadow-[#2D84FF]/20"
+                          : "text-white/60 hover:bg-white/5 hover:text-white/90"
+                      }`}>
+                      <TabIcon name={t.icon} size={collapsed ? 20 : 18} className={isActive ? "text-white" : ""} />
+                      {!collapsed && <span className={`text-[13px] ${isActive ? "font-semibold" : "font-medium"}`}>{t.label}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+    );
+  }
+}
+
+export default function HQPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh bg-[#F0F2F5] flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-slate-200 border-t-[#2D84FF] rounded-full" />
+      </div>
+    }>
+      <HQPage />
+    </Suspense>
   );
 }

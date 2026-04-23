@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
 function ResetForm() {
   const router = useRouter();
-  const _params = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -132,5 +132,13 @@ function ResetForm() {
 }
 
 export default function ResetPasswordPage() {
-  return <Suspense><ResetForm /></Suspense>;
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+      </main>
+    }>
+      <ResetForm />
+    </Suspense>
+  );
 }

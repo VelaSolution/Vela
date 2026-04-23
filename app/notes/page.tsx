@@ -68,12 +68,14 @@ export function NotesWidget() {
     setData(local);
     loaded.current = true;
 
+    let cancelled = false;
     (async () => {
       const sb = createSupabaseBrowserClient();
       const { data: { user } } = await sb.auth.getUser();
-      if (!user) return;
+      if (!user || cancelled) return;
       userRef.current = user.id;
       const { data: cloud } = await sb.from("user_notes").select("data").eq("user_id", user.id).limit(1);
+      if (cancelled) return;
       if (cloud && cloud.length > 0) {
         try {
           const parsed = JSON.parse(cloud[0].data);
@@ -84,10 +86,19 @@ export function NotesWidget() {
         await sb.from("user_notes").insert({ user_id: user.id, data: JSON.stringify(local) });
       }
     })();
+    return () => { cancelled = true; };
+  }, []);
+
+  /* cleanup timers on unmount */
+  const cloudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (cloudTimer.current) clearTimeout(cloudTimer.current);
+    };
   }, []);
 
   /* auto-save: localStorage + 클라우드 */
-  const cloudTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const save = useCallback((next: NotesData) => {
     setData(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
