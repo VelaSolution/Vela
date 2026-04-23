@@ -277,7 +277,9 @@ function HQPage() {
     <div className={`hq-root h-dvh flex flex-col overflow-hidden${darkMode ? " hq-dark" : ""}`}>
       <meta name="theme-color" content={darkMode ? "#0F172A" : "#20202D"} />
       <style>{`
-        .hq-root { background: #F0F2F5; color: #20202D; }
+        .hq-root { background: #F0F2F5; color: #20202D; overscroll-behavior: none; }
+        .hq-root > * { overscroll-behavior: contain; }
+        html, body { background: #20202D !important; }
         .hq-dark { background: #0F172A !important; color: #E2E8F0 !important; }
         .hq-dark .hq-sidebar { background: #0B1120 !important; }
         .hq-dark .hq-header { background: #0F172A !important; border-color: #1E293B !important; }
@@ -408,7 +410,7 @@ function HQPage() {
         </aside>
 
         {/* ── 메인 콘텐츠 ──────────────────────────────── */}
-        <main className="hq-content flex-1 min-w-0 pb-24 md:pb-0 overflow-y-auto bg-[#F0F2F5]">
+        <main className="hq-content flex-1 min-w-0 pb-24 md:pb-0 overflow-y-auto bg-[#F0F2F5]" style={{ overscrollBehavior: "contain" }}>
           {/* 모바일 현재 탭 표시 */}
           {tab !== "dashboard" && (
             <div className="md:hidden px-4 pt-4 pb-1 flex items-center gap-2">
