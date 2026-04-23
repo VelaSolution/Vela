@@ -15,7 +15,7 @@ interface UploadAreaProps {
   fileRef: React.RefObject<HTMLInputElement | null>;
   uploading: boolean;
   setUploading: (v: boolean) => void;
-  deleteFileSilent: (f: FileItem) => Promise<void>;
+  deleteFileSilent: (f: FileItem) => Promise<boolean | void>;
 }
 
 export default function UploadArea({

@@ -567,22 +567,50 @@ export default function FilesTab({ userId, userName, myRole, flash }: Props) {
 
   const deleteFileSilent = useCallback(async (f: FileItem) => {
     const s = sb();
-    if (!s) return;
+    if (!s) return false;
+
+    // R2 파일이면 서버 API로 삭제 (DB도 admin 권한으로 함께 삭제)
     if (f.url.includes("r2.dev")) {
-      try { const key = f.url.split(".r2.dev/")[1]; if (key) await fetch("/api/r2/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: decodeURIComponent(key) }) }); } catch {}
-    } else if (f.url.includes("supabase")) {
+      const key = f.url.split(".r2.dev/")[1];
+      const res = await fetch("/api/r2/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: key ? decodeURIComponent(key) : null, fileId: f.id }),
+      });
+      if (!res.ok) { console.error("파일 삭제 API 실패"); return false; }
+      return true;
+    }
+
+    // Supabase Storage 파일
+    if (f.url.includes("supabase")) {
       try { const path = f.url.split("/hq-files/")[1]; if (path) await s.storage.from("hq-files").remove([decodeURIComponent(path)]); } catch {}
     }
+
+    // DB 삭제 시도 (클라이언트) — 실패 시 서버 API로 폴백
     try { await s.from("hq_file_versions").delete().eq("file_id", f.id); } catch {}
     try { await s.from("hq_file_stars").delete().eq("file_id", f.id); } catch {}
     try { await s.from("hq_file_tags").delete().eq("file_id", f.id); } catch {}
     try { await s.from("hq_file_shares").delete().eq("file_id", f.id); } catch {}
-    await s.from("hq_files").delete().eq("id", f.id);
+    const { error } = await s.from("hq_files").delete().eq("id", f.id);
+    if (error) {
+      // RLS 실패 시 서버 API로 재시도
+      const res = await fetch("/api/r2/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId: f.id }),
+      });
+      if (!res.ok) { console.error("파일 삭제 실패:", error); return false; }
+    }
+    return true;
   }, []);
 
   const deleteFile = useCallback(async (f: FileItem) => {
-    await deleteFileSilent(f);
-    flash("파일이 삭제되었습니다");
+    const ok = await deleteFileSilent(f);
+    if (ok === false) {
+      flash("삭제 실패 — 권한을 확인해주세요");
+    } else {
+      flash("파일이 삭제되었습니다");
+    }
     setConfirmDelete(null);
     load(currentFolder);
   }, [deleteFileSilent, flash, load, currentFolder]);

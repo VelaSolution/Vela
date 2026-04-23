@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { r2, R2_BUCKET } from "@/lib/r2";
 
 async function getUser(req: NextRequest) {
-  const token = req.cookies.get("sb-mkhnkgjpjsjadxuxtiya-auth-token")?.value
-    || req.headers.get("authorization")?.replace("Bearer ", "");
+  const authCookie = req.cookies.getAll().find(c => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
+  const token = authCookie?.value || req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
   const { data: { user } } = await sb.auth.getUser(token);
