@@ -319,6 +319,10 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const [editClockOutId, setEditClockOutId] = useState<string | null>(null);
   const [editClockOutTimeTeam, setEditClockOutTimeTeam] = useState("");
 
+  // 본인 과거 퇴근시간 수정
+  const [editPastClockOutId, setEditPastClockOutId] = useState<string | null>(null);
+  const [editPastClockOutTime, setEditPastClockOutTime] = useState("");
+
   const updateClockIn = async (recId: string) => {
     if (!editClockInTime) return;
     const s = sb();
@@ -359,6 +363,36 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     if (error) { flash("수정 실패: " + error.message); return; }
     flash(`퇴근 시간 수정 완료 (${editClockOutTimeTeam})`);
     setEditClockOutId(null);
+    loadData();
+  };
+
+  // 본인 과거 퇴근시간 저장 (최대 7일 이내)
+  const savePastClockOut = async (recId: string) => {
+    if (!editPastClockOutTime) return;
+    const s = sb();
+    if (!s) return;
+    const rec = records.find(r => r.id === recId);
+    if (!rec) return;
+    // 7일 이내 확인
+    const recDate = new Date(`${rec.date}T00:00:00`);
+    const nowDate = new Date();
+    const diffDays = Math.floor((nowDate.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays > 7) { flash("7일이 지난 기록은 수정할 수 없습니다"); return; }
+    const [h, m] = editPastClockOutTime.split(":").map(Number);
+    const d = new Date(`${rec.date}T00:00:00`);
+    d.setHours(h, m, 0, 0);
+    const nextDay = editPastClockOutTime < rec.clockIn;
+    const hours = diffHours(rec.clockIn, editPastClockOutTime, nextDay);
+    const isEarly = !nextDay && editPastClockOutTime < "18:00";
+    const overtime = Math.max(0, +(hours - 8).toFixed(1));
+    const newStatus = isEarly && rec.status !== "지각" ? "조퇴" : rec.status;
+    const { error } = await s.from("hq_attendance").update({
+      clock_out: d.toISOString(), overtime, status: newStatus,
+    }).eq("id", recId);
+    if (error) { flash("저장 실패: " + error.message); return; }
+    flash(`${rec.date} 퇴근시간 입력 완료 (${editPastClockOutTime})`);
+    setEditPastClockOutId(null);
+    setEditPastClockOutTime("");
     loadData();
   };
 
@@ -443,6 +477,19 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
   const totalHoursToday = todayRec?.clockIn
     ? diffHours(todayRec.clockIn, todayRec.clockOut || now.toTimeString().slice(0, 5), isNextDayClockOut)
     : 0;
+
+  // 미입력 퇴근시간: 출근했지만 퇴근 미입력 (7일 이내, 본인 기록, 오늘 제외)
+  const missingClockOutRecords = useMemo(() => {
+    const nowDate = new Date();
+    return records.filter(r => {
+      if (r.userName !== userName) return false;
+      if (!r.clockIn || r.clockOut) return false;
+      if (r.date === todayStr) return false;
+      const recDate = new Date(`${r.date}T00:00:00`);
+      const diffDays = Math.floor((nowDate.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays <= 7 && diffDays >= 1;
+    }).sort((a, b) => b.date.localeCompare(a.date));
+  }, [records, userName, todayStr]);
 
   // 전 직원 오늘 현황
   const todayAllRecords = records.filter(r => r.date === todayStr);
@@ -678,7 +725,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     const dist = oLat != null && oLng != null ? haversineDistance(userLat, userLng, oLat, oLng) : null;
     const isInside = dist !== null && radius ? dist <= radius : false;
     return (
-      <div className="relative w-full h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl overflow-hidden border border-slate-200">
+      <div className="relative w-full h-24 md:h-32 bg-gradient-to-br from-slate-100 to-slate-50 rounded-xl overflow-hidden border border-slate-200">
         {/* Grid lines */}
         <div className="absolute inset-0 opacity-20">
           {[...Array(5)].map((_, i) => (
@@ -775,6 +822,46 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
           <p className="mt-2 text-sm font-semibold text-[#3182F6]">{filteredCount}건 조회</p>
         )}
       </div>
+
+      {/* 미입력 퇴근시간 알림 */}
+      {missingClockOutRecords.length > 0 && (
+        <div className={`${C} !border-amber-200 !bg-amber-50/50`}>
+          <h3 className="text-sm font-bold text-amber-700 mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            미입력 퇴근시간
+            <span className="text-xs font-normal text-amber-500">({missingClockOutRecords.length}건)</span>
+          </h3>
+          <div className="space-y-2">
+            {missingClockOutRecords.map(rec => (
+              <div key={rec.id} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-amber-100">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-700">{rec.date}</p>
+                  <p className="text-xs text-slate-400">출근: {rec.clockIn}</p>
+                </div>
+                {editPastClockOutId === rec.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="time"
+                      value={editPastClockOutTime}
+                      onChange={e => setEditPastClockOutTime(e.target.value)}
+                      className="border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-slate-800 w-24"
+                    />
+                    <button onClick={() => savePastClockOut(rec.id)} className="text-xs text-[#3182F6] font-bold px-2 py-1">확인</button>
+                    <button onClick={() => { setEditPastClockOutId(null); setEditPastClockOutTime(""); }} className="text-xs text-slate-400 px-1">취소</button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditPastClockOutId(rec.id); setEditPastClockOutTime("18:00"); }}
+                    className="rounded-xl bg-amber-500 text-white font-semibold px-4 py-2 text-xs hover:bg-amber-600 active:scale-[0.98] transition-all"
+                  >
+                    퇴근 입력
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Live Clock & Clock In/Out */}
       <div className={C}>
@@ -954,7 +1041,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
           오늘 근무 현황
           {isNextDayClockOut && <span className="ml-2 text-xs font-semibold text-amber-500">(어제 출근 → 익일 퇴근 대기)</span>}
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           <div className="text-center">
             <p className="text-xs text-slate-400 mb-1">출근</p>
             <p className="text-lg font-bold text-slate-800">{todayRec?.clockIn || "--:--"}</p>
@@ -998,6 +1085,7 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
       {/* This week */}
       <div className={C}>
         <h3 className="text-sm font-bold text-slate-700 mb-4">이번 주 출근 기록</h3>
+        <p className="md:hidden text-xs text-slate-400 mb-2">&larr; 좌우로 스크롤하세요</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -1038,18 +1126,48 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
                       )}
                     </td>
                     <td className="py-2.5 px-3 text-slate-700">
-                      {editClockOutId === r?.id ? (
+                      {editPastClockOutId === r?.id ? (
+                        <div className="flex items-center gap-1">
+                          <input type="time" value={editPastClockOutTime} onChange={e => setEditPastClockOutTime(e.target.value)}
+                            className="border border-slate-200 rounded-lg px-1.5 py-0.5 text-sm font-bold text-slate-800 w-[5.5rem]" />
+                          <button onClick={() => savePastClockOut(r!.id)} className="text-xs text-[#3182F6] font-bold">확인</button>
+                          <button onClick={() => { setEditPastClockOutId(null); setEditPastClockOutTime(""); }} className="text-xs text-slate-400">취소</button>
+                        </div>
+                      ) : editClockOutId === r?.id ? (
                         <div className="flex items-center gap-1">
                           <input type="time" value={editClockOutTimeTeam} onChange={e => setEditClockOutTimeTeam(e.target.value)}
                             className="border border-slate-200 rounded-lg px-1.5 py-0.5 text-sm font-bold text-slate-800 w-[5.5rem]" />
                           <button onClick={() => updateClockOutTeam(r!.id)} className="text-xs text-[#3182F6] font-bold">확인</button>
                           <button onClick={() => setEditClockOutId(null)} className="text-xs text-slate-400">취소</button>
                         </div>
+                      ) : r?.clockIn && !r?.clockOut && d !== todayStr && (() => {
+                        const recDate = new Date(`${d}T00:00:00`);
+                        const diffDays = Math.floor((new Date().getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24));
+                        return diffDays <= 7 && diffDays >= 1;
+                      })() ? (
+                        <button
+                          onClick={() => { setEditPastClockOutId(r!.id); setEditPastClockOutTime("18:00"); }}
+                          className="text-[11px] font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg px-2 py-1 transition-all"
+                        >
+                          퇴근 입력
+                        </button>
                       ) : (
                         <span className="inline-flex items-center gap-1">
                           {r?.clockOut || "-"}
                           {r?.clockOut && (
-                            <button onClick={() => { setEditClockOutId(r.id); setEditClockOutTimeTeam(r.clockOut); }}
+                            <button onClick={() => {
+                              const recDate = new Date(`${d}T00:00:00`);
+                              const diffDays = Math.floor((new Date().getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24));
+                              if (diffDays <= 7) {
+                                setEditPastClockOutId(r.id); setEditPastClockOutTime(r.clockOut);
+                              } else if (myRole === "대표") {
+                                setEditClockOutId(r.id); setEditClockOutTimeTeam(r.clockOut);
+                              }
+                            }}
+                              className="text-xs text-slate-300 hover:text-[#3182F6] transition-colors" title="퇴근 시간 수정">✏️</button>
+                          )}
+                          {!r?.clockOut && myRole === "대표" && r?.clockIn && (
+                            <button onClick={() => { setEditClockOutId(r.id); setEditClockOutTimeTeam("18:00"); }}
                               className="text-xs text-slate-300 hover:text-[#3182F6] transition-colors" title="퇴근 시간 수정">✏️</button>
                           )}
                         </span>

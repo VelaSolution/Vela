@@ -137,6 +137,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
   const [activeFolder, setActiveFolder] = useState<string>("받은편지함");
   const [selectedMail, setSelectedMail] = useState<Mail | null>(null);
   const [search, setSearch] = useState("");
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [showCompose, setShowCompose] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
@@ -468,6 +469,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
 
   const selectMail = (mail: Mail) => {
     setSelectedMail(mail);
+    setMobileShowDetail(true);
     setAiSummary(null);
     setShowSummary(true);
     markAsRead(mail);
@@ -709,7 +711,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
                 className="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={L}>이름</label>
                   <input className={I} placeholder="홍길동"
@@ -723,7 +725,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
                     onChange={e => setSigEditing(prev => ({ ...prev, position: e.target.value }))} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className={L}>전화번호</label>
                   <input className={I} placeholder="010-1234-5678"
@@ -942,7 +944,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
       {/* Compose Modal */}
       {showCompose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg md:max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800">
                 {replyMode === "reply" ? "답장" : replyMode === "forward" ? "전달" : "새 메일 작성"}
@@ -1067,7 +1069,7 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
                   </div>
                 )}
 
-                <textarea className={`${I} min-h-[200px] resize-y`}
+                <textarea className={`${I} min-h-[120px] md:min-h-[200px] resize-y`}
                   placeholder="내용을 입력하세요..."
                   value={composeBody} onChange={e => setComposeBody(e.target.value)} rows={8}
                 />
@@ -1119,9 +1121,35 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
         </div>
       )}
 
+      {/* Mobile folder selector (shown on mobile only) */}
+      <div className="md:hidden flex items-center gap-2 flex-wrap">
+        <button className={`${B} !text-sm !px-3 !py-2`} onClick={openCompose}>+ 새 메일</button>
+        <select
+          className={`${I} !py-2 !text-sm flex-1 min-w-[140px]`}
+          value={activeFolder}
+          onChange={e => { setActiveFolder(e.target.value); setSelectedMail(null); setMobileShowDetail(false); }}
+        >
+          {allFolders.map(f => {
+            const count = f.key === "받은편지함" ? unreadCount : 0;
+            return (
+              <option key={f.key} value={f.key}>
+                {f.icon} {f.key}{count > 0 ? ` (${count})` : ""}
+              </option>
+            );
+          })}
+        </select>
+        <div className="flex gap-1">
+          <button className={`${B2} !text-xs !px-2 !py-1.5`} onClick={openSignatureModal}>서명</button>
+          <button className={`${B2} !text-xs !px-2 !py-1.5`} onClick={openRuleModal}>규칙</button>
+          <button className={`${B2} !text-xs !px-2 !py-1.5`} onClick={openOOOModal}>
+            {isOOOActive(userName) ? "🏖️" : "부재중"}
+          </button>
+        </div>
+      </div>
+
       <div className="flex gap-4 min-h-[600px]">
-        {/* Left Panel - Folder Tree */}
-        <div className="w-56 flex-shrink-0 space-y-2">
+        {/* Left Panel - Folder Tree (hidden on mobile) */}
+        <div className="hidden md:block w-56 flex-shrink-0 space-y-2">
           <button className={`${B} w-full mb-3`} onClick={openCompose}>+ 새 메일</button>
           <div className="flex gap-1.5 mb-3">
             <button className={`${B2} flex-1 !text-sm !px-3 !py-2`} onClick={openSignatureModal}>서명 설정</button>
@@ -1158,8 +1186,8 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
 
         {/* Center / Right Panel */}
         <div className="flex-1 flex gap-4">
-          {/* Mail List */}
-          <div className={`${selectedMail ? "w-2/5" : "flex-1"} flex flex-col`}>
+          {/* Mail List - hidden on mobile when detail is shown */}
+          <div className={`${selectedMail ? "hidden md:flex md:w-2/5" : "flex"} ${!mobileShowDetail ? "flex" : "hidden md:flex"} flex-col flex-1 md:flex-none ${selectedMail ? "md:w-2/5" : "md:flex-1"}`}>
             <div className={`${C} !p-3 mb-3`}>
               <input className={`${I} !py-2 !text-sm`}
                 placeholder="제목, 보낸사람 검색..."
@@ -1226,11 +1254,20 @@ export default function MailTab({ userId, userName, myRole, flash }: Props) {
 
           {/* Mail Detail */}
           {selectedMail && (
-            <div className={`flex-1 ${C} overflow-y-auto`}>
+            <div className={`${mobileShowDetail ? "flex" : "hidden"} md:flex flex-1 flex-col ${C} overflow-y-auto`}>
+              {/* Mobile back button */}
+              <button
+                onClick={() => { setMobileShowDetail(false); setSelectedMail(null); }}
+                className="md:hidden flex items-center gap-1 text-sm font-semibold text-[#3182F6] mb-3 hover:text-[#2672DE] transition-colors"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                목록
+              </button>
+
               <div className="flex items-start justify-between mb-4">
                 <h2 className="text-lg font-bold text-slate-800 flex-1 mr-4">{selectedMail.subject}</h2>
-                <button onClick={() => setSelectedMail(null)}
-                  className="text-slate-400 hover:text-slate-600 text-lg flex-shrink-0">&times;</button>
+                <button onClick={() => { setSelectedMail(null); setMobileShowDetail(false); }}
+                  className="text-slate-400 hover:text-slate-600 text-lg flex-shrink-0 hidden md:block">&times;</button>
               </div>
 
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">

@@ -415,7 +415,7 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
             {/* Date grid */}
             <div className="grid grid-cols-7">
               {cells.map((d, i) => {
-                if (d === null) return <div key={`e-${i}`} className="h-24" />;
+                if (d === null) return <div key={`e-${i}`} className="h-20 md:h-24" />;
                 const ds = dateStr(d);
                 const isToday = ds === todayStr;
                 const isSelected = ds === selectedDate;
@@ -428,23 +428,23 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
                   <div
                     key={ds}
                     onClick={() => { setSelectedDate(ds); setShowForm(false); setEditingEvent(null); setEditRecurringMode(null); }}
-                    className={`h-24 flex flex-col pt-1 px-0.5 rounded-xl transition-all cursor-pointer border ${
+                    className={`h-20 md:h-24 flex flex-col pt-1 px-0.5 rounded-xl transition-all cursor-pointer border ${
                       isSelected ? "bg-[#3182F6]/5 border-[#3182F6]/30" : isToday ? "bg-blue-50/50 border-transparent" : "hover:bg-slate-50 border-transparent"
                     }`}
                   >
-                    <span className={`text-xs font-medium leading-none self-center mb-0.5 ${
-                      isToday ? "bg-[#3182F6] text-white w-6 h-6 flex items-center justify-center rounded-full text-[11px]"
+                    <span className={`text-[10px] md:text-xs font-medium leading-none self-center mb-0.5 ${
+                      isToday ? "bg-[#3182F6] text-white w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full text-[10px] md:text-[11px]"
                         : dayOfWeek === 0 ? "text-red-400" : dayOfWeek === 6 ? "text-blue-400" : "text-slate-700"
                     }`}>{d}</span>
                     {/* Event titles in cells */}
                     <div className="flex-1 overflow-hidden space-y-0.5 min-h-0">
                       {dayEvents.slice(0, 2).map((e, idx) => (
-                        <div key={`${e.id}-${idx}`} className={`text-[9px] leading-tight px-1 py-0.5 rounded truncate font-medium ${colorLight(e.color)}`}>
+                        <div key={`${e.id}-${idx}`} className={`text-[8px] md:text-[9px] leading-tight px-0.5 md:px-1 py-0.5 rounded truncate font-medium ${colorLight(e.color)}`}>
                           {(e._isRecurring || (e.recurrence && e.recurrence !== "none")) ? "🔄 " : ""}{e.title}
                         </div>
                       ))}
                       {dayEvents.length > 2 && (
-                        <p className="text-[9px] text-slate-400 px-1 font-medium">+{dayEvents.length - 2} more</p>
+                        <p className="text-[8px] md:text-[9px] text-slate-400 px-0.5 md:px-1 font-medium">+{dayEvents.length - 2} more</p>
                       )}
                       {dayEvents.length === 0 && (hasTask || hasGoal) && (
                         <div className="flex gap-0.5 mt-0.5 px-1">
@@ -464,7 +464,7 @@ export default function CalendarTab({ userId, userName, myRole, flash }: Props) 
           <>
             <p className="md:hidden text-xs text-slate-400 mb-2">← 좌우로 스크롤하세요</p>
             <div className="overflow-x-auto">
-            <div className="min-w-[640px]">
+            <div className="min-w-[500px]">
             {/* Week view headers */}
             <div className="grid grid-cols-8 border-b border-slate-200">
               <div className="w-14 shrink-0" />

@@ -354,10 +354,10 @@ function HQPage() {
       </header>
 
       {/* ── 모바일 사이드바 오버레이 ──────────────────── */}
-      <div className={`fixed inset-0 z-40 md:hidden transition-opacity duration-200 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} onClick={() => setSidebarOpen(false)}>
+      <div className={`fixed inset-0 z-[55] md:hidden transition-opacity duration-200 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} onClick={() => setSidebarOpen(false)}>
         <div className="absolute inset-0 bg-black/40" />
         <aside
-          className={`hq-sidebar absolute left-0 top-0 bottom-0 w-[260px] bg-[#20202D] flex flex-col transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`hq-sidebar absolute left-0 top-0 bottom-0 w-[260px] z-[55] bg-[#20202D] flex flex-col transition-transform duration-300 ease-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
           style={{ paddingTop: "env(safe-area-inset-top)" }}
           onClick={e => e.stopPropagation()}>
           {/* 프로필 */}
@@ -408,7 +408,7 @@ function HQPage() {
         </aside>
 
         {/* ── 메인 콘텐츠 ──────────────────────────────── */}
-        <main className="hq-content flex-1 min-w-0 pb-20 md:pb-0 overflow-y-auto bg-[#F0F2F5]">
+        <main className="hq-content flex-1 min-w-0 pb-24 md:pb-0 overflow-y-auto bg-[#F0F2F5]">
           {/* 모바일 현재 탭 표시 */}
           {tab !== "dashboard" && (
             <div className="md:hidden px-4 pt-4 pb-1 flex items-center gap-2">
@@ -447,7 +447,7 @@ function HQPage() {
             return (
               <button key={item.key} onClick={() => setTab(item.key)}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-all active:scale-90 ${isActive ? "text-[#2D84FF]" : "text-slate-400"}`}>
-                <TabIcon name={tabInfo?.icon ?? "dashboard"} size={20} className={isActive ? "text-[#2D84FF]" : "text-slate-400"} />
+                <TabIcon name={tabInfo?.icon ?? "dashboard"} size={22} className={isActive ? "text-[#2D84FF]" : "text-slate-400"} />
                 <span className={`text-[10px] font-semibold ${isActive ? "text-[#2D84FF]" : "text-slate-400"}`}>{item.label}</span>
               </button>
             );
@@ -472,7 +472,7 @@ function HQPage() {
             </div>
             <div className="px-4 pb-2">
               <p className="text-sm font-bold text-slate-900 mb-3">전체 메뉴</p>
-              <div className="grid grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pb-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto pb-4">
                 {allowedTabs.filter(t => !MOBILE_NAV.some(m => m.key === t.key)).map(t => (
                   <button key={t.key} onClick={() => setTab(t.key)}
                     className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all active:scale-95 ${

@@ -87,6 +87,7 @@ export default function KanbanTab({ userId, userName, myRole, flash }: Props) {
   const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [dragCard, setDragCard] = useState<{ cardId: string; fromCol: string } | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [mobileMovingCard, setMobileMovingCard] = useState<{ cardId: string; fromCol: string } | null>(null);
 
   const allColDefs = [...DEFAULT_COLUMNS, ...customCols];
 
@@ -173,6 +174,24 @@ export default function KanbanTab({ userId, userName, myRole, flash }: Props) {
       await load();
     }
     setDragCard(null);
+  };
+
+  // ── Mobile Move Card ──
+  const handleMobileMove = async (toColId: string) => {
+    if (!mobileMovingCard) return;
+    const targetCol = allColDefs.find(c => c.id === toColId);
+    if (!targetCol || mobileMovingCard.fromCol === toColId) { setMobileMovingCard(null); return; }
+    const s = sb();
+    if (!s) { setMobileMovingCard(null); return; }
+    const newStatus = targetCol.statusKey;
+    const { error } = await s.from("hq_tasks").update({ status: newStatus }).eq("id", mobileMovingCard.cardId);
+    if (error) {
+      flash("상태 변경 실패: " + error.message);
+    } else {
+      flash("상태가 변경되었습니다");
+      await load();
+    }
+    setMobileMovingCard(null);
   };
 
   // ── Add Card ──
@@ -278,6 +297,36 @@ export default function KanbanTab({ userId, userName, myRole, flash }: Props) {
         </div>
       )}
 
+      {/* Mobile scroll hint */}
+      <p className="md:hidden text-xs text-slate-400 font-medium flex items-center gap-1">
+        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" viewBox="0 0 24 24"><path d="M18 8l-6-6-6 6" /><path d="M6 16l6 6 6-6" /></svg>
+        좌우로 스크롤하세요
+      </p>
+
+      {/* Mobile move column selector dropdown */}
+      {mobileMovingCard && (
+        <div className="md:hidden fixed inset-0 bg-black/30 z-50 flex items-end justify-center" onClick={() => setMobileMovingCard(null)}>
+          <div className="bg-white rounded-t-2xl w-full max-w-md shadow-2xl p-5 space-y-2" onClick={e => e.stopPropagation()}>
+            <h4 className="text-sm font-bold text-slate-800 mb-3">이동할 컬럼 선택</h4>
+            {allColDefs.map(col => (
+              <button
+                key={col.id}
+                onClick={() => handleMobileMove(col.id)}
+                disabled={col.id === mobileMovingCard.fromCol}
+                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  col.id === mobileMovingCard.fromCol
+                    ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                    : "bg-slate-50 text-slate-700 hover:bg-[#3182F6]/10 hover:text-[#3182F6] active:scale-[0.98]"
+                }`}
+              >
+                {col.title} {col.id === mobileMovingCard.fromCol && "(현재)"}
+              </button>
+            ))}
+            <button onClick={() => setMobileMovingCard(null)} className="w-full text-center text-sm text-slate-400 font-semibold py-2 mt-1">취소</button>
+          </div>
+        </div>
+      )}
+
       {/* Board */}
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map(col => {
@@ -344,11 +393,20 @@ export default function KanbanTab({ userId, userName, myRole, flash }: Props) {
                           <span className="text-[10px] text-slate-400 font-medium">{card.deadline.slice(5)}</span>
                         )}
                       </div>
-                      {card.assignee && (
-                        <span className="w-6 h-6 rounded-full bg-[#3182F6]/10 text-[#3182F6] text-[10px] font-bold flex items-center justify-center" title={displayName(card.assignee)}>
-                          {card.assignee.charAt(0)}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {/* Mobile move button */}
+                        <button
+                          onClick={e => { e.stopPropagation(); setMobileMovingCard({ cardId: card.id, fromCol: col.id }); }}
+                          className="md:hidden text-[10px] font-bold text-slate-400 hover:text-[#3182F6] bg-slate-50 hover:bg-[#3182F6]/10 px-2 py-1 rounded-lg transition-all"
+                        >
+                          이동
+                        </button>
+                        {card.assignee && (
+                          <span className="w-6 h-6 rounded-full bg-[#3182F6]/10 text-[#3182F6] text-[10px] font-bold flex items-center justify-center" title={displayName(card.assignee)}>
+                            {card.assignee.charAt(0)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -378,9 +436,9 @@ export default function KanbanTab({ userId, userName, myRole, flash }: Props) {
 
       {/* Detail Modal */}
       {showDetail && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowDetail(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3 md:p-4" onClick={() => setShowDetail(null)}>
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-slate-800">카드 상세</h3>
                 <button onClick={() => setShowDetail(null)} className="text-slate-400 hover:text-slate-600 text-lg">✕</button>

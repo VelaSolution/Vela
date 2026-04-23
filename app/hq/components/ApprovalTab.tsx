@@ -26,11 +26,12 @@ interface EnrichedApproval extends Approval {
 }
 
 // ── 양식 템플릿 정의 ──────────────────────────────────
-type TemplateType = "자유양식" | "휴가신청서" | "지출결의서" | "출장신청서" | "구매요청서" | "업무협조전" | "시말서" | "경조사신청서" | "회의록" | "교육신청서" | "기안서";
+type TemplateType = "자유양식" | "휴가신청서" | "지출결의서" | "출장신청서" | "구매요청서" | "업무협조전" | "시말서" | "경조사신청서" | "회의록" | "교육신청서" | "기안서" | "일일보고서" | "주간보고서" | "월간보고서";
 
 const TEMPLATE_TYPES: TemplateType[] = [
   "자유양식", "휴가신청서", "지출결의서", "출장신청서", "구매요청서",
   "업무협조전", "시말서", "경조사신청서", "회의록", "교육신청서", "기안서",
+  "일일보고서", "주간보고서", "월간보고서",
 ];
 
 interface TemplateField {
@@ -131,6 +132,32 @@ const TEMPLATE_FIELDS: Record<Exclude<TemplateType, "자유양식">, TemplateFie
     { key: "effect", label: "기대 효과", type: "textarea", placeholder: "기대되는 효과를 기술하세요" },
     { key: "budget", label: "소요 예산 (원)", type: "number", placeholder: "0" },
     { key: "schedule", label: "추진 일정", type: "textarea", placeholder: "단계별 추진 일정을 작성하세요" },
+  ],
+  "일일보고서": [
+    { key: "report_date", label: "보고일", type: "date" },
+    { key: "completed", label: "금일 완료 업무", type: "textarea", placeholder: "오늘 완료한 업무를 작성하세요" },
+    { key: "in_progress", label: "진행 중 업무", type: "textarea", placeholder: "현재 진행 중인 업무를 작성하세요" },
+    { key: "planned", label: "익일 예정 업무", type: "textarea", placeholder: "내일 예정된 업무를 작성하세요" },
+    { key: "issues", label: "이슈/건의 사항", type: "textarea", placeholder: "이슈나 건의 사항이 있으면 작성하세요" },
+  ],
+  "주간보고서": [
+    { key: "week_start", label: "주간 시작일", type: "date" },
+    { key: "week_end", label: "주간 종료일", type: "date" },
+    { key: "summary", label: "주간 업무 요약", type: "textarea", placeholder: "이번 주 핵심 업무 성과를 요약하세요" },
+    { key: "completed", label: "완료 업무", type: "textarea", placeholder: "이번 주 완료한 업무 목록" },
+    { key: "in_progress", label: "진행 중 업무", type: "textarea", placeholder: "다음 주로 이어지는 업무" },
+    { key: "next_week", label: "차주 계획", type: "textarea", placeholder: "다음 주 예정된 업무 계획" },
+    { key: "issues", label: "이슈/건의 사항", type: "textarea", placeholder: "이슈나 건의 사항" },
+    { key: "kpi", label: "KPI 달성 현황", type: "textarea", placeholder: "주간 KPI 달성 현황 (수치 포함)" },
+  ],
+  "월간보고서": [
+    { key: "month", label: "보고 월", type: "text", placeholder: "2026년 4월" },
+    { key: "summary", label: "월간 업무 요약", type: "textarea", placeholder: "이번 달 핵심 성과를 요약하세요" },
+    { key: "achievements", label: "주요 성과", type: "textarea", placeholder: "이번 달 주요 달성 사항" },
+    { key: "metrics", label: "성과 지표", type: "textarea", placeholder: "매출, KPI 등 정량적 성과 (수치 포함)" },
+    { key: "challenges", label: "과제/이슈", type: "textarea", placeholder: "이번 달 겪은 과제와 해결 현황" },
+    { key: "next_month", label: "차월 계획", type: "textarea", placeholder: "다음 달 업무 계획 및 목표" },
+    { key: "budget_status", label: "예산 집행 현황", type: "textarea", placeholder: "예산 대비 집행 현황" },
   ],
 };
 
@@ -443,6 +470,7 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
 
   const addToApprovalLine = (name: string) => {
     if (approvalLine.includes(name)) return flash("이미 결재선에 추가된 결재자입니다");
+    if (name === userName && myRole !== "대표") return flash("대표만 자가결재가 가능합니다");
     setApprovalLine(prev => [...prev, name]);
     setApproverSearch("");
     setShowApproverList(false);

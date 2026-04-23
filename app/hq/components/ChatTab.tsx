@@ -153,7 +153,7 @@ export default function ChatTab({ userId, userName, myRole, flash }: Props) {
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
             </button>
             {showStatusDropdown && (
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-30 w-36">
+              <div className="absolute left-0 md:right-0 md:left-auto top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-30 w-36">
                 {ALL_STATUSES.map(st => {
                   const cfg = STATUS_CONFIG[st];
                   return (
@@ -176,7 +176,7 @@ export default function ChatTab({ userId, userName, myRole, flash }: Props) {
       {showPresencePanel && (
         <div className="flex-shrink-0 mb-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">팀원 상태</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             {allMembers.map(m => {
               const st = memberStatuses[m.name] || "오프라인";
               const cfg = STATUS_CONFIG[st];
