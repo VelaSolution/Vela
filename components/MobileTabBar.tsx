@@ -5,16 +5,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase-client";
 
-const TABS = [
-  { href: "/", icon: "🏠", label: "홈" },
+const TABS_LOGGED_IN = [
+  { href: "/home", icon: "🏠", label: "홈" },
   { href: "/simulator", icon: "📊", label: "시뮬레이터" },
   { href: "/tools", icon: "🛠️", label: "도구" },
+  { href: "/tools/cashbook", icon: "📒", label: "가계부" },
   { href: "/dashboard", icon: "📈", label: "대시보드" },
   { href: "/profile", icon: "👤", label: "내 정보" },
 ];
 
+const TABS_LOGGED_OUT = [
+  { href: "/", icon: "🏠", label: "홈" },
+  { href: "/simulator", icon: "📊", label: "시뮬레이터" },
+  { href: "/tools", icon: "🛠️", label: "도구" },
+  { href: "/guide", icon: "📖", label: "가이드" },
+  { href: "/login", icon: "🔑", label: "로그인" },
+];
+
 export default function MobileTabBar() {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isHqMember, setIsHqMember] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -30,6 +40,7 @@ export default function MobileTabBar() {
         if (!sb) return;
         const { data: { user } } = await sb.auth.getUser();
         if (!user?.email) return;
+        setIsLoggedIn(true);
 
         const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").split(",").map(e => e.trim().toLowerCase());
         if (adminEmails.includes(user.email.toLowerCase())) { setIsHqMember(true); return; }
@@ -46,9 +57,10 @@ export default function MobileTabBar() {
 
   if (isHidden) return null;
 
+  const baseTabs = isLoggedIn ? TABS_LOGGED_IN : TABS_LOGGED_OUT;
   const tabs = isHqMember
-    ? [...TABS.slice(0, 3), { href: "/hq", icon: "⚓", label: "Bridge" }, ...TABS.slice(3)]
-    : TABS;
+    ? [...baseTabs.slice(0, 3), { href: "/hq", icon: "⚓", label: "Bridge" }, ...baseTabs.slice(3)]
+    : baseTabs;
 
   // 현재 활성 탭
   const activeTab = tabs.find(t =>

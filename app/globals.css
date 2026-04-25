@@ -87,6 +87,8 @@ html.capacitor-app .vela-nav-actions { display: none !important; }
 html.capacitor-app .vela-hamburger { display: none !important; }
 /* 앱에서 body 상단 패딩 */
 html.capacitor-app body { padding-top: calc(48px + env(safe-area-inset-top)) !important; }
+/* 앱에서 랜딩 히어로 상단 safe area */
+html.capacitor-app .hero { padding-top: calc(120px + env(safe-area-inset-top)) !important; }
 /* 앱에서 ToolNav 하단 탭바 safe area */
 html.capacitor-app nav.fixed.bottom-0 {
   padding-bottom: env(safe-area-inset-bottom) !important;
@@ -542,3 +544,8 @@ html.dark .vela-theme-toggle:hover { border-color: #94A3B8 !important; }
 html.is-hq .vela-nav,
 html.is-hq .vela-mobile-tab { display: none !important; }
 html.is-hq body { padding-top: 0 !important; }
+
+/* HQ iOS 앱: safe area 대응 */
+html.capacitor-app.is-hq body { padding-top: env(safe-area-inset-top) !important; background: #fff !important; }
+html.capacitor-app.is-hq .hq-header-inner { padding-top: env(safe-area-inset-top) !important; }
+html.capacitor-app.is-hq header { height: calc(56px + env(safe-area-inset-top)) !important; }
