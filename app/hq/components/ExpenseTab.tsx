@@ -172,9 +172,16 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
     const urls: string[] = [];
     for (const file of files) {
       const ext = file.name.split(".").pop() || "file";
-      const path = `receipts/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await s.storage.from("hq-files").upload(path, file);
-      if (!error) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `receipts/${Date.now()}_${safeName}`;
+      const { error } = await s.storage.from("hq-files").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) {
+        console.error("영수증 업로드 에러:", error);
+        flash(`업로드 실패 (${file.name}): ${error.message}`);
+      } else {
         const { data: { publicUrl } } = s.storage.from("hq-files").getPublicUrl(path);
         urls.push(publicUrl);
       }
@@ -190,11 +197,10 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
     const s = sb();
     if (!s) { setExpSaving(false); return; }
 
-    // 영수증 업로드
+    // 영수증 업로드 (실패해도 경비 등록은 진행)
     let receiptUrls: string[] = [];
     if (expForm.receiptFiles.length > 0) {
       receiptUrls = await uploadReceipts(expForm.receiptFiles);
-      if (receiptUrls.length === 0) { flash("영수증 업로드 실패"); setExpSaving(false); return; }
     }
 
     const row: any = { author: userName, date: expForm.date, category: expForm.category, amount: amt, currency: expForm.currency, description: expForm.description.trim(), payment: expForm.payment, memo: expForm.memo.trim(), status: "대기" };
