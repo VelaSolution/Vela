@@ -554,6 +554,7 @@ CREATE TABLE IF NOT EXISTS hq_wiki (
   author      text DEFAULT '',
   last_editor text DEFAULT '',                       -- 마지막 수정자
   tags        jsonb DEFAULT '[]'::jsonb,             -- 태그 배열
+  attachments jsonb DEFAULT '[]'::jsonb,            -- 첨부파일 URL 배열
   views       integer DEFAULT 0,
   created_at  timestamptz DEFAULT now(),
   updated_at  timestamptz DEFAULT now()

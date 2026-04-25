@@ -62,6 +62,8 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
   const [fCategory, setFCategory] = useState("일반");
   const [fTags, setFTags] = useState("");
   const [fContent, setFContent] = useState("");
+  const [fFiles, setFFiles] = useState<File[]>([]);
+  const [fExistingFiles, setFExistingFiles] = useState<string[]>([]);
 
   const loadArticles = async () => {
     const s = sb();
@@ -81,6 +83,7 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
           updatedAt: d.updated_at?.slice(0, 10) ?? today(),
           tags: d.tags ?? [],
           views: d.views ?? 0,
+          attachments: d.attachments ?? [],
         })));
       }
     } catch (e) {
@@ -142,7 +145,22 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     title: string; content: string; editor: string; timestamp: string;
   }>>([]);
 
-  const resetForm = () => { setFTitle(""); setFCategory("일반"); setFTags(""); setFContent(""); };
+  const resetForm = () => { setFTitle(""); setFCategory("일반"); setFTags(""); setFContent(""); setFFiles([]); setFExistingFiles([]); };
+
+  const uploadWikiFiles = async (files: File[]): Promise<string[]> => {
+    const s = sb();
+    if (!s || files.length === 0) return [];
+    const urls: string[] = [];
+    for (const file of files) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `wiki/${Date.now()}_${safeName}`;
+      const { error } = await s.storage.from("hq-files").upload(path, file, { cacheControl: "3600", upsert: false });
+      if (error) { flash(`업로드 실패 (${file.name}): ${error.message}`); continue; }
+      const { data: { publicUrl } } = s.storage.from("hq-files").getPublicUrl(path);
+      urls.push(publicUrl);
+    }
+    return urls;
+  };
 
   const openCreate = () => {
     resetForm();
@@ -184,6 +202,8 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     setFCategory(selected.category);
     setFTags(selected.tags.join(", "));
     setFContent(selected.content);
+    setFFiles([]);
+    setFExistingFiles((selected as any).attachments ?? []);
     setView("edit");
     setShowEditConfirm(false);
   };
@@ -195,6 +215,8 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     const s = sb();
     if (!s) { flash("DB 연결 실패"); return; }
     try {
+      let attachments: string[] = [];
+      if (fFiles.length > 0) attachments = await uploadWikiFiles(fFiles);
       const { error } = await s.from("hq_wiki").insert({
         title: fTitle.trim(),
         content: fContent.trim(),
@@ -203,6 +225,7 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
         last_editor: userName,
         tags,
         views: 0,
+        attachments: [...attachments],
       });
       if (error) throw error;
       await loadArticles();
@@ -232,6 +255,9 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
     }]);
 
     try {
+      let newUploads: string[] = [];
+      if (fFiles.length > 0) newUploads = await uploadWikiFiles(fFiles);
+      const allAttachments = [...fExistingFiles, ...newUploads];
       const { error } = await s.from("hq_wiki").update({
         title: fTitle.trim(),
         content: fContent.trim(),
@@ -239,6 +265,7 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
         tags,
         last_editor: userName,
         updated_at: new Date().toISOString(),
+        attachments: allAttachments,
       }).eq("id", selected.id);
       if (error) throw error;
       await loadArticles();
@@ -383,6 +410,26 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
                   {renderContent(selected.content)}
                 </div>
               </div>
+
+              {/* 첨부파일 */}
+              {((selected as any).attachments ?? []).length > 0 && (
+                <div className="border-t border-slate-100 pt-4 mt-4">
+                  <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">첨부파일 ({(selected as any).attachments.length})</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {((selected as any).attachments as string[]).map((url, i) => {
+                      const name = decodeURIComponent(url.split("/").pop() || "파일").replace(/^\d+_/, "");
+                      const isImage = /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(name);
+                      return (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-[#3182F6]/40 hover:bg-blue-50/50 transition-all text-sm text-slate-700 hover:text-[#3182F6]">
+                          <span>{isImage ? "🖼️" : "📎"}</span>
+                          <span className="truncate max-w-[200px]">{name}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 수정 이력 모달 */}
@@ -511,6 +558,44 @@ export default function WikiTab({ userId, userName, myRole, flash }: Props) {
                 rows={16}
                 className={`${I} font-mono`}
               />
+            </div>
+            <div>
+              <label className={L}>첨부파일</label>
+              <div className="flex items-center gap-3">
+                <label className={`${B2} cursor-pointer inline-flex items-center gap-1.5`}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                  파일 선택
+                  <input type="file" className="hidden" multiple
+                    onChange={e => { const files = Array.from(e.target.files || []); setFFiles(prev => [...prev, ...files]); e.target.value = ""; }} />
+                </label>
+                <span className="text-xs text-slate-400">이미지, PDF, 문서 등 여러 파일 가능</span>
+              </div>
+              {/* 기존 첨부파일 */}
+              {fExistingFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {fExistingFiles.map((url, i) => {
+                    const name = decodeURIComponent(url.split("/").pop() || "파일");
+                    return (
+                      <div key={`ex-${i}`} className="flex items-center gap-1.5 bg-blue-50 rounded-lg px-2.5 py-1.5 text-xs text-blue-600">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="truncate max-w-[150px] hover:underline">{name.replace(/^\d+_/, "")}</a>
+                        <button onClick={() => setFExistingFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-blue-300 hover:text-red-500 ml-0.5">✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {/* 새 파일 */}
+              {fFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {fFiles.map((f, i) => (
+                    <div key={`new-${i}`} className="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2.5 py-1.5 text-xs text-slate-600">
+                      <span className="truncate max-w-[150px]">{f.name}</span>
+                      <span className="text-slate-300">({(f.size / 1024).toFixed(0)}KB)</span>
+                      <button onClick={() => setFFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-slate-300 hover:text-red-500 ml-0.5">✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-5">
