@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import type { HQRole } from "@/app/hq/types";
-import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames, notifyMany } from "@/app/hq/utils";
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
@@ -109,15 +109,7 @@ export default function BookingTab({ userId, userName, myRole, flash }: Props) {
 
       // 참석자에게 알림 생성
       if (form.participants.length > 0 && inserted) {
-        const notifications = form.participants.map(p => ({
-          type: "booking",
-          message: `회의실 ${form.resource_name} 예약됨: ${form.start_time} ~ ${form.end_time}`,
-          target_user: p,
-          created_by: userName,
-          created_at: new Date().toISOString(),
-          read: false,
-        }));
-        await s.from("hq_notifications").insert(notifications).throwOnError().catch(() => {});
+        await notifyMany(form.participants, "booking", `${form.resource_name} 예약: ${form.date} ${form.start_time}~${form.end_time}`, userName);
 
         // 초대 엔트리 생성
         const invEntries = form.participants.map(p => ({

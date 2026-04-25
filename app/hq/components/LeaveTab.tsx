@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { HQRole, LeaveRequest } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notify, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -171,6 +171,11 @@ export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
       approver: null,
     });
     if (error) { flash("신청 실패: " + error.message); return; }
+    // 팀장 이상에게 알림
+    const { data: managers } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사", "팀장"]);
+    if (managers) {
+      await notifyMany(managers.map((m: any) => m.name), "leave", `${userName}님이 ${type} 휴가를 신청했습니다 (${startDate} ~ ${endDate})`, userName);
+    }
     flash("휴가 신청이 완료되었습니다");
     setReason("");
     setStartDate(today());
@@ -203,13 +208,9 @@ export default function LeaveTab({ userId, userName, myRole, flash }: Props) {
       .update(updateData)
       .eq("id", id);
     if (error) { flash("처리 실패: " + error.message); return; }
-    // 알림 발송
     const target = requests.find(r => r.id === id);
     if (target) {
-      await s.from("hq_notifications").insert({
-        type: "leave", target_user: target.requester, created_by: userName,
-        message: `휴가 신청 (${target.type}) ${status === "승인" ? "승인되었습니다" : "반려되었습니다"}`,
-      }).catch(() => {});
+      await notify(target.requester, "leave", `휴가 신청 (${target.type}) ${status === "승인" ? "승인되었습니다" : "반려되었습니다"}`, userName);
     }
     setApprovalComments(prev => { const next = { ...prev }; delete next[id]; return next; });
     flash(status === "승인" ? "승인 완료" : "반려 완료");

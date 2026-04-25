@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { HQRole, Approval } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notify } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -596,6 +596,10 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
       approved_steps: "0",
     });
     if (error) return flash("저장 실패: " + error.message);
+    // 첫 결재자에게 알림
+    if (approvalLine.length > 0) {
+      await notify(approvalLine[0], "approval", `새 결재 요청: "${title.trim()}"${urgent ? " [긴급]" : ""}`, userName);
+    }
     flash("결재가 요청되었습니다");
     setTitle(""); setContent(""); setSelectedApprover(""); setFile(null); setUrgent(false);
     setApproverSearch(""); setApprovalLine([]);
@@ -642,11 +646,7 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
         flash(`${currentStep + 1}단계 승인 완료 — 다음 결재자: ${line[nextStep]}`);
       }
     }
-    // 알림 발송
-    await s.from("hq_notifications").insert({
-      type: "approval", target_user: item.author, created_by: userName,
-      message: `결재 "${item.title}" ${status === "승인" ? (currentStep + 1 >= line.length ? "최종 승인되었습니다" : `${currentStep + 1}단계 승인되었습니다`) : "반려되었습니다"}`,
-    }).catch(() => {});
+    await notify(item.author, "approval", `결재 "${item.title}" ${status === "승인" ? (currentStep + 1 >= line.length ? "최종 승인되었습니다" : `${currentStep + 1}단계 승인되었습니다`) : "반려되었습니다"}`, userName);
     setComment("");
     load();
   };

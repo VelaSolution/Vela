@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import type { HQRole } from "@/app/hq/types";
-import { sb, today, I, C, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, B, B2, BADGE, useTeamDisplayNames, notify } from "@/app/hq/utils";
 
 type Kudos = {
   id: string; from_name: string; to_name: string; message: string;
@@ -48,6 +48,7 @@ export default function KudosTab({ userId, userName, myRole, flash }: Props) {
     if (!toName || !message.trim()) { flash("대상과 메시지를 입력해주세요"); return; }
     const s = sb(); if (!s) return;
     await s.from("hq_kudos").insert({ from_name: userName, to_name: toName, message: message.trim(), emoji, category });
+    await notify(toName, "kudos", `${emoji} ${userName}님이 칭찬을 보냈습니다: "${message.trim().slice(0, 30)}"`, userName);
     flash("칭찬이 전달되었습니다!"); setShowForm(false); setMessage(""); setToName(""); setCategory("업무성과");
     load();
   };

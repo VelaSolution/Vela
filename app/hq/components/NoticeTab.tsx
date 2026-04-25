@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { HQRole, Notice } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -128,6 +128,11 @@ export default function NoticeTab({ userId, userName, myRole, flash }: Props) {
     setCategory("일반");
     setUseSchedule(false);
     setPublishAt("");
+    // 전체 팀원에게 알림
+    const { data: allMembers } = await s.from("hq_team").select("name").neq("approved", false);
+    if (allMembers) {
+      await notifyMany((allMembers as any[]).map(m => m.name), "notice", `새 공지: "${title.trim()}"${important ? " [중요]" : ""}`, userName);
+    }
     flash(useSchedule && publishAt ? "예약 공지 등록 완료" : "공지 등록 완료");
     load();
   };

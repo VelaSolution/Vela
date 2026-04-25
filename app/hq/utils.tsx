@@ -44,6 +44,34 @@ export function useTeamDisplayNames() {
   return useContext(TeamDisplayContext);
 }
 
+// ── 알림 발송 헬퍼 ─────────────────────────────────────
+export async function notify(
+  targetUser: string,
+  type: string,
+  message: string,
+  createdBy: string,
+) {
+  const s = sb();
+  if (!s || targetUser === createdBy) return; // 본인에게는 안 보냄
+  await s.from("hq_notifications").insert({
+    type, message, target_user: targetUser, created_by: createdBy,
+  }).catch(() => {});
+}
+
+export async function notifyMany(
+  targetUsers: string[],
+  type: string,
+  message: string,
+  createdBy: string,
+) {
+  const s = sb();
+  if (!s) return;
+  const rows = targetUsers
+    .filter(u => u !== createdBy)
+    .map(u => ({ type, message, target_user: u, created_by: createdBy }));
+  if (rows.length > 0) await s.from("hq_notifications").insert(rows).catch(() => {});
+}
+
 // ── 포맷팅 ─────────────────────────────────────────────
 export const fmt = (n: number) => n.toLocaleString("ko-KR");
 export const today = () => new Date().toISOString().slice(0, 10);
