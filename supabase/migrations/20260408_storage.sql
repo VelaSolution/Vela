@@ -1,7 +1,7 @@
 -- HQ 파일 공유용 Storage 버킷
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('hq-files', 'hq-files', false)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('hq-files', 'hq-files', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
 
 -- RLS: 관리자만 업로드/다운로드
 CREATE POLICY "admin_upload" ON storage.objects FOR INSERT
