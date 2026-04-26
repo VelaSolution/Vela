@@ -7,7 +7,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Safe area 배경색 설정
+        if let window = self.window {
+            window.backgroundColor = UIColor(red: 249/255, green: 250/255, blue: 251/255, alpha: 1)
+        }
         return true
     }
 

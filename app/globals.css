@@ -545,7 +545,15 @@ html.is-hq .vela-nav,
 html.is-hq .vela-mobile-tab { display: none !important; }
 html.is-hq body { padding-top: 0 !important; }
 
+/* iOS 앱 전역 safe area — 상단/하단 회색 영역 제거 */
+html.capacitor-app { background: #F9FAFB !important; }
+html.capacitor-app body { background: #F9FAFB !important; }
+html.capacitor-app.is-hq, html.capacitor-app.is-hq body { background: #F7F8FA !important; }
+
 /* HQ iOS 앱: safe area 대응 */
-html.capacitor-app.is-hq body { padding-top: env(safe-area-inset-top) !important; background: #fff !important; }
+html.capacitor-app.is-hq body { padding-top: env(safe-area-inset-top) !important; }
 html.capacitor-app.is-hq .hq-header-inner { padding-top: env(safe-area-inset-top) !important; }
 html.capacitor-app.is-hq header { height: calc(56px + env(safe-area-inset-top)) !important; }
+
+/* iOS 앱: HQ 하단바 safe area */
+html.capacitor-app.is-hq nav.fixed.bottom-0 { padding-bottom: env(safe-area-inset-bottom) !important; }

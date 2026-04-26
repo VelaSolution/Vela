@@ -10,10 +10,11 @@ const config: CapacitorConfig = {
     allowNavigation: ['velaanalytics.com', '*.velaanalytics.com', '*.supabase.co', '*.r2.dev', '*.tosspayments.com'],
   },
   ios: {
-    contentInset: 'automatic',
+    contentInset: 'always',
     preferredContentMode: 'mobile',
     scrollEnabled: true,
     allowsLinkPreview: false,
+    backgroundColor: '#F9FAFB',
   },
 };
 
