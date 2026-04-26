@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import type { HQRole } from "@/app/hq/types";
-import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames, notifyMany } from "@/app/hq/utils";
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
@@ -101,6 +101,9 @@ export default function CheckinTab({ userId, userName, myRole, flash }: Props) {
         flash("이미 오늘 체크아웃을 완료했습니다");
       } else {
         flash("체크아웃 완료!");
+        // 체크아웃 알림 → 대표/이사
+        const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+        if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "checkin", `${userName} 일일 체크아웃 완료`, userName);
       }
     }
     setSaving(false); setEditId(null);

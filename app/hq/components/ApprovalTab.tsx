@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { HQRole, Approval } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notify } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notify, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -647,6 +647,9 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
       }
     }
     await notify(item.author, "approval", `결재 "${item.title}" ${status === "승인" ? (currentStep + 1 >= line.length ? "최종 승인되었습니다" : `${currentStep + 1}단계 승인되었습니다`) : "반려되었습니다"}`, userName);
+    // 대표/이사에게도 알림
+    const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+    if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "approval", `결재 "${item.title}" ${status} - ${userName}`, userName);
     setComment("");
     load();
   };
@@ -655,7 +658,13 @@ export default function ApprovalTab({ userId, userName, myRole, flash }: Props) 
     if (!confirm("삭제하시겠습니까?")) return;
     const s = sb();
     if (!s) return;
+    const item = list.find(a => a.id === id);
     await s.from("hq_approvals").delete().eq("id", id);
+    // 삭제 알림 → 대표/이사
+    if (item) {
+      const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "approval", `결재 "${item.title}" 삭제됨 - ${userName}`, userName);
+    }
     flash("삭제되었습니다");
     load();
   };

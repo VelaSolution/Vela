@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import type { HQRole, Expense, FixedCost } from "@/app/hq/types";
-import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames, notify } from "@/app/hq/utils";
+import { sb, I, C, L, B, B2, BADGE, fmt, today, useTeamDisplayNames, notify, notifyMany } from "@/app/hq/utils";
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
@@ -210,10 +210,16 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
       const { error } = await s.from("hq_expenses").update(row).eq("id", expEditId);
       if (error) { flash("수정 실패"); setExpSaving(false); return; }
       flash("수정 완료");
+      // 수정 알림 → 대표/이사
+      const { data: managers } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (managers) await notifyMany(managers.map((m: any) => m.name), "expense", `경비 수정: ${fmt(amt)}${expForm.currency === "USD" ? "$" : "원"} (${expForm.category}) - ${userName}`, userName);
     } else {
       const { error } = await s.from("hq_expenses").insert(row);
       if (error) { flash("등록 실패"); setExpSaving(false); return; }
       flash("경비 등록 완료");
+      // 등록 알림 → 대표/이사
+      const { data: managers } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (managers) await notifyMany(managers.map((m: any) => m.name), "expense", `새 경비 승인 요청: ${fmt(amt)}${expForm.currency === "USD" ? "$" : "원"} (${expForm.category}) - ${userName}`, userName);
     }
     setExpForm(EXP_EMPTY); setExpEditId(null); setShowExpForm(false); setExpSaving(false); load();
   }
@@ -226,7 +232,14 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
   async function deleteExpense(id: string) {
     if (!confirm("삭제하시겠습니까?")) return;
     const s = sb(); if (!s) return;
+    const target = expenses.find(e => e.id === id);
     await s.from("hq_expenses").delete().eq("id", id);
+    // 삭제 알림 → 대표/이사 + 등록자
+    if (target) {
+      const { data: managers } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      const targets = new Set([...(managers || []).map((m: any) => m.name), target.author]);
+      await notifyMany([...targets], "expense", `경비 삭제: ${fmt(Number(target.amount))}${(target as any).currency === "USD" ? "$" : "원"} (${target.category}) - ${userName}`, userName);
+    }
     flash("삭제 완료"); load();
   }
 
@@ -235,7 +248,11 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
     await s.from("hq_expenses").update({ status, approver: userName }).eq("id", id);
     const target = expenses.find(e => e.id === id);
     if (target) {
+      // 등록자에게 알림
       await notify(target.author, "expense", `경비 ${fmt(Number(target.amount))}${(target as any).currency === "USD" ? "$" : "원"} (${target.category}) ${status === "승인" ? "승인되었습니다" : "반려되었습니다"}`, userName);
+      // 대표/이사에게도 알림
+      const { data: managers } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (managers) await notifyMany(managers.map((m: any) => m.name), "expense", `경비 ${status}: ${fmt(Number(target.amount))}${(target as any).currency === "USD" ? "$" : "원"} (${target.category}) - ${target.author}`, userName);
     }
     flash(`${status} 처리 완료`); load();
   }
@@ -789,15 +806,15 @@ export default function ExpenseTab({ userId, userName, myRole, flash }: Props) {
                       {e.author === userName && e.status === "반려" && (
                         <button onClick={() => { startEditExp(e); }} className="text-xs font-semibold text-[#3182F6] hover:bg-blue-50 px-2.5 py-1.5 rounded-lg transition">재등록</button>
                       )}
-                      {e.author === userName && (e.status === "대기" || e.status === "반려") && (
-                        <>
-                          <button onClick={() => startEditExp(e)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-500 transition p-1.5 rounded-lg hover:bg-slate-100" title="수정">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                          </button>
-                          <button onClick={() => deleteExpense(e.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-slate-100" title="삭제">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          </button>
-                        </>
+                      {(e.author === userName && (e.status === "대기" || e.status === "반려")) && (
+                        <button onClick={() => startEditExp(e)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-500 transition p-1.5 rounded-lg hover:bg-slate-100" title="수정">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                      )}
+                      {(e.author === userName && (e.status === "대기" || e.status === "반려") || myRole === "대표") && (
+                        <button onClick={() => deleteExpense(e.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition p-1.5 rounded-lg hover:bg-slate-100" title="삭제">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
                       )}
                     </div>
                   </div>

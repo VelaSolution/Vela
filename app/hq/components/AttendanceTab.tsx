@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { HQRole, AttendanceRecord } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -416,6 +416,9 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     }, { onConflict: "user_id,date" });
     if (error) { flash("저장 실패: " + error.message); return; }
     flash(`출근 완료 (${time})`);
+    // 출근 알림 → 대표/이사
+    const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+    if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "attendance", `${userName} 출근 (${time})${isLate ? " [지각]" : ""}`, userName);
     setMemo("");
     loadData();
   };
@@ -437,6 +440,9 @@ export default function AttendanceTab({ userId, userName, myRole, flash }: Props
     }).eq("id", todayRec.id);
     if (error) { flash("저장 실패: " + error.message); return; }
     flash(`퇴근 완료 (${time}) - ${hours}시간 근무${isNextDayClockOut ? " (익일)" : ""}`);
+    // 퇴근 알림 → 대표/이사
+    const { data: mgrs2 } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+    if (mgrs2) await notifyMany(mgrs2.map((m: any) => m.name), "attendance", `${userName} 퇴근 (${time}) - ${hours}시간 근무`, userName);
     loadData();
   };
 

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { HQRole, BoardPost, BoardComment, BugStatus, BugPriority } from "@/app/hq/types";
-import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, today, I, C, L, B, B2, BADGE, useTeamDisplayNames, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -155,6 +155,9 @@ export default function BoardTab({ userId, userName, myRole, flash }: Props) {
       await load();
       setFTitle(""); setFContent(""); setFCat("자유"); setFBugPriority("보통"); setShowForm(false);
       flash("게시글 등록 완료");
+      // 게시글 알림 → 대표/이사
+      const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "board", `새 게시글 [${fCat}]: "${fTitle.trim()}" - ${userName}`, userName);
     } catch (e) {
       console.error("addPost error:", e);
       flash("게시글 등록 실패");
@@ -238,6 +241,13 @@ export default function BoardTab({ userId, userName, myRole, flash }: Props) {
       });
       if (error) throw error;
       await load();
+      // 댓글 알림 → 대표/이사 + 글쓴이
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+        const targets = new Set([...(mgrs || []).map((m: any) => m.name), post.author]);
+        await notifyMany([...targets], "board", `게시글 "${post.title}"에 댓글 - ${userName}`, userName);
+      }
       setCommentText("");
     } catch (e) {
       console.error("addComment error:", e);

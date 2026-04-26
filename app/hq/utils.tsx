@@ -52,7 +52,7 @@ export async function notify(
   createdBy: string,
 ) {
   const s = sb();
-  if (!s || targetUser === createdBy) return; // 본인에게는 안 보냄
+  if (!s) return;
   await s.from("hq_notifications").insert({
     type, message, target_user: targetUser, created_by: createdBy,
   }).catch(() => {});
@@ -67,7 +67,6 @@ export async function notifyMany(
   const s = sb();
   if (!s) return;
   const rows = targetUsers
-    .filter(u => u !== createdBy)
     .map(u => ({ type, message, target_user: u, created_by: createdBy }));
   if (rows.length > 0) await s.from("hq_notifications").insert(rows).catch(() => {});
 }

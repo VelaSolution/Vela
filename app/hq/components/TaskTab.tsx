@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import type { HQRole, Task, Goal, TaskComment } from "@/app/hq/types";
-import { sb, I, C, L, B, B2, BADGE, ST, useTeamDisplayNames } from "@/app/hq/utils";
+import { sb, I, C, L, B, B2, BADGE, ST, useTeamDisplayNames, notify, notifyMany } from "@/app/hq/utils";
 
 interface Props {
   userId: string;
@@ -109,7 +109,15 @@ export default function TaskTab({ userId, userName, flash }: Props) {
       result: JSON.stringify({ priority: form.priority, progress: Number(form.progress) || 0 }),
     });
     if (error) flash("저장 실패: " + error.message);
-    else { flash("태스크 생성 완료"); setForm({ ...EMPTY }); await load(); }
+    else {
+      flash("태스크 생성 완료"); setForm({ ...EMPTY });
+      // 태스크 생성 알림 → 담당자 + 대표/이사
+      const assignee = form.assignee || userName;
+      if (assignee !== userName) await notify(assignee, "task", `새 태스크 배정: "${form.title}"`, userName);
+      const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "task", `새 태스크: "${form.title}" (담당: ${assignee})`, userName);
+      await load();
+    }
     setSaving(false);
   }
 
@@ -117,6 +125,13 @@ export default function TaskTab({ userId, userName, flash }: Props) {
     const s = sb();
     if (!s) return;
     await s.from("hq_tasks").update({ status }).eq("id", id);
+    // 상태 변경 알림 → 대표/이사
+    const task = tasks.find(t => t.id === id);
+    const statusLabel = STATUSES.find(st => st.key === status)?.label || status;
+    if (task) {
+      const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "task", `태스크 "${task.title}" 상태 변경: ${statusLabel} - ${userName}`, userName);
+    }
     await load();
   }
 
@@ -146,6 +161,12 @@ export default function TaskTab({ userId, userName, flash }: Props) {
     if (!s) return;
     const { error } = await s.from("hq_task_comments").insert({ task_id: taskId, author: userName, text });
     if (error) { flash("댓글 저장 실패"); return; }
+    // 댓글 알림 → 대표/이사
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      const { data: mgrs } = await s.from("hq_team").select("name").in("hq_role", ["대표", "이사"]);
+      if (mgrs) await notifyMany(mgrs.map((m: any) => m.name), "task", `태스크 "${task.title}"에 댓글: ${text.slice(0, 30)} - ${userName}`, userName);
+    }
     setCommentInputs((p) => ({ ...p, [taskId]: "" }));
     loadComments();
   }
