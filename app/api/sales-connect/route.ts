@@ -91,7 +91,7 @@ ${csvText}
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "sales-connect", limit: 5 });
+    const rl = await checkRateLimit(ip, { key: "sales-connect", limit: 5 });
     if (!rl.ok) return rateLimitResponse();
 
     const body = await req.json().catch(() => null);

@@ -313,7 +313,7 @@ export function TeamStatusSection({ teamMembers, attendanceData, go }: SharedPro
 
 // ── Recent Notices ──
 export function RecentNoticesSection({ notices, go }: SharedProps & {
-  notices: { id: string; title: string; date: string; pinned: boolean; author: string }[];
+  notices: { id: string; title: string; created_at: string; pinned: boolean; author: string }[];
 }) {
   if (notices.length === 0) return null;
   return (
@@ -327,7 +327,7 @@ export function RecentNoticesSection({ notices, go }: SharedProps & {
           <div key={n.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-50 cursor-pointer transition" onClick={() => go("board")}>
             {n.pinned && <span className="text-[10px]">📌</span>}
             <span className="text-sm text-slate-800 truncate flex-1">{n.title}</span>
-            <span className="text-[10px] text-slate-400 flex-shrink-0">{n.date?.slice(5, 10)}</span>
+            <span className="text-[10px] text-slate-400 flex-shrink-0">{n.created_at?.slice(5, 10)}</span>
           </div>
         ))}
       </div>
@@ -372,7 +372,7 @@ export function UpcomingEventsSection({ events, go }: SharedProps & {
 
 // ── Recent Reports ──
 export function RecentReportsSection({ reports, go }: SharedProps & {
-  reports: { id: string; title: string; content?: string; author: string; status: string; date: string; report_type: string }[];
+  reports: { id: string; title: string; content?: string; author: string; status: string; created_at: string; report_type: string }[];
 }) {
   const { displayName } = useTeamDisplayNames();
   if (reports.length === 0) return null;

@@ -1127,10 +1127,11 @@ CREATE POLICY "hq_notifications_auth" ON hq_notifications FOR ALL USING (auth.ro
 -- ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS hq_audit_log (
   id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_name   text NOT NULL,                              -- 행위자
+  actor       text NOT NULL,                              -- 행위자
   action      text NOT NULL,                              -- 행위 (로그인, 파일열람 등)
-  detail      text DEFAULT '',                            -- 상세 내용
-  browser     text DEFAULT '',                            -- 브라우저/OS 정보
+  target_type text DEFAULT '',                            -- 대상 유형
+  target_id   text DEFAULT '',                            -- 대상 ID
+  detail      text DEFAULT '',                            -- 상세 내용 (브라우저 정보 포함)
   ip          text DEFAULT '',                            -- IP 주소
   created_at  timestamptz DEFAULT now()
 );
@@ -1153,7 +1154,21 @@ ALTER TABLE hq_booking_invitations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "hq_booking_invitations_auth" ON hq_booking_invitations FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
 
+-- 62. hq_shift_preferences ─ 교대근무 선호도
+CREATE TABLE IF NOT EXISTS hq_shift_preferences (
+  id              uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_name       text NOT NULL,
+  day_of_week     int NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  preferred_shift text NOT NULL DEFAULT '주간',
+  unavailable     boolean NOT NULL DEFAULT false,
+  created_at      timestamptz DEFAULT now(),
+  UNIQUE (user_name, day_of_week)
+);
+ALTER TABLE hq_shift_preferences ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "hq_shift_preferences_auth" ON hq_shift_preferences FOR ALL USING (auth.uid() IS NOT NULL);
+
+
 -- ============================================================
--- 완료! 총 61개 테이블 생성
+-- 완료! 총 62개 테이블 생성
 -- 참고: hq-files Storage 버킷은 Supabase 대시보드에서 별도 생성 필요
 -- ============================================================

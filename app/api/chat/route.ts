@@ -6,7 +6,7 @@ export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, { key: "chat", limit: 10 });
+  const rl = await checkRateLimit(ip, { key: "chat", limit: 10 });
   if (!rl.ok) return rateLimitResponse();
   const body = await req.json();
   const { messages, context } = body;

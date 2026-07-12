@@ -38,6 +38,7 @@ export default function SearchModal({ userId, isOpen, onClose, onNavigate }: Pro
   const [recent, setRecent] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchGenRef = useRef(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -53,10 +54,11 @@ export default function SearchModal({ userId, isOpen, onClose, onNavigate }: Pro
     const s = sb();
     if (!s) return;
     setLoading(true);
+    const gen = ++searchGenRef.current;
     const term = `%${q.trim()}%`;
 
     try {
-      const [tasks, notices, feedback, files, wiki, board, decisions, memos] = await Promise.all([
+      const [tasks, notices, feedback, files, wiki, board, decisions, memos, mail, contacts, approvals, reports] = await Promise.all([
         s.from("hq_tasks").select("id, title").ilike("title", term).limit(5),
         s.from("hq_notices").select("id, title, content").or(`title.ilike.${term},content.ilike.${term}`).limit(5),
         s.from("hq_feedback").select("id, title").ilike("title", term).limit(5),
@@ -65,8 +67,13 @@ export default function SearchModal({ userId, isOpen, onClose, onNavigate }: Pro
         s.from("hq_board").select("id, title").ilike("title", term).limit(5),
         s.from("hq_decisions").select("id, title").ilike("title", term).limit(5),
         s.from("hq_memos").select("id, content").ilike("content", term).limit(5),
+        s.from("hq_mail").select("id, subject").ilike("subject", term).limit(5),
+        s.from("hq_contacts").select("id, name, department").or(`name.ilike.${term},department.ilike.${term}`).limit(5),
+        s.from("hq_approvals").select("id, title").ilike("title", term).limit(5),
+        s.from("hq_reports").select("id, title").ilike("title", term).limit(5),
       ]);
 
+      if (gen !== searchGenRef.current) return; // 이전 검색 결과 무시
       const groups: ResultGroup[] = [];
 
       if (tasks.data?.length) groups.push({ type: "task", tab: "task", icon: "✅", label: "태스크", items: tasks.data.map((r: any) => ({ id: r.id, title: r.title })) });
@@ -76,6 +83,11 @@ export default function SearchModal({ userId, isOpen, onClose, onNavigate }: Pro
       if (wiki.data?.length) groups.push({ type: "wiki", tab: "docs", icon: "📖", label: "위키", items: wiki.data.map((r: any) => ({ id: r.id, title: r.title, sub: r.content?.slice(0, 60) })) });
       if (board.data?.length) groups.push({ type: "board", tab: "board", icon: "💬", label: "게시판", items: board.data.map((r: any) => ({ id: r.id, title: r.title })) });
       if (decisions.data?.length) groups.push({ type: "decision", tab: "approval", icon: "⚖️", label: "의사결정", items: decisions.data.map((r: any) => ({ id: r.id, title: r.title })) });
+      if (memos.data?.length) groups.push({ type: "memo", tab: "docs", icon: "📝", label: "메모", items: memos.data.map((r: any) => ({ id: r.id, title: r.content?.slice(0, 60) || "메모" })) });
+      if (mail.data?.length) groups.push({ type: "mail", tab: "mail", icon: "✉️", label: "메일", items: mail.data.map((r: any) => ({ id: r.id, title: r.subject })) });
+      if (contacts.data?.length) groups.push({ type: "contact", tab: "team", icon: "👤", label: "주소록", items: contacts.data.map((r: any) => ({ id: r.id, title: r.name, sub: r.department })) });
+      if (approvals.data?.length) groups.push({ type: "approval", tab: "approval", icon: "📋", label: "결재", items: approvals.data.map((r: any) => ({ id: r.id, title: r.title })) });
+      if (reports.data?.length) groups.push({ type: "report", tab: "approval", icon: "📄", label: "보고서", items: reports.data.map((r: any) => ({ id: r.id, title: r.title })) });
 
       setResults(groups);
       addRecent(q.trim());

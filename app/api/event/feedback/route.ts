@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limiting: 분당 3회
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "event-feedback", limit: 3 });
+    const rl = await checkRateLimit(ip, { key: "event-feedback", limit: 3 });
     if (!rl.ok) return rateLimitResponse();
 
     const body = await req.json().catch(() => null);

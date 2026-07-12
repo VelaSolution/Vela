@@ -88,10 +88,9 @@ export async function insertAuditLog(opts: {
   if (!s) return;
   const browser = getBrowserInfo();
   await s.from("hq_audit_log").insert({
-    user_name: opts.userName,
+    actor: opts.userName,
     action: opts.action,
-    detail: opts.detail ?? "",
-    browser: browser,
+    detail: `${opts.detail ?? ""} [${browser}]`,
     ip: "",
     created_at: new Date().toISOString(),
   }).then(() => {});
@@ -149,10 +148,9 @@ export default function AuditLog({ userId, userName, myRole, flash }: Props) {
           type: r.action,
           icon: cfg?.icon ?? "📝",
           description: r.detail || r.action,
-          author: r.user_name || "",
+          author: r.actor || "",
           createdAt: r.created_at,
           detail: r.detail || "",
-          browser: r.browser || "",
           ip: r.ip || "",
         });
       });

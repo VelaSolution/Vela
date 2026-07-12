@@ -10,7 +10,7 @@ function esc(s: string) { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").re
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "weekly-report", limit: 2 });
+    const rl = await checkRateLimit(ip, { key: "weekly-report", limit: 2 });
     if (!rl.ok) return rateLimitResponse();
 
     const { secret } = await req.json();

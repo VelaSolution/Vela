@@ -14,7 +14,7 @@ const industryLabels: Record<string, string> = {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "anon-ai-reply", limit: 5 });
+    const rl = await checkRateLimit(ip, { key: "anon-ai-reply", limit: 5 });
     if (!rl.ok) return rateLimitResponse();
     const { postId } = await req.json();
     if (!postId) return apiError("postId 필요", 400);

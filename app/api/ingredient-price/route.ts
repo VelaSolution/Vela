@@ -104,7 +104,7 @@ function getManualPrices(): PriceItem[] {
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, { key: "ingredient-price", limit: 20 });
+  const rl = await checkRateLimit(ip, { key: "ingredient-price", limit: 20 });
   if (!rl.ok) return rateLimitResponse();
 
   // KAMIS API 연동

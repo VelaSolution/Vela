@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense, memo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -13,24 +13,34 @@ import {
 // ── 탭 컴포넌트 (always needed) ───────────────────────
 import NotificationBell from "./components/NotificationBell";
 import SearchModal from "./components/SearchModal";
+import TabErrorBoundary from "./components/TabErrorBoundary";
 
-// ── 탭 컴포넌트 (12탭 — lazy loaded) ─────────────────
-const Dashboard = dynamic(() => import("./components/Dashboard"));
-const MailTab = dynamic(() => import("./components/MailTab"));
-const AttendanceHub = dynamic(() => import("./components/AttendanceHub"));
-const TaskHub = dynamic(() => import("./components/TaskHub"));
-const BoardHub = dynamic(() => import("./components/BoardHub"));
-const ChatTab = dynamic(() => import("./components/ChatTab"));
-const DocsHub = dynamic(() => import("./components/DocsHub"));
-const ApprovalHub = dynamic(() => import("./components/ApprovalHub"));
-const FinanceHub = dynamic(() => import("./components/FinanceHub"));
-const TeamHub = dynamic(() => import("./components/TeamHub"));
-const ResourceTab = dynamic(() => import("./components/ResourceTab"));
-const PerformanceHub = dynamic(() => import("./components/PerformanceHub"));
-const AdminHub = dynamic(() => import("./components/AdminHub"));
+// ── 탭 로딩 스켈레톤 ─────────────────────────────────
+const TabSkeleton = () => (
+  <div className="space-y-3 animate-pulse">
+    <div className="h-8 bg-white rounded-2xl w-48 shadow-sm" />
+    <div className="h-32 bg-white rounded-2xl shadow-sm" />
+    <div className="h-32 bg-white rounded-2xl shadow-sm" />
+  </div>
+);
+
+// ── 탭 컴포넌트 (13탭 — lazy loaded) ─────────────────
+const Dashboard = dynamic(() => import("./components/Dashboard"), { loading: TabSkeleton });
+const MailTab = dynamic(() => import("./components/MailTab"), { loading: TabSkeleton });
+const AttendanceHub = dynamic(() => import("./components/AttendanceHub"), { loading: TabSkeleton });
+const TaskHub = dynamic(() => import("./components/TaskHub"), { loading: TabSkeleton });
+const BoardHub = dynamic(() => import("./components/BoardHub"), { loading: TabSkeleton });
+const ChatTab = dynamic(() => import("./components/ChatTab"), { loading: TabSkeleton });
+const DocsHub = dynamic(() => import("./components/DocsHub"), { loading: TabSkeleton });
+const ApprovalHub = dynamic(() => import("./components/ApprovalHub"), { loading: TabSkeleton });
+const FinanceHub = dynamic(() => import("./components/FinanceHub"), { loading: TabSkeleton });
+const TeamHub = dynamic(() => import("./components/TeamHub"), { loading: TabSkeleton });
+const ResourceTab = dynamic(() => import("./components/ResourceTab"), { loading: TabSkeleton });
+const PerformanceHub = dynamic(() => import("./components/PerformanceHub"), { loading: TabSkeleton });
+const AdminHub = dynamic(() => import("./components/AdminHub"), { loading: TabSkeleton });
 
 // ── 탭 → 컴포넌트 매핑 (13탭) ────────────────────────
-const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }>> = {
+const TAB_COMPONENTS: Record<Tab, React.ComponentType<{ userId: string; userName: string; myRole: HQRole; flash: (m: string, type?: "success" | "error" | "info") => void }>> = {
   dashboard: Dashboard, mail: MailTab, attendance: AttendanceHub, task: TaskHub,
   board: BoardHub, chat: ChatTab, docs: DocsHub,
   approval: ApprovalHub, finance: FinanceHub, team: TeamHub,
@@ -67,14 +77,50 @@ function TabIcon({ name, size = 18, className = "", colored = false }: { name: s
   return <svg {...s} viewBox="0 0 24 24" className={className}>{icons[name]}</svg>;
 }
 
-// 모바일 하단 고정 5탭
-const MOBILE_NAV: { key: Tab; label: string }[] = [
-  { key: "dashboard", label: "홈" },
-  { key: "approval", label: "결재" },
-  { key: "chat", label: "메신저" },
-  { key: "task", label: "업무" },
-  { key: "finance", label: "경리" },
-];
+// ── 사이드바 메모이즈 컴포넌트 ──────────────────────────
+const SidebarNav = memo(function SidebarNav({ collapsed, isMobile, tab, myRole, setTab, setSidebarOpen }: {
+  collapsed: boolean; isMobile: boolean; tab: Tab; myRole: HQRole;
+  setTab: (t: Tab) => void; setSidebarOpen: (v: boolean) => void;
+}) {
+  return (
+    <nav className="flex-1 overflow-y-auto py-2">
+      {SIDEBAR_GROUPS.map(g => {
+        const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
+        if (groupTabs.length === 0) return null;
+        return (
+          <div key={g.label} className="mb-1">
+            {!collapsed && g.label !== "홈" && (
+              <div className="px-4 pt-3 pb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{g.label}</span>
+              </div>
+            )}
+            {collapsed && g.label !== "홈" && <div className="mx-2 my-1 border-t border-slate-100" />}
+            <div className="space-y-0.5 px-2">
+              {groupTabs.map(k => {
+                const t = TAB_MAP[k]; if (!t) return null;
+                const isActive = tab === k;
+                return (
+                  <button key={k} onClick={() => { setTab(k); if (isMobile) setSidebarOpen(false); }}
+                    title={collapsed ? t.label : undefined}
+                    className={`w-full text-left rounded-xl flex items-center transition-all duration-150 ${
+                      collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
+                    } ${
+                      isActive
+                        ? "bg-[#3182F6]/10 text-[#3182F6] font-bold border-l-[3px] border-[#3182F6]"
+                        : "text-slate-600 hover:bg-slate-50 font-medium border-l-[3px] border-transparent"
+                    }`}>
+                    <TabIcon name={t.icon} size={collapsed ? 20 : 18} className={isActive ? "text-[#3182F6]" : "text-slate-400"} />
+                    {!collapsed && <span className="text-[13px]">{t.label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </nav>
+  );
+});
 
 function HQPage() {
   const searchParams = useSearchParams();
@@ -84,7 +130,7 @@ function HQPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
   const [userName, setUserName] = useState("관리자");
   const [myRole, setMyRole] = useState<HQRole>("팀원");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -115,6 +161,8 @@ function HQPage() {
 
   useEffect(() => {
     try { localStorage.setItem("hq_dark_mode", String(darkMode)); } catch {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", darkMode ? "#0F172A" : "#ffffff");
   }, [darkMode]);
 
   useEffect(() => {
@@ -124,6 +172,22 @@ function HQPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // ── 세션 만료 감지 ──────────────────────────────────
+  useEffect(() => {
+    const s = createSupabaseBrowserClient();
+    if (!s) return;
+    const { data: { subscription } } = s.auth.onAuthStateChange((event: string) => {
+      if (event === "SIGNED_OUT") router.push("/");
+    });
+    const handleVisibility = async () => {
+      if (document.visibilityState !== "visible") return;
+      const { data: { session } } = await s.auth.getSession();
+      if (!session) router.push("/");
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => { subscription.unsubscribe(); document.removeEventListener("visibilitychange", handleVisibility); };
+  }, [router]);
 
   const setTab = useCallback((t: Tab) => {
     setTabState(t);
@@ -137,7 +201,14 @@ function HQPage() {
     if (tabParam && TABS.some(t => t.key === tabParam) && tabParam !== tab) setTabState(tabParam);
   }, [tabParam]);
 
-  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2500); };
+  const flash = useCallback((m: string, type: "success" | "error" | "info" = "success") => { setMsg({ text: m, type }); setTimeout(() => setMsg(null), 2500); }, []);
+
+  const handleLogout = useCallback(async () => {
+    const s = createSupabaseBrowserClient();
+    if (!s) return;
+    await s.auth.signOut();
+    router.push("/");
+  }, [router]);
 
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed(prev => {
@@ -191,25 +262,30 @@ function HQPage() {
     const sb = createSupabaseBrowserClient();
     if (!sb) return;
     let cancelled = false;
+    let badgeLoading = false;
 
     async function loadBadges() {
+      if (badgeLoading) return;
+      badgeLoading = true;
       try {
-        const [approvals, tasks, chats, boards, leaves] = await Promise.all([
+        const [approvals, tasks, chats, boards, leaves] = await Promise.allSettled([
           sb.from("hq_approvals").select("id", { count: "exact", head: true }).eq("status", "대기"),
-          sb.from("hq_tasks").select("id", { count: "exact", head: true }).eq("status", "active"),
+          sb.from("hq_tasks").select("id", { count: "exact", head: true }).in("status", ["pending", "in_progress"]),
           sb.from("hq_chat").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 3600_000).toISOString()),
           sb.from("hq_board").select("id", { count: "exact", head: true }).gte("created_at", new Date(Date.now() - 86400_000).toISOString()),
           sb.from("hq_leave").select("id", { count: "exact", head: true }).eq("status", "대기"),
         ]);
         if (cancelled) return;
+        const v = (r: PromiseSettledResult<any>) => r.status === "fulfilled" ? (r.value.count ?? 0) : 0;
         setBadges({
-          approval: approvals.count ?? 0,
-          task: tasks.count ?? 0,
-          chat: chats.count ?? 0,
-          board: boards.count ?? 0,
-          attendance: leaves.count ?? 0,
+          approval: v(approvals),
+          task: v(tasks),
+          chat: v(chats),
+          board: v(boards),
+          attendance: v(leaves),
         });
       } catch {}
+      finally { badgeLoading = false; }
     }
 
     async function loadNotices() {
@@ -267,38 +343,14 @@ function HQPage() {
     </main>
   );
 
-  const allowedTabs = TABS.filter(t => ROLE_PERMISSIONS[myRole]?.includes(t.key));
-  const todayDate = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+  const allowedTabs = useMemo(() => TABS.filter(t => ROLE_PERMISSIONS[myRole]?.includes(t.key)), [myRole]);
+  const todayDate = useMemo(() => new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" }), []);
   const ActiveComponent = TAB_COMPONENTS[tab];
   const activeTabInfo = TAB_MAP[tab];
 
   return (
     <TeamDisplayProvider>
     <div className={`hq-root h-dvh flex flex-col overflow-hidden${darkMode ? " hq-dark" : ""}`}>
-      <meta name="theme-color" content={darkMode ? "#0F172A" : "#ffffff"} />
-      <style>{`
-        .hq-root { background: #F7F8FA; color: #191F28; overscroll-behavior: none; }
-        .hq-root > * { overscroll-behavior: contain; }
-        html, body { background: #F7F8FA !important; }
-        .hq-dark { background: #0F172A !important; color: #E2E8F0 !important; }
-        .hq-dark .hq-sidebar { background: #0B1120 !important; }
-        .hq-dark .hq-header { background: #0F172A !important; border-color: #1E293B !important; }
-        .hq-dark .bg-white { background: #1E293B !important; }
-        .hq-dark .hq-content { background: #0F172A !important; }
-        .hq-dark .text-slate-900, .hq-dark .text-slate-800, .hq-dark .text-slate-700 { color: #E2E8F0 !important; }
-        .hq-dark .text-slate-600, .hq-dark .text-slate-500 { color: #94A3B8 !important; }
-        .hq-dark .text-slate-400 { color: #64748B !important; }
-        .hq-dark .border-slate-200, .hq-dark .border-slate-100 { border-color: #1E293B !important; }
-        .hq-dark .bg-slate-50, .hq-dark .bg-slate-100 { background: #1E293B !important; }
-        .hq-dark input, .hq-dark textarea, .hq-dark select { background: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
-        .hq-more-sheet { animation: slideUp 0.25s ease-out; }
-        .hq-fade-in { animation: fadeIn 0.2s ease-out; }
-        .hq-toast { animation: toastIn 0.3s ease-out; }
-      `}</style>
-
       {/* ── 헤더 (다우오피스 스타일: 다크 네이비) ──────── */}
       <header className="hq-header sticky top-0 z-50 h-[44px] md:h-[52px] flex-shrink-0 bg-white/97 backdrop-blur-xl border-b border-slate-100">
         <div className="h-full flex items-center px-3 lg:px-5">
@@ -375,11 +427,14 @@ function HQPage() {
             </div>
             <button onClick={() => setSidebarOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 text-xs">✕</button>
           </div>
-          {renderSidebar(true)}
-          <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0">
+          <SidebarNav collapsed={false} isMobile={true} tab={tab} myRole={myRole} setTab={setTab} setSidebarOpen={setSidebarOpen} />
+          <div className="px-4 py-3 border-t border-slate-100 flex-shrink-0 space-y-2">
             <Link href="/" className="flex items-center gap-2 text-xs text-slate-400 hover:text-[#3182F6] transition font-medium" onClick={() => setSidebarOpen(false)}>
               <span>←</span><span>홈으로 나가기</span>
             </Link>
+            <button onClick={handleLogout} className="flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 transition font-medium w-full text-left">
+              <span>⎋</span><span>로그아웃</span>
+            </button>
           </div>
         </aside>
       </div>
@@ -397,12 +452,15 @@ function HQPage() {
               </svg>
             </button>
           </div>
-          {renderSidebar(false)}
+          <SidebarNav collapsed={sidebarCollapsed} isMobile={false} tab={tab} myRole={myRole} setTab={setTab} setSidebarOpen={setSidebarOpen} />
           {!sidebarCollapsed && (
-            <div className="px-3 py-3 border-t border-slate-100 flex-shrink-0">
+            <div className="px-3 py-3 border-t border-slate-100 flex-shrink-0 space-y-1">
               <Link href="/" className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-[#3182F6] transition font-medium px-2">
                 <span>←</span><span>홈으로</span>
               </Link>
+              <button onClick={handleLogout} className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-red-500 transition font-medium px-2 w-full text-left">
+                <span>⎋</span><span>로그아웃</span>
+              </button>
             </div>
           )}
         </aside>
@@ -418,11 +476,13 @@ function HQPage() {
           )}
           <div className="px-4 lg:px-6 pt-4 lg:pt-5 pb-10">
             <div key={tab} className="hq-fade-in">
-              {userId && tab === "dashboard" ? (
-                <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
-              ) : userId ? (
-                <ActiveComponent userId={userId} userName={userName} myRole={myRole} flash={flash} />
-              ) : null}
+              <TabErrorBoundary tabName={activeTabInfo?.label}>
+                {userId && tab === "dashboard" ? (
+                  <Dashboard userId={userId} userName={userName} myRole={myRole} flash={flash} onNavigate={setTab} />
+                ) : userId ? (
+                  <ActiveComponent userId={userId} userName={userName} myRole={myRole} flash={flash} />
+                ) : null}
+              </TabErrorBoundary>
             </div>
           </div>
         </main>
@@ -431,10 +491,18 @@ function HQPage() {
       {/* ── 토스트 알림 ──────────────────────────────────── */}
       {msg && (
         <div className="hq-toast fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[200] bg-slate-900 text-white px-5 py-3 rounded-xl text-[13px] font-semibold shadow-2xl flex items-center gap-2.5">
-          <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-6"/></svg>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+            msg.type === "error" ? "bg-red-500" : msg.type === "info" ? "bg-blue-500" : "bg-emerald-500"
+          }`}>
+            {msg.type === "error" ? (
+              <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+            ) : msg.type === "info" ? (
+              <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M6 4v3M6 9h0"/></svg>
+            ) : (
+              <svg width="12" height="12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6l3 3 5-6"/></svg>
+            )}
           </div>
-          {msg}
+          {msg.text}
         </div>
       )}
 
@@ -485,48 +553,6 @@ function HQPage() {
     </TeamDisplayProvider>
   );
 
-  // ── 사이드바 렌더링 (다우오피스 스타일: 다크 + SVG 아이콘) ──
-  function renderSidebar(isMobile: boolean) {
-    const collapsed = !isMobile && sidebarCollapsed;
-    return (
-      <nav className="flex-1 overflow-y-auto py-2">
-        {SIDEBAR_GROUPS.map(g => {
-          const groupTabs = g.items.filter(k => ROLE_PERMISSIONS[myRole]?.includes(k));
-          if (groupTabs.length === 0) return null;
-          return (
-            <div key={g.label} className="mb-1">
-              {!collapsed && g.label !== "홈" && (
-                <div className="px-4 pt-3 pb-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{g.label}</span>
-                </div>
-              )}
-              {collapsed && g.label !== "홈" && <div className="mx-2 my-1 border-t border-slate-100" />}
-              <div className="space-y-0.5 px-2">
-                {groupTabs.map(k => {
-                  const t = TAB_MAP[k]; if (!t) return null;
-                  const isActive = tab === k;
-                  return (
-                    <button key={k} onClick={() => { setTab(k); if (isMobile) setSidebarOpen(false); }}
-                      title={collapsed ? t.label : undefined}
-                      className={`w-full text-left rounded-xl flex items-center transition-all duration-150 ${
-                        collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5"
-                      } ${
-                        isActive
-                          ? "bg-[#3182F6]/10 text-[#3182F6] font-bold border-l-[3px] border-[#3182F6]"
-                          : "text-slate-600 hover:bg-slate-50 font-medium border-l-[3px] border-transparent"
-                      }`}>
-                      <TabIcon name={t.icon} size={collapsed ? 20 : 18} className={isActive ? "text-[#3182F6]" : "text-slate-400"} />
-                      {!collapsed && <span className="text-[13px]">{t.label}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </nav>
-    );
-  }
 }
 
 export default function HQPageWrapper() {

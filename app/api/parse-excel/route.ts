@@ -24,7 +24,7 @@ function truncateCsvSafely(csvText: string): { text: string; truncated: boolean 
 export async function POST(req: NextRequest) {
   try {
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, { key: "parse-excel", limit: 3 });
+  const rl = await checkRateLimit(ip, { key: "parse-excel", limit: 3 });
   if (!rl.ok) return rateLimitResponse();
   const body = await req.json().catch(() => null);
   if (!body) return apiError("입력값 누락", 400);

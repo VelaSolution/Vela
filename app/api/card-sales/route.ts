@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip, { key: "card-sales", limit: 5 });
+    const rl = await checkRateLimit(ip, { key: "card-sales", limit: 5 });
     if (!rl.ok) return rateLimitResponse();
 
     const { bizNumber } = await req.json();

@@ -9,6 +9,7 @@ const EducationTab = dynamic(() => import("./EducationTab"));
 const TimelineTab = dynamic(() => import("./TimelineTab"));
 const AuditLog = dynamic(() => import("./AuditLog"));
 const CertificateTab = dynamic(() => import("./CertificateTab"));
+const MettTab = dynamic(() => import("./MettTab"));
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
@@ -17,6 +18,7 @@ const tabs = [
   { key: "crm", label: "CRM" },
   { key: "education", label: "교육" },
   { key: "certificate", label: "재직증명서" },
+  { key: "mett", label: "상황판단" },
   { key: "activity", label: "활동로그" },
   { key: "audit", label: "관리자 로그" },
 ] as const;
@@ -43,6 +45,7 @@ export default function AdminHub({ userId, userName, myRole, flash }: Props) {
       {sub === "crm" && <CrmTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "education" && <EducationTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "certificate" && <CertificateTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
+      {sub === "mett" && <MettTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "activity" && (
         <div className="space-y-0">
           <TimelineTab userId={userId} userName={userName} myRole={myRole} flash={flash} />

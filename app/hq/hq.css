@@ -1,0 +1,44 @@
+/* HQ 인트라넷 — 다크모드 & 애니메이션 */
+
+.hq-root { background: #F7F8FA; color: #191F28; overscroll-behavior: none; }
+.hq-root > * { overscroll-behavior: contain; }
+
+/* 다크모드 */
+.hq-dark { background: #0F172A; color: #E2E8F0; }
+.hq-dark .hq-sidebar { background: #0B1120; }
+.hq-dark .hq-header { background: #0F172A; border-color: #1E293B; }
+.hq-dark .bg-white { background: #1E293B; }
+.hq-dark .hq-content { background: #0F172A; }
+.hq-dark .text-slate-900,
+.hq-dark .text-slate-800,
+.hq-dark .text-slate-700 { color: #E2E8F0; }
+.hq-dark .text-slate-600,
+.hq-dark .text-slate-500 { color: #94A3B8; }
+.hq-dark .text-slate-400 { color: #64748B; }
+.hq-dark .border-slate-200,
+.hq-dark .border-slate-100 { border-color: #1E293B; }
+.hq-dark .bg-slate-50,
+.hq-dark .bg-slate-100 { background: #1E293B; }
+.hq-dark input,
+.hq-dark textarea,
+.hq-dark select { background: #1E293B; color: #E2E8F0; border-color: #334155; }
+
+/* 애니메이션 */
+@keyframes slideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.hq-more-sheet { animation: slideUp 0.25s ease-out; }
+.hq-fade-in { animation: fadeIn 0.2s ease-out; }
+.hq-toast { animation: toastIn 0.3s ease-out; }
+
+/* 인쇄 */
+@media print {
+  .hq-sidebar,
+  .hq-header,
+  .hq-toast,
+  .hq-more-sheet { display: none !important; }
+  .hq-content {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+}

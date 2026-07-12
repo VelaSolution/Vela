@@ -98,7 +98,7 @@ describe("Rate Limiting", () => {
 
   it("checkRateLimit allows requests within limit", async () => {
     const { checkRateLimit } = await import("@/lib/rate-limit");
-    const result = checkRateLimit("test-ip-security-1", { key: "security-test-1", limit: 5 });
+    const result = await checkRateLimit("test-ip-security-1", { key: "security-test-1", limit: 5 });
     expect(result.ok).toBe(true);
     expect(result.remaining).toBe(4);
   });
@@ -108,9 +108,9 @@ describe("Rate Limiting", () => {
     const ip = "test-ip-security-blocked";
     const key = "security-test-blocked";
     for (let i = 0; i < 3; i++) {
-      checkRateLimit(ip, { key, limit: 3 });
+      await checkRateLimit(ip, { key, limit: 3 });
     }
-    const blocked = checkRateLimit(ip, { key, limit: 3 });
+    const blocked = await checkRateLimit(ip, { key, limit: 3 });
     expect(blocked.ok).toBe(false);
     expect(blocked.remaining).toBe(0);
   });

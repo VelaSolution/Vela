@@ -44,7 +44,7 @@ function saveWidgetPrefs(prefs: WidgetPrefs) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(prefs)); } catch {}
 }
 
-type ImportantNotice = { id: string; title: string; content: string; date: string };
+type ImportantNotice = { id: string; title: string; content: string; created_at: string };
 
 export default function Dashboard({ userId, userName, myRole, flash, onNavigate }: Props) {
   const { displayName } = useTeamDisplayNames();
@@ -72,9 +72,9 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
   const [recentActivity, setRecentActivity] = useState<{ type: string; icon: string; title: string; time: string; tab: Tab }[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ name: string; role: string; status: string }[]>([]);
   const [todayAttRecords, setTodayAttRecords] = useState<{ userName: string; clockIn: string; clockOut: string; status: string }[]>([]);
-  const [recentNotices, setRecentNotices] = useState<{ id: string; title: string; date: string; pinned: boolean; author: string }[]>([]);
+  const [recentNotices, setRecentNotices] = useState<{ id: string; title: string; created_at: string; pinned: boolean; author: string }[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; date: string; author: string }[]>([]);
-  const [recentReports, setRecentReports] = useState<{ id: string; title: string; content?: string; author: string; status: string; date: string; report_type: string }[]>([]);
+  const [recentReports, setRecentReports] = useState<{ id: string; title: string; content?: string; author: string; status: string; created_at: string; report_type: string }[]>([]);
   const [checkinDone, setCheckinDone] = useState(0);
   const [checkinPending, setCheckinPending] = useState(0);
   const [todayBookingsCount, setTodayBookingsCount] = useState(0);
@@ -104,7 +104,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
     const s = sb(); if (!s) return;
     try {
-      const { data } = await s.from("hq_notices").select("id, title, content, date").eq("important", true).order("date", { ascending: false }).limit(10);
+      const { data } = await s.from("hq_notices").select("id, title, content, created_at").eq("important", true).order("created_at", { ascending: false }).limit(10);
       if (!data || data.length === 0) return;
 
       // localStorage에서 이미 읽은 공지 ID 목록 확인
@@ -223,7 +223,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
             setTodayAttendance({ clockIn: toTime(myAtt.clock_in), clockOut: toTime(myAtt.clock_out) });
           } else { setTodayAttendance(null); }
         }
-        const { count: teamCount } = await s.from("hq_team").select("id", { count: "exact", head: true }).neq("approved", false);
+        const { count: teamCount } = await s.from("hq_team").select("id", { count: "exact", head: true }).eq("approved", true);
         if (teamCount && attData) { setAttendanceOut(Math.max(0, (teamCount ?? 0) - attData.length)); setAttendanceIn(attData.length); }
       } catch {}
     } catch { flash("데이터 로딩 실패"); }
@@ -271,7 +271,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
       // 팀원 현황
       try {
-        const { data: td } = await s.from("hq_team").select("name, role, status").neq("approved", false);
+        const { data: td } = await s.from("hq_team").select("name, role, status").eq("approved", true);
         if (td) setTeamMembers(td as any[]);
       } catch {}
 
@@ -288,26 +288,26 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
       // 최근 공지
       try {
-        const { data: nd } = await s.from("hq_notices").select("id, title, date, pinned, author").order("pinned", { ascending: false }).order("date", { ascending: false }).limit(5);
+        const { data: nd } = await s.from("hq_notices").select("id, title, created_at, pinned, author").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(5);
         if (nd) setRecentNotices(nd as any[]);
       } catch {}
 
       // 다가오는 일정
       try {
-        const { data: ed } = await s.from("hq_calendar").select("id, title, date, author").gte("date", today()).order("date", { ascending: true }).limit(5);
+        const { data: ed } = await s.from("hq_events").select("id, title, date, author").gte("date", today()).order("date", { ascending: true }).limit(5);
         if (ed) setUpcomingEvents(ed as any[]);
       } catch {}
 
       // 최근 보고서
       try {
-        const { data: rd } = await s.from("hq_reports").select("id, title, content, author, status, date, report_type").order("created_at", { ascending: false }).limit(5);
+        const { data: rd } = await s.from("hq_reports").select("id, title, content, author, status, created_at, report_type").order("created_at", { ascending: false }).limit(5);
         if (rd) setRecentReports(rd as any[]);
       } catch {}
 
       // 체크인 현황
       try {
         const todayStr = today();
-        const { count: teamCount } = await s.from("hq_team").select("id", { count: "exact", head: true }).neq("approved", false);
+        const { count: teamCount } = await s.from("hq_team").select("id", { count: "exact", head: true }).eq("approved", true);
         const { count: doneCount } = await s.from("hq_checkins").select("id", { count: "exact", head: true }).eq("date", todayStr);
         const done = doneCount ?? 0;
         const total = teamCount ?? 0;
@@ -324,7 +324,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
 
       // CRM 파이프라인
       try {
-        const { data: deals } = await s.from("hq_crm_deals").select("stage, value");
+        const { data: deals } = await s.from("hq_crm_deals").select("stage, amount");
         if (deals) {
           const stageMap: Record<string, { count: number; value: number }> = {};
           let totalVal = 0;
@@ -332,8 +332,8 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
             const st = d.stage || "lead";
             if (!stageMap[st]) stageMap[st] = { count: 0, value: 0 };
             stageMap[st].count += 1;
-            stageMap[st].value += (d.value || 0);
-            totalVal += (d.value || 0);
+            stageMap[st].value += (d.amount || 0);
+            totalVal += (d.amount || 0);
           }
           setCrmDealsByStage(Object.entries(stageMap).map(([stage, v]) => ({ stage, ...v })));
           setCrmTotalValue(totalVal);
@@ -449,7 +449,7 @@ export default function Dashboard({ userId, userName, myRole, flash, onNavigate 
                       <span className="text-sm font-semibold text-slate-800 truncate">{n.title}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-slate-400">{n.date}</span>
+                      <span className="text-xs text-slate-400">{n.created_at?.slice(0, 10)}</span>
                       <span className={`text-slate-400 transition-transform ${expandedNoticeId === n.id ? "rotate-180" : ""}`}>▼</span>
                     </div>
                   </button>

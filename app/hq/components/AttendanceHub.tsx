@@ -5,12 +5,14 @@ import type { HQRole } from "@/app/hq/types";
 
 const AttendanceTab = dynamic(() => import("./AttendanceTab"));
 const LeaveTab = dynamic(() => import("./LeaveTab"));
+const ShiftTab = dynamic(() => import("./ShiftTab"));
 
 interface Props { userId: string; userName: string; myRole: HQRole; flash: (m: string) => void }
 
 const tabs = [
   { key: "attendance", label: "출퇴근" },
   { key: "leave", label: "휴가" },
+  { key: "shift", label: "교대근무" },
 ] as const;
 
 type Sub = (typeof tabs)[number]["key"];
@@ -33,6 +35,7 @@ export default function AttendanceHub({ userId, userName, myRole, flash }: Props
 
       {sub === "attendance" && <AttendanceTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
       {sub === "leave" && <LeaveTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
+      {sub === "shift" && <ShiftTab userId={userId} userName={userName} myRole={myRole} flash={flash} />}
     </div>
   );
 }

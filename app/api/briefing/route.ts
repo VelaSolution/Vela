@@ -7,7 +7,7 @@ export const runtime = "edge";
 export async function POST(req: NextRequest) {
   try {
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, { key: "briefing", limit: 5 });
+  const rl = await checkRateLimit(ip, { key: "briefing", limit: 5 });
   if (!rl.ok) return rateLimitResponse();
   const body = await req.json().catch(() => null);
   if (!body?.form || !body?.result) {

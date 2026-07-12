@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, { key: "benchmark", limit: 10 });
+  const rl = await checkRateLimit(ip, { key: "benchmark", limit: 10 });
   if (!rl.ok) return rateLimitResponse();
 
   const industry = req.nextUrl.searchParams.get("industry") ?? "restaurant";

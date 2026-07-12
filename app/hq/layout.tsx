@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./hq.css";
 
 export const metadata: Metadata = {
   title: "VELA Bridge - 사내 인트라넷",

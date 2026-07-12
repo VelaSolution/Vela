@@ -19,7 +19,7 @@ export function TeamDisplayProvider({ children }: { children: React.ReactNode })
     (async () => {
       const s = sb();
       if (!s) return;
-      const { data } = await s.from("hq_team").select("name, role, hq_role").neq("approved", false);
+      const { data } = await s.from("hq_team").select("name, role, hq_role").eq("approved", true);
       if (data) {
         const m: Record<string, { role: string; hqRole: string }> = {};
         for (const t of data as TeamInfo[]) {
