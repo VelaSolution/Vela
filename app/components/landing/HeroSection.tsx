@@ -1,33 +1,6 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-
-function AnimatedCounter({ target, duration = 2000, suffix = "" }: { target: number; duration?: number; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    function tick(now: number) {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }, [target, duration]);
-  return <>{count.toLocaleString("ko-KR")}{suffix}</>;
-}
 
 export function HeroSection() {
-  const [userCount, setUserCount] = useState(0);
-
-  useEffect(() => {
-    fetch("/api/home")
-      .then(r => r.json())
-      .then(d => { if (d.userCount) setUserCount(d.userCount); })
-      .catch(() => {});
-  }, []);
 
   return (
     <section className="hero" id="home">
@@ -52,11 +25,11 @@ export function HeroSection() {
             <h1 className="hero-title">사장님의 <span className="gradient-text">항해를 시작</span>하세요</h1>
             <p className="hero-desc">데이터라는 바람을 읽어 방향을 잡아드립니다.<br />좌석 수랑 객단가만 넣으면, 진짜 남는 돈이 바로 보여요.</p>
 
-            {/* Live counter */}
+            {/* Trust badge */}
             <div style={{ marginBottom: 24, display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, background: "#22C55E", borderRadius: "50%", boxShadow: "0 0 8px rgba(34,197,94,0.5)" }} />
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--gray-600)" }}>
-                지금까지 <span style={{ color: "var(--blue)", fontWeight: 800 }}><AnimatedCounter target={userCount} suffix="명" /></span>의 사장님이 사용 중
+                외식업 사장님들이 매일 사용하는 경영 도구
               </span>
             </div>
 

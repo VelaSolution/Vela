@@ -27,7 +27,7 @@ export async function GET() {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 48, background: "#F1F5F9", borderRadius: 20, padding: "16px 36px" }}>
-          <span style={{ fontSize: 20, color: "#94a3b8", textDecoration: "line-through" }}>월 9,900원</span>
+          <span style={{ fontSize: 20, color: "#94a3b8", textDecoration: "line-through" }}>월 29,900원</span>
           <span style={{ fontSize: 36, fontWeight: 800, color: "#191F28" }}>0원</span>
           <span style={{ background: "#EF4444", color: "#fff", fontSize: 14, fontWeight: 700, padding: "6px 14px", borderRadius: 100 }}>1개월 무료</span>
         </div>

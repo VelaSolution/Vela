@@ -17,7 +17,7 @@ export async function GET() {
         <p style={{ fontSize: 24, color: "#6B7684", marginTop: 24 }}>회원가입만 하면 자동 적용</p>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 48, background: "#F1F5F9", borderRadius: 20, padding: "18px 40px" }}>
-          <span style={{ fontSize: 22, color: "#94a3b8", textDecoration: "line-through" }}>월 9,900원</span>
+          <span style={{ fontSize: 22, color: "#94a3b8", textDecoration: "line-through" }}>월 29,900원</span>
           <span style={{ fontSize: 40, fontWeight: 800, color: "#191F28" }}>0원</span>
         </div>
 
